@@ -89,7 +89,7 @@ Running under Xen/KVM and managed-mode RISC-V (currently targeting https://www.s
 See [Charisma](#Charisma).
 
 ### Other
-- Support for sub-majority consensus clusters
+- Support for sub-majority consensus clusters (1 - 2 nodes)
 - ARQ networking
 - Kernel-managed distributed KV-store
 - Message bus
