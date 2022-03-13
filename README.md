@@ -105,6 +105,8 @@ See [Charisma](#Charisma).
 
 ## Charisma
 
+![Charisma demo](https://raw.githubusercontent.com/wangell/pleroma-docs/main/vkoko.png)
+
 ### Programming is not text editing
 
 # Links
