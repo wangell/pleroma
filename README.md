@@ -7,9 +7,8 @@ Pleroma is a distributed operating system/VM inspired by the original vision of 
 ~io
 
 ε HWEntity
-	δ hello-world() -> ()
+	δ hello-world() -> u8
 		loc a : u8 := 1 + 1
-		↵ a + 1
 
 		? a > 1
 			#t io.println("Hello, world!")
@@ -18,6 +17,8 @@ Pleroma is a distributed operating system/VM inspired by the original vision of 
 		loc ls : [u8] := [1, 2, 3, 4]
 		x | ls
 			io.println(x)
+
+		↵ a + 1
 
 	λ pure-func(a)
 		↵ 5 * pure-func2(2)
