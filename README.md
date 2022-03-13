@@ -89,6 +89,7 @@ Running under Xen/KVM and managed-mode RISC-V (currently targeting https://www.s
 See [Charisma](#Charisma).
 
 ### Other
+- Support for sub-majority consensus clusters
 - ARQ networking
 - Kernel-managed distributed KV-store
 - Message bus
@@ -96,7 +97,14 @@ See [Charisma](#Charisma).
 - Stdlib support for ingresses, job queues, scheduling, etc.
 - Strong supervisor + process-management support.  Handling exceptions + errors in native entities as well as external processes is made extremely easy.
 - Designed as a better Kubernetes
+- Focus on faul tolerance/supporting temporary nodes - cell phones, computers that turn on/off (laptops), etc.  Data/entities seamlessly move and continue to operate.
+- Intelligent kernel.  Can handle auto-grouping and scheduling of objects.
 
 ## Charisma
 
 ### Programming is not text editing
+
+# Links
+- [E Programming Language](http://www.erights.org/)
+- [Notation as a Tool of Thought](https://dl.acm.org/doi/pdf/10.1145/358896.358899)
+- [Alan Kay: The computer revolution hasn't happened yet](https://www.youtube.com/watch?v=oKg1hTOQXoY)
