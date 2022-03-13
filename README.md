@@ -3,6 +3,7 @@
 Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Plan9.
 
 ```
+~sys
 ~io
 
 ε HWEntity
@@ -13,6 +14,10 @@ Pleroma is a distributed operating system/VM inspired by the original vision of 
 		? a > 1
 			#t io.println("Hello, world!")
 			#f io.println("Goodbye, world!")
+
+		loc ls : [u8] := [1, 2, 3, 4]
+		x | ls
+			io.println(x)
 
 	λ pure-func(a)
 		↵ 5 * pure-func2(2)
@@ -25,5 +30,72 @@ Pleroma is a distributed operating system/VM inspired by the original vision of 
 		far z : HWEntity = vat.create(HWEntity)
 		z ! hello-world()
 ```
+
+## Features
+
+### Sync, async, and promise-based message passing on both local and far references (optionally disabled)
+```
+ε EntityEx
+	δ main(env: sys.env) -> ()
+		loc foo : EntityEx()
+		far bar : vat.create(EntityEx)
+
+		foo ! do-it()
+		foo.do-it()
+		var prom = foo <- do-it()
+		prom ->
+			prom.do-something()
+	...
+```
+
+### Constraint-based actor management
+Kernel satisfies constraints on entities during instantiation.
+```
+ε EntityEx
+	- unique
+	- memory:256m
+	- custom-constraint: #t
+	...
+```
+
+### Capability-based security
+Pointer arithmetic is disallowed and objects can only be accessed by reference.  The stdlib provides provides out-of-the-box support for auditing and accountability.
+
+### Purity-marked functions
+Functions without side-effects can be marked and statically checked.
+
+### Inter-cluster natives
+Alien type allows creation/reference to proxy objects, i.e. objects on other clusters can be referenced without instantiation.
+
+```
+~sys
+~wikipedia
+
+ε WikipediaFetcher
+	δ main(env: sys.env) -> ()
+		aln wiki: wikipedia.Wikipedia()
+		wiki ! get-article(4)
+
+### Grouping of object graphs (like E)
+Entities that should share the same object graph are grouped in vats.  Each vat is assigned to a node for processing, rather than every single entity being assigned.  Calling a method synchronously in the same happens the way regular function calls happen via the stack, no network/message queue involved.
+
+### Paravirtualization + bare-metal RISC-V support
+Running under Xen/KVM and managed-mode RISC-V (currently targeting https://www.sifive.com/boards/hifive-unmatched)
+
+### Strong distributed primitives support out-of-box
+
+### A human editor
+See [Charisma](#Charisma).
+
+### Other
+- ARQ networking
+- Kernel-managed distributed KV-store
+- Message bus
+- Single-inheritance + interfaces
+- Stdlib support for ingresses, job queues, scheduling, etc.
+- Strong supervisor + process-management support.  Handling exceptions + errors in native entities as well as external processes is made extremely easy.
+- Designed as a better Kubernetes
+
+## Charisma
 
 ### Programming is not text editing
