@@ -74,7 +74,7 @@ Alien type allows creation/reference to proxy objects, i.e. objects on other clu
 
 ε WikipediaFetcher
 	δ main(env: sys.env) -> ()
-		aln wiki: wikipedia.Wikipedia()
+		aln wiki: wikipedia.Wikipedia = wikipedia.Wikipedia()
 		wiki ! get-article(4)
 ```
 
