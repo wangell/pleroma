@@ -2,6 +2,8 @@
 
 Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Plan9.
 
+Pleroma is the system, Hylic is the language:
+
 ```
 ~sys
 ~io
