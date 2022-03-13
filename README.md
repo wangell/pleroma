@@ -75,6 +75,7 @@ Alien type allows creation/reference to proxy objects, i.e. objects on other clu
 	δ main(env: sys.env) -> ()
 		aln wiki: wikipedia.Wikipedia()
 		wiki ! get-article(4)
+```
 
 ### Grouping of object graphs (like E)
 Entities that should share the same object graph are grouped in vats.  Each vat is assigned to a node for processing, rather than every single entity being assigned.  Calling a method synchronously in the same happens the way regular function calls happen via the stack, no network/message queue involved.
