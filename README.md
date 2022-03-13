@@ -78,7 +78,7 @@ Alien type allows creation/reference to proxy objects, i.e. objects on other clu
 ```
 
 ### Grouping of object graphs (like E)
-Entities that should share the same object graph are grouped in vats.  Each vat is assigned to a node for processing, rather than every single entity being assigned.  Calling a method synchronously in the same happens the way regular function calls happen via the stack, no network/message queue involved.
+Entities that should share the same object graph are grouped in vats.  Each vat is assigned to a node for processing, rather than every single entity being assigned.  Calling a method synchronously in the same vat happens the way regular function calls happen via the stack, no network/message queue involved.
 
 ### Paravirtualization + bare-metal RISC-V support
 Running under Xen/KVM and managed-mode RISC-V (currently targeting https://www.sifive.com/boards/hifive-unmatched)
@@ -94,7 +94,7 @@ See [Charisma](#Charisma).
 - Kernel-managed distributed KV-store
 - Message bus
 - Single-inheritance + interfaces
-- Stdlib support for ingresses, job queues, scheduling, etc.
+- Kernel-managed ingresses, job queues, scheduling, etc.
 - Strong supervisor + process-management support.  Handling exceptions + errors in native entities as well as external processes is made extremely easy.
 - Designed as a better Kubernetes
 - Focus on faul tolerance/supporting temporary nodes - cell phones, computers that turn on/off (laptops), etc.  Data/entities seamlessly move and continue to operate.
