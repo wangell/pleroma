@@ -16,21 +16,18 @@
 
 #include "hylic.h"
 #include "hylic_tokenizer.h"
+#include "hylic_ast.h"
 
-std::stack<TokenStream> tokenstream_stack;
+TokenStream tokenstream;
 
 Scope global_scope;
 
-AstNode* static_nop;
-AstNode *static_true;
-AstNode *static_false;
-
 Token *check(TokenType t) {
-  if (tokenstream_stack.top().current == tokenstream_stack.top().tokens.end()) {
+  if (tokenstream.current == tokenstream.tokens.end()) {
     return nullptr;
   }
-  auto g = tokenstream_stack.top().get();
-  tokenstream_stack.top().current--;
+  auto g = tokenstream.get();
+  tokenstream.current--;
   if (g->type == t) {
     return g;
   } else {
@@ -42,14 +39,14 @@ std::vector<Token*> accept_all(std::vector<TokenType> toks) {
   assert(toks.size() > 0);
 
   // FIXME need to check for toks.length until end
-  if (tokenstream_stack.top().current == tokenstream_stack.top().tokens.end()) {
+  if (tokenstream.current == tokenstream.tokens.end()) {
     return {};
   }
 
   std::vector<Token*> return_toks;
 
   for (int k = 0; k < toks.size(); ++k) {
-    auto g = tokenstream_stack.top().get();
+    auto g = tokenstream.get();
     if (toks[k] == g->type) {
       return_toks.push_back(g);
     } else {
@@ -59,7 +56,7 @@ std::vector<Token*> accept_all(std::vector<TokenType> toks) {
 
   if (toks.size() != return_toks.size()) {
     for (int k = 0; k < return_toks.size(); ++k) {
-      tokenstream_stack.top().current--;
+      tokenstream.current--;
     }
     return {};
   }
@@ -68,17 +65,17 @@ std::vector<Token*> accept_all(std::vector<TokenType> toks) {
 }
 
 Token* accept(TokenType t) {
-  if (tokenstream_stack.top().current == tokenstream_stack.top().tokens.end()) {
+  if (tokenstream.current == tokenstream.tokens.end()) {
     return nullptr;
   }
-  auto g = tokenstream_stack.top().get();
+  auto g = tokenstream.get();
   if (g->type == t) {
 
-    if (g->type == TokenType::Newline) tokenstream_stack.top().line_number++;
+    if (g->type == TokenType::Newline) tokenstream.line_number++;
 
     return g;
   } else {
-    tokenstream_stack.top().current--;
+    tokenstream.current--;
     return nullptr;
   }
 }
@@ -90,6 +87,18 @@ const char* token_type_to_string(TokenType t) {
     break;
   case TokenType::Tab:
     return "Tab";
+    break;
+  case TokenType::Symbol:
+    return "Symbol";
+    break;
+  case TokenType::LeftParen:
+    return "Left Paren";
+    break;
+  case TokenType::RightParen:
+    return "Right Paren";
+    break;
+  case TokenType::Colon:
+    return "Colon";
     break;
   }
 
@@ -107,18 +116,18 @@ const char* node_type_to_string(AstNodeType t) {
 }
 
 void expect(TokenType t) {
-  if (tokenstream_stack.top().current == tokenstream_stack.top().tokens.end()) {
+  if (tokenstream.current == tokenstream.tokens.end()) {
     printf("Reached end of tokenstream\n");
     exit(1);
   }
 
-  auto curr = tokenstream_stack.top().get();
+  auto curr = tokenstream.get();
   if (curr->type != t) {
-    printf("Expected token type: %s but got %s, at line %d\n", token_type_to_string(t), token_type_to_string(curr->type), tokenstream_stack.top().line_number);
+    printf("Expected token type: %s but got %s(%d), at line %d\n", token_type_to_string(t), token_type_to_string(curr->type), curr->type, tokenstream.line_number);
     exit(1);
   }
 
-  tokenstream_stack.top().line_number++;
+  tokenstream.line_number++;
 }
 
 void print(AstNode* s) {
@@ -195,172 +204,6 @@ char peek(FILE* f) {
   return q;
 }
 
-AstNode* make_for(std::string sym, AstNode* gen, std::vector<AstNode*> body) {
-  ForStmt *node = new ForStmt;
-  node->type = AstNodeType::ForStmt;
-  node->generator = gen;
-  node->body = body;
-  node->sym = sym;
-  return node;
-}
-
-AstNode* make_return(AstNode* a) {
-  ReturnNode *r = new ReturnNode;
-  r->type = AstNodeType::ReturnNode;
-  r->expr = a;
-  return r;
-}
-
-AstNode *make_operator_expr(OperatorExpr::Op op, AstNode* expr1, AstNode* expr2) {
-  OperatorExpr *exp = new OperatorExpr;
-  exp->type = AstNodeType::OperatorExpr;
-  exp->op = op;
-  exp->term1 = expr1;
-  exp->term2 = expr2;
-  return exp;
-}
-
-AstNode *make_fallthrough() {
-  FallthroughExpr *exp = new FallthroughExpr;
-  exp->type = AstNodeType::FallthroughExpr;
-  return exp;
-}
-
-AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2) {
-  BooleanExpr *exp = new BooleanExpr;
-  exp->type = AstNodeType::BooleanExpr;
-  exp->op = op;
-  exp->term1 = expr1;
-  exp->term2 = expr2;
-  return exp;
-}
-
-AstNode *make_assignment(std::string sym, AstNode* expr) {
-  AssignmentStmt *assignment_stmt = new AssignmentStmt;
-  assignment_stmt->type = AstNodeType::AssignmentStmt;
-  assignment_stmt->sym = sym;
-  assignment_stmt->value = expr;
-  return assignment_stmt;
-}
-
-AstNode* make_match(AstNode* match_expr, std::vector<std::tuple<AstNode*, std::vector<AstNode*>>> cases) {
-  MatchNode* node = new MatchNode;
-  node->type = AstNodeType::MatchNode;
-  node->match_expr = match_expr;
-  node->cases = cases;
-  return node;
-}
-
-AstNode* make_table_access(AstNode* table, std::string sym, bool breakthrough) {
-  TableAccess* node = new TableAccess;
-  node->type = AstNodeType::TableAccess;
-  node->table = table;
-  node->access_sym = sym;
-  node->breakthrough = breakthrough;
-  return node;
-}
-
-AstNode* make_while(AstNode* generator, std::vector<AstNode*> body) {
-  WhileStmt *while_stmt = new WhileStmt;
-
-  while_stmt->type = AstNodeType::WhileStmt;
-  while_stmt->generator = generator;
-  while_stmt->body = body;
-
-  return while_stmt;
-}
-
-AstNode* make_module_stmt(std::string s, bool namespaced) {
-  ModuleStmt* mod_stmt = new ModuleStmt;
-  mod_stmt->type = AstNodeType::ModuleStmt;
-  mod_stmt->module = s;
-  mod_stmt->namespaced = namespaced;
-  return mod_stmt;
-}
-
-AstNode* make_table(std::map<std::string, AstNode*> vals) {
-  TableNode* table = new TableNode;
-  table->type = AstNodeType::TableNode;
-  table->table = vals;
-  return table;
-}
-
-AstNode *make_number(int64_t v) {
-  NumberNode *symbol_node = new NumberNode;
-  symbol_node->type = AstNodeType::NumberNode;
-  //symbol_node->value = strtol(s.c_str(), nullptr, 10);
-  symbol_node->value = v;
-  return symbol_node;
-}
-
-AstNode* make_string(std::string s) {
-  StringNode *node = new StringNode;
-  node->type = AstNodeType::StringNode;
-  node->value = s;
-  return node;
-}
-
-AstNode *make_boolean(bool b) {
-  if (!static_true || !static_false) {
-    BooleanNode *true_node = new BooleanNode;
-    true_node->type = AstNodeType::BooleanNode;
-    true_node->value = true;
-    static_true = true_node;
-
-    BooleanNode *false_node = new BooleanNode;
-    false_node->type = AstNodeType::BooleanNode;
-    false_node->value = false;
-    static_false = false_node;
-  }
-
-  if (b) {
-    return static_true;
-  } else {
-    return static_false;
-  }
-}
-
-AstNode *make_symbol(std::string s) {
-  SymbolNode *symbol_node = new SymbolNode;
-  symbol_node->type = AstNodeType::SymbolNode;
-  symbol_node->sym = s;
-  return symbol_node;
-}
-
-AstNode *make_actor(std::string s, std::map<std::string, FuncStmt*> functions, std::map<std::string, AstNode*> data) {
-  ActorDef *actor_def = new ActorDef;
-  actor_def->type = AstNodeType::ActorDef;
-  actor_def->name = s;
-  actor_def->functions = functions;
-  actor_def->data = data;
-  return actor_def;
-}
-
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode*> body) {
-  FuncStmt *func_stmt = new FuncStmt;
-  func_stmt->type = AstNodeType::FuncStmt;
-  func_stmt->name = s;
-  func_stmt->args = args;
-  func_stmt->body = body;
-  return func_stmt;
-}
-
-AstNode* make_nop() {
-  if (!static_nop) {
-    auto nop = new Nop;
-    nop->type = AstNodeType::Nop;
-    static_nop = nop;
-  }
-  return static_nop;
-}
-
-AstNode *make_function_call(AstNode* sym, std::vector<AstNode*> args) {
-  FuncCall *func_call = new FuncCall;
-  func_call->type = AstNodeType::FuncCall;
-  func_call->sym = (SymbolNode*)sym;
-  func_call->args = args;
-  return func_call;
-}
 
 AstNode * eval(AstNode * obj, Scope *scope);
 
@@ -806,7 +649,7 @@ AstNode* parse_expr() {
 
     return make_table(table_vals);
   } else {
-    printf("Couldn't parse expression at line %d\n", tokenstream_stack.top().line_number);
+    printf("Couldn't parse expression at line %d\n", tokenstream.line_number);
     exit(1);
   }
 }
@@ -916,7 +759,7 @@ AstNode* parse_stmt(int expected_indent = 0) {
       } else if (current_indent < expected_indent + 1) {
         // We're done
         match_cases.push_back(std::make_tuple(match_case, case_body));
-        tokenstream_stack.top().go_back(current_indent);
+        tokenstream.go_back(current_indent);
         break;
       }
     }
@@ -947,8 +790,12 @@ std::vector<AstNode*> parse_block(int expected_indent = 0) {
 
 AstNode* parse_function() {
   printf("Parsing function\n");
-  // Handle pure
-  accept(TokenType::Function);
+  bool pure;
+  if (accept(TokenType::Function)) {
+    pure = false;
+  } else if (accept(TokenType::Pure)) {
+    pure = true;
+  }
   auto func_name = accept(TokenType::Symbol);
 
   std::vector<std::string> args;
@@ -956,9 +803,20 @@ AstNode* parse_function() {
   Token* arg;
   expect(TokenType::LeftParen);
   while((arg = accept(TokenType::Symbol))) {
+
+    expect(TokenType::Colon);
+    auto type_spec = accept(TokenType::Symbol);
+
     args.push_back(arg->lexeme);
   }
   expect(TokenType::RightParen);
+
+  // Return type
+  expect(TokenType::Minus);
+  expect(TokenType::GreaterThan);
+
+  expect(TokenType::Symbol);
+
   expect(TokenType::Newline);
 
   auto body = parse_block(2);
@@ -971,7 +829,10 @@ AstNode *parse_actor() {
   std::map<std::string, AstNode *> data;
 
   printf("Parsing actor\n");
-  auto actor_name = accept(TokenType::Symbol);
+  Token* actor_name;
+  if (!(actor_name = accept(TokenType::Symbol))) {
+    printf("sup\n");
+  }
 
   expect(TokenType::Newline);
 
@@ -984,6 +845,7 @@ AstNode *parse_actor() {
 
     if (current_indent != 1) break;
 
+    printf("func\n");
     FuncStmt* func = (FuncStmt*)parse_function();
     functions[func->name] = func;
     printf("done parsing\n");
@@ -992,7 +854,10 @@ AstNode *parse_actor() {
   return make_actor(actor_name->lexeme, functions, data);
 }
 
-void parse(TokenStream stream) {
+std::map<std::string, AstNode*> parse(TokenStream stream) {
+
+  std::map<std::string, AstNode*> symbol_map;
+
   if (accept(TokenType::Import)) {
     // ModuleStmt
     std::string mod_name;
@@ -1002,41 +867,48 @@ void parse(TokenStream stream) {
       namespaced = false;
     }
 
-    Token *sym = tokenstream_stack.top().get();
+    Token *sym = tokenstream.get();
     expect(TokenType::Newline);
     make_module_stmt(sym->lexeme, namespaced);
-    } else if (accept(TokenType::Actor)) {
-      parse_actor();
+  } else if (accept(TokenType::Actor)) {
+    EntityDef *actor = (EntityDef*)parse_actor();
+    symbol_map[actor->name] = (AstNode*)actor;
   } else if (accept(TokenType::Newline)) {
     // Skip
     make_nop();
   } else {
     assert(false);
   }
+
+  return symbol_map;
 }
 
 void parse_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
   // printf("> ");
   FILE *f = fopen(path.c_str(), "r");
-  TokenStream ts;
-  ts = tokenize_file(f);
+  tokenize_file(f);
 
-  std::vector<ActorDef*> nodes;
+  std::vector<EntityDef*> nodes;
 
-  parse(ts);
+  //parse(ts);
+}
+
+bool typecheck(std::map<std::string, AstNode*> program) {
+  return true;
 }
 
 void load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
-  //printf("> ");
   FILE *f = fopen(path.c_str(), "r");
-  TokenStream ts;
-  tokenstream_stack.push(ts);
   tokenize_file(f);
 
-  //while (tokenstream_stack.top().current != tokenstream_stack.top().tokens.end()) {
-  //  eval(parse(tokenstream_stack.top()));
-  //}
-  //tokenstream_stack.pop();
+  auto program = parse(tokenstream);
+
+  if (!typecheck(program)) {
+    printf("Typecheck failed\n");
+  }
+  printf("Load success!\n");
+
+  eval(program["Kernel"]);
 }

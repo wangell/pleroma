@@ -80,4 +80,4 @@ struct TokenStream {
 
 void add_token(TokenType t, std::string lexeme);
 
-TokenStream tokenize_file(FILE *f);
+void tokenize_file(FILE *f);

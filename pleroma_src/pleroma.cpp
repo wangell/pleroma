@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <vector>
 #include "hylic.h"
+#include "hylic_ast.h"
 #include "pleroma.h"
 
 #include <thread>
@@ -18,6 +19,11 @@ const int MAX_STEPS = 3;
 
 std::mutex mtx;
 std::map<int, Vat *> vats;
+
+Entity *instance_entity(EntityDef *actor_def_node) {
+  Entity *entity_node = (Entity *)make_entity(actor_def_node);
+  return entity_node;
+}
 
 struct VqNode {
   VqNode* next;
@@ -80,6 +86,7 @@ void process_vq() {
 
 int main(int argc, char **argv) {
 
+  setlocale(LC_ALL, "");
   load_file("kernel.po");
 
   exit(1);

@@ -1,0 +1,20 @@
+syntax = "proto2";
+
+package romabuf;
+
+message Peer {
+}
+
+message PleromaMessage {
+  required int32 vat_id = 1;
+  required int32 actor_id = 2;
+  required int32 function_id = 3;
+}
+
+message AnnouncePeer {
+  required int32 address = 1;
+}
+
+message LoadProgram {
+}
+
