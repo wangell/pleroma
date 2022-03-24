@@ -12,6 +12,8 @@ enum class AstNodeType {
   TableNode,
   TableAccess,
 
+  CreateEntity,
+
   EntityDef,
 
   WhileStmt,
@@ -140,6 +142,9 @@ struct EntityDef : AstNode {
   std::map<std::string, AstNode *> data;
 };
 
+struct CreateEntityNode : AstNode {
+};
+
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body);
 AstNode *make_return(AstNode *a);
 AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1, AstNode *expr2);
@@ -159,4 +164,4 @@ AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, 
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body);
 AstNode *make_nop();
 AstNode *make_function_call(AstNode *sym, std::vector<AstNode *> args);
-AstNode *make_entity(EntityDef *actor_def);
+AstNode *make_create_entity(EntityDef *actor_def);

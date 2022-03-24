@@ -20,11 +20,6 @@ const int MAX_STEPS = 3;
 std::mutex mtx;
 std::map<int, Vat *> vats;
 
-Entity *instance_entity(EntityDef *actor_def_node) {
-  Entity *entity_node = (Entity *)make_entity(actor_def_node);
-  return entity_node;
-}
-
 struct VqNode {
   VqNode* next;
 

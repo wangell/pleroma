@@ -660,6 +660,23 @@ AstNode* parse_stmt(int expected_indent = 0) {
   Token *t;
   if ((t = accept(TokenType::Symbol))) {
 
+    // Creating a variable
+    if (t->lexeme == "let") {
+      Token *new_variable = accept(TokenType::Symbol);
+
+      expect(TokenType::Colon);
+
+      // We can either take a nothing, a loc, or a far
+
+      Token *type_or_var = accept(TokenType::Symbol);
+
+      if (type_or_var->lexeme == "loc") {
+      } else if (type_or_var->lexeme == "far") {
+      } else {
+        // It's the variable
+      }
+    }
+
     if (accept(TokenType::Equals)) {
       auto expr = parse_expr();
       expect(TokenType::Newline);
@@ -782,6 +799,8 @@ std::vector<AstNode*> parse_block(int expected_indent = 0) {
 
     if (current_indent != expected_indent) break;
 
+    printf("parsings statemnet\n");
+
     auto stmt = parse_stmt(expected_indent);
     block.push_back(stmt);
   }
@@ -819,7 +838,9 @@ AstNode* parse_function() {
 
   expect(TokenType::Newline);
 
+  printf("getting block\n");
   auto body = parse_block(2);
+  printf("got block\n");
 
   return make_function(func_name->lexeme, args, body);
 }
@@ -831,7 +852,6 @@ AstNode *parse_actor() {
   printf("Parsing actor\n");
   Token* actor_name;
   if (!(actor_name = accept(TokenType::Symbol))) {
-    printf("sup\n");
   }
 
   expect(TokenType::Newline);
@@ -910,5 +930,5 @@ void load_file(std::string path) {
   }
   printf("Load success!\n");
 
-  eval(program["Kernel"]);
+  //eval(program["Kernel"]);
 }

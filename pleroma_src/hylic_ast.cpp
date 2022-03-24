@@ -109,6 +109,9 @@ AstNode* make_string(std::string s) {
   return node;
 }
 
+AstNode* make_entity_creation() {
+}
+
 AstNode *make_boolean(bool b) {
   if (!static_true || !static_false) {
     BooleanNode *true_node = new BooleanNode;
@@ -171,8 +174,8 @@ AstNode *make_function_call(AstNode* sym, std::vector<AstNode*> args) {
   return func_call;
 }
 
-AstNode *make_entity(EntityDef* actor_def) {
-  EntityNode *entity_node = new EntityNode;
+AstNode *make_create_entity(EntityDef* actor_def, bool new_vat) {
+  CreateEntityNode *entity_node = new CreateEntityNode;
 
   return entity_node;
 }
