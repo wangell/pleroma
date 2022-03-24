@@ -1,6 +1,4 @@
 // Allogenes
-// maybe not - communicates beyond cluster, represent foreign references
-// basically, kubectl
 
 #include <iostream>
 #include "../shared_src/protoloma.pb.h"
