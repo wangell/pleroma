@@ -35,6 +35,11 @@ enum class AstNodeType {
 
 struct PType {
   std::string type;
+  enum Dist {
+    Local,
+    Far,
+    Alien
+  } distance;
 };
 
 struct AstNode {

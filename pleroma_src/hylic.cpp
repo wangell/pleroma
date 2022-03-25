@@ -493,6 +493,41 @@ void expect(char c, FILE *f) {
 void parse_match_blocks() {
 }
 
+bool check_type(std::string type) {
+  // check type against symbol table
+
+  if (type == "u8") return true;
+
+  return false;
+}
+
+PType *parse_type() {
+  PType *var_type = new PType;
+
+  Token *dist_type = accept(TokenType::Symbol);
+
+  // let blah : (loc|far) [Promise] base_type
+  // No such thing as a far Promise
+
+  if (dist_type->lexeme == "loc") {
+    var_type->distance = PType::Local;
+  } else if (dist_type->lexeme == "far") {
+    var_type->distance = PType::Far;
+  }
+
+  Token *promise_or_var = accept(TokenType::Symbol);
+
+  if (promise_or_var->lexeme == "Promise") {
+    // handle promise
+    assert(false);
+  } else {
+    var_type->type = promise_or_var->lexeme;
+    assert(check_type(var_type->type));
+}
+
+  return var_type;
+}
+
 AstNode* parse_expr() {
   if (accept(TokenType::LeftParen)) {
     auto body = parse_expr();
@@ -654,6 +689,8 @@ AstNode* parse_expr() {
   }
 }
 
+
+
 AstNode* parse_stmt(int expected_indent = 0) {
 
   // NOTE create function to accept row of symbols
@@ -667,14 +704,13 @@ AstNode* parse_stmt(int expected_indent = 0) {
       expect(TokenType::Colon);
 
       // We can either take a nothing, a loc, or a far
+      PType *var_type = parse_type();
 
-      Token *type_or_var = accept(TokenType::Symbol);
+      expect(TokenType::Equals);
 
-      if (type_or_var->lexeme == "loc") {
-      } else if (type_or_var->lexeme == "far") {
-      } else {
-        // It's the variable
-      }
+      AstNode* expr = parse_expr();
+
+      return make_assignment(new_variable->lexeme, expr);
     }
 
     if (accept(TokenType::Equals)) {
@@ -930,5 +966,5 @@ void load_file(std::string path) {
   }
   printf("Load success!\n");
 
-  //eval(program["Kernel"]);
+  eval(program["Kernel"]);
 }
