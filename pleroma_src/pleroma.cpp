@@ -7,6 +7,7 @@
 #include <vector>
 #include "hylic.h"
 #include "hylic_ast.h"
+#include "hylic_eval.h"
 #include "pleroma.h"
 
 #include <thread>
@@ -14,7 +15,7 @@
 #include "netcode.h"
 
 //const auto processor_count = std::thread::hardware_concurrency();
-const auto processor_count = 2;
+const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
 std::mutex mtx;
@@ -57,12 +58,13 @@ void process_vq() {
 
     // Take a number of steps
     for (int k = 0; k < 1; ++k) {
+      our_vat->message_mtx.lock();
       printf("Processing vat %d for step %d\n", our_vat->id, our_vat->run_n);
 
-      our_vat->message_mtx.lock();
       while (!our_vat->messages.empty()) {
         our_vat->messages.pop();
         printf("got message\n");
+        eval_func(our_vat->entities[0]->entity_def->functions["main"], {});
       }
       our_vat->message_mtx.unlock();
 
@@ -79,12 +81,29 @@ void process_vq() {
   }
 }
 
+void inoculate_pleroma(EntityDef* entity_def) {
+  Entity* ent = create_entity(entity_def);
+
+  VqNode *c = new VqNode;
+  c->claimed = false;
+  c->next = c;
+  c->vat = new Vat;
+
+  c->vat->entities[0] = ent;
+
+  vats[0] = c->vat;
+  queue = c;
+}
+
 int main(int argc, char **argv) {
 
   setlocale(LC_ALL, "");
-  load_file("kernel.po");
+  auto program = load_file("examples/kernel.po");
 
-  exit(1);
+  auto kernel_program = (EntityDef *)program["Kernel"];
+
+  inoculate_pleroma(kernel_program);
+
   init_network();
   setup_server();
 
@@ -92,18 +111,17 @@ int main(int argc, char **argv) {
     connect_client(get_address(std::string(argv[1])));
   }
 
-  VqNode *c = new VqNode;
-  c->claimed = false;
-  c->next = c;
-  c->vat = new Vat;
-  vats[0] = c->vat;
-  queue = c;
-
   std::thread burners[processor_count];
 
   for (int k = 0; k < processor_count; ++k) {
     burners[k] = std::thread(process_vq);
   }
+
+  sleep(2);
+  Msg m;
+  m.actor_id = 0;
+  m.function_id = 0;
+  queue->vat->messages.push(m);
 
   while (true) {
     net_loop();

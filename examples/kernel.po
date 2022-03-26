@@ -1,0 +1,3 @@
+ε Kernel
+	δ main(env: u8) -> int
+		let a : loc u8 = 1 + 1
