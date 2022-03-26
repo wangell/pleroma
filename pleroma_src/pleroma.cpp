@@ -68,7 +68,6 @@ void process_vq() {
       }
       our_vat->message_mtx.unlock();
 
-
       our_vat->run_n++;
       sleep(1);
     }
@@ -104,6 +103,11 @@ int main(int argc, char **argv) {
 
   inoculate_pleroma(kernel_program);
 
+  Msg m;
+  m.actor_id = 0;
+  m.function_id = 0;
+  queue->vat->messages.push(m);
+
   init_network();
   setup_server();
 
@@ -117,11 +121,6 @@ int main(int argc, char **argv) {
     burners[k] = std::thread(process_vq);
   }
 
-  sleep(2);
-  Msg m;
-  m.actor_id = 0;
-  m.function_id = 0;
-  queue->vat->messages.push(m);
 
   while (true) {
     net_loop();
