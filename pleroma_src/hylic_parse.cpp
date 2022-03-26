@@ -298,10 +298,12 @@ AstNode* parse_expr() {
 }
 
 AstNode* parse_stmt(int expected_indent = 0) {
+  printf("parsing statement\n");
 
   // NOTE create function to accept row of symbols
   Token *t;
   if ((t = accept(TokenType::Symbol))) {
+    printf("parsing SYM!!! %s\n", t->lexeme.c_str());
 
     // Creating a variable
     if (t->lexeme == "let") {
@@ -441,8 +443,6 @@ std::vector<AstNode*> parse_block(int expected_indent = 0) {
 
     if (current_indent != expected_indent) break;
 
-    printf("parsings statemnet\n");
-
     auto stmt = parse_stmt(expected_indent);
     block.push_back(stmt);
   }
@@ -480,9 +480,7 @@ AstNode* parse_function() {
 
   expect(TokenType::Newline);
 
-  printf("getting block\n");
   auto body = parse_block(2);
-  printf("got block\n");
 
   return make_function(func_name->lexeme, args, body);
 }
@@ -491,7 +489,6 @@ AstNode *parse_actor() {
   std::map<std::string, FuncStmt*> functions;
   std::map<std::string, AstNode *> data;
 
-  printf("Parsing actor\n");
   Token* actor_name;
   if (!(actor_name = accept(TokenType::Symbol))) {
   }

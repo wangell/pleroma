@@ -30,8 +30,6 @@ AstNode *eval_func(AstNode* obj, std::vector<AstNode *> args) {
       subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
     }
 
-    printf("evaling the func!\n");
-
     return eval_block(func_def_node->body, &global_scope, subs);
 }
 
@@ -226,8 +224,7 @@ AstNode *eval(AstNode *obj, Scope *scope) {
       args.push_back(eval(arg, scope));
     }
 
-    assert(false);
-    //return eval_func(node->sym->sym, args);
+    //return eval_func(sym, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
