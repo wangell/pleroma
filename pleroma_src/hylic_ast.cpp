@@ -166,10 +166,13 @@ AstNode* make_nop() {
   return static_nop;
 }
 
-AstNode *make_function_call(AstNode* sym, std::vector<AstNode*> args) {
-  FuncCall *func_call = new FuncCall;
-  func_call->type = AstNodeType::FuncCall;
-  func_call->sym = (SymbolNode*)sym;
+AstNode *make_message_node(EntityRefNode* entity_ref, AstNode* function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode*> args) {
+  MessageNode *func_call = new MessageNode;
+  func_call->type = AstNodeType::MessageNode;
+  func_call->sym = (SymbolNode*)function_name;
+  func_call->entity_ref = entity_ref;
+  func_call->message_distance = dist;
+  func_call->comm_mode = comm_mode;
   func_call->args = args;
   return func_call;
 }

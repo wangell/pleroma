@@ -64,7 +64,7 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         our_vat->messages.pop();
         printf("got message\n");
-        eval_func(our_vat->entities[0]->entity_def->functions["main"], {});
+        eval_func_local(our_vat, our_vat->entities[0], "main", {});
       }
       our_vat->message_mtx.unlock();
 
@@ -104,8 +104,8 @@ int main(int argc, char **argv) {
   inoculate_pleroma(kernel_program);
 
   Msg m;
-  m.actor_id = 0;
-  m.function_id = 0;
+  m.entity_id = 0;
+  m.function_name = "main";
   queue->vat->messages.push(m);
 
   init_network();

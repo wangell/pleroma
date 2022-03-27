@@ -16,6 +16,8 @@ enum class AstNodeType {
 
   EntityDef,
 
+  EntityRefNode,
+
   WhileStmt,
   ForStmt,
   FallthroughExpr,
@@ -27,19 +29,26 @@ enum class AstNodeType {
   StringNode,
   OperatorExpr,
   BooleanExpr,
-  FuncCall,
+  MessageNode,
   ReturnNode,
   BooleanNode,
-  MatchNode
+  MatchNode,
+};
+
+enum class MessageDistance {
+  Local,
+  Far,
+  Alien
+};
+
+enum class CommMode {
+  Sync,
+  Async
 };
 
 struct PType {
   std::string type;
-  enum Dist {
-    Local,
-    Far,
-    Alien
-  } distance;
+  MessageDistance distance;
 };
 
 struct AstNode {
@@ -116,8 +125,19 @@ struct BooleanNode : AstNode {
   bool value;
 };
 
-struct FuncCall : AstNode {
+struct EntityRefNode : AstNode {
+  int node_id;
+  int vat_id;
+  int entity_id;
+};
+
+struct MessageNode : AstNode {
+  EntityRefNode* entity_ref;
   SymbolNode* sym;
+
+  MessageDistance message_distance;
+  CommMode comm_mode;
+
   std::vector<AstNode*> args;
 };
 
@@ -150,6 +170,7 @@ struct EntityDef : AstNode {
 struct CreateEntityNode : AstNode {
 };
 
+
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body);
 AstNode *make_return(AstNode *a);
 AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1, AstNode *expr2);
@@ -168,5 +189,6 @@ AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body);
 AstNode *make_nop();
-AstNode *make_function_call(AstNode *sym, std::vector<AstNode *> args);
-AstNode *make_create_entity(EntityDef *actor_def);
+AstNode *make_message_node(EntityRefNode *entity_ref, AstNode *function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
+AstNode *make_create_entity(EntityDef * actor_def);
+AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);

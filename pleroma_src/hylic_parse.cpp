@@ -1,4 +1,6 @@
 #include "hylic_parse.h"
+#include "hylic.h"
+#include "hylic_ast.h"
 
 bool check_type(std::string type) {
   // check type against symbol table
@@ -118,9 +120,9 @@ PType *parse_type() {
   // No such thing as a far Promise
 
   if (dist_type->lexeme == "loc") {
-    var_type->distance = PType::Local;
+    var_type->distance = MessageDistance::Local;
   } else if (dist_type->lexeme == "far") {
-    var_type->distance = PType::Far;
+    var_type->distance = MessageDistance::Far;
   }
 
   Token *promise_or_var = accept(TokenType::Symbol);
@@ -190,7 +192,10 @@ AstNode* parse_expr() {
 
       expect(TokenType::RightParen);
 
-      return make_function_call(expr1, args);
+      // TODO
+      assert(false);
+      //return make_message_node(expr1, args);
+      assert(false);
     }
     if (accept(TokenType::Plus)) {
       auto expr2 = parse_expr();
@@ -340,7 +345,7 @@ AstNode* parse_stmt(int expected_indent = 0) {
       expect(TokenType::RightParen);
       auto sym = make_symbol(t->lexeme);
 
-      return make_function_call(sym , args);
+      return make_message_node(nullptr, sym, MessageDistance::Local, CommMode::Sync, args);
     } else if (accept(TokenType::For)) {
       auto for_generator = parse_expr();
       expect(TokenType::Newline);
@@ -441,7 +446,10 @@ std::vector<AstNode*> parse_block(int expected_indent = 0) {
 
     while (accept(TokenType::Tab)) current_indent++;
 
-    if (current_indent != expected_indent) break;
+    if (current_indent != expected_indent) {
+      tokenstream.go_back(current_indent);
+      break;
+    }
 
     auto stmt = parse_stmt(expected_indent);
     block.push_back(stmt);
@@ -502,12 +510,16 @@ AstNode *parse_actor() {
       current_indent++;
     }
 
-    if (current_indent != 1) break;
+    if (current_indent != 1) {
+      tokenstream.go_back(current_indent);
+      break;
+    }
 
-    printf("func\n");
     FuncStmt* func = (FuncStmt*)parse_function();
+    printf("Parsed func %s\n", func->name.c_str());
     functions[func->name] = func;
     printf("done parsing\n");
+    expect(TokenType::Newline);
   }
 
   return make_actor(actor_name->lexeme, functions, data);
