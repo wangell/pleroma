@@ -193,9 +193,7 @@ AstNode* parse_expr() {
       expect(TokenType::RightParen);
 
       // TODO
-      assert(false);
-      //return make_message_node(expr1, args);
-      assert(false);
+      return make_message_node(nullptr, make_symbol(tt->lexeme), MessageDistance::Local, CommMode::Sync, args);
     }
     if (accept(TokenType::Plus)) {
       auto expr2 = parse_expr();
