@@ -152,31 +152,6 @@ AstNode* parse_expr() {
     auto tt = accept(TokenType::Symbol);
     auto expr1 = make_symbol(tt->lexeme);
 
-    if (check(TokenType::Dot)) {
-      AstNode* taccess = nullptr;
-      while (accept(TokenType::Dot)) {
-        bool bt = false;;
-
-        if (accept(TokenType::Breakthrough)) {
-          bt = true;
-        }
-
-        Token *exp;
-        if (check(TokenType::Symbol)) {
-          exp = accept(TokenType::Symbol);
-        }
-        if (check(TokenType::Number)) {
-          exp = accept(TokenType::Number);
-        }
-        if (taccess) {
-          taccess = make_table_access(taccess, exp->lexeme, bt);
-        } else {
-          taccess = make_table_access(expr1, exp->lexeme, bt);
-        }
-      }
-      return taccess;
-    }
-
     if (accept(TokenType::LeftParen)) {
 
       std::vector<AstNode*> args;
@@ -192,7 +167,6 @@ AstNode* parse_expr() {
 
       expect(TokenType::RightParen);
 
-      // TODO
       return make_message_node(nullptr, make_symbol(tt->lexeme), MessageDistance::Local, CommMode::Sync, args);
     }
     if (accept(TokenType::Plus)) {
@@ -324,27 +298,13 @@ AstNode* parse_stmt(int expected_indent = 0) {
       return make_assignment(new_variable->lexeme, expr);
     }
 
-    if (accept(TokenType::Equals)) {
-      auto expr = parse_expr();
-      expect(TokenType::Newline);
-      return make_assignment(t->lexeme, expr);
-    } else if (accept(TokenType::LeftParen)) {
-      std::vector<AstNode *> args;
-      // While next token does not equal right paren
-      while (!check(TokenType::RightParen)) {
+      if (accept(TokenType::Equals)) {
         auto expr = parse_expr();
-        args.push_back(expr);
-
-        if (!check(TokenType::RightParen)) {
-          expect(TokenType::Comma);
-        }
+        expect(TokenType::Newline);
+        return make_assignment(t->lexeme, expr);
       }
 
-      expect(TokenType::RightParen);
-      auto sym = make_symbol(t->lexeme);
-
-      return make_message_node(nullptr, sym, MessageDistance::Local, CommMode::Sync, args);
-    } else if (accept(TokenType::For)) {
+     else if (accept(TokenType::For)) {
       auto for_generator = parse_expr();
       expect(TokenType::Newline);
 
@@ -364,7 +324,9 @@ AstNode* parse_stmt(int expected_indent = 0) {
 
       return make_for(t->lexeme, for_generator, body);
     } else {
-      return make_symbol(t->lexeme);
+    tokenstream.go_back(1);
+    printf("huh\n");
+    return parse_expr();
     }
 
   } else if (accept(TokenType::While)) {
@@ -431,8 +393,11 @@ AstNode* parse_stmt(int expected_indent = 0) {
     return make_match(match_expr, match_cases);
   } else {
     // try parse expr
+    printf("trying expr\n");
     return parse_expr();
   }
+
+  //return parse_expr();
 
   assert(false);
 }
