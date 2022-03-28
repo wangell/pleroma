@@ -1,6 +1,7 @@
 #include "hylic_parse.h"
 #include "hylic.h"
 #include "hylic_ast.h"
+#include "hylic_tokenizer.h"
 
 bool check_type(std::string type) {
   // check type against symbol table
@@ -473,12 +474,28 @@ AstNode *parse_actor() {
       current_indent++;
     }
 
+    if (current_indent == 0) {
+      // If we're at the end of the file, end it
+      if (tokenstream.current == tokenstream.tokens.end()) {
+        break;
+      }
+
+      if (check(TokenType::Actor)) {
+        // Spit it back out, return
+        tokenstream.go_back(1);
+        break;
+      }
+
+      expect(TokenType::Newline);
+      continue;
+    }
+
     if (current_indent != 1) {
       tokenstream.go_back(current_indent);
       break;
     }
 
-    FuncStmt* func = (FuncStmt*)parse_function();
+    FuncStmt *func = (FuncStmt *)parse_function();
     printf("Parsed func %s\n", func->name.c_str());
     functions[func->name] = func;
     printf("done parsing\n");
@@ -488,30 +505,32 @@ AstNode *parse_actor() {
   return make_actor(actor_name->lexeme, functions, data);
 }
 
-std::map<std::string, AstNode*> parse(TokenStream stream) {
+std::map<std::string, AstNode *> parse(TokenStream stream) {
 
-  std::map<std::string, AstNode*> symbol_map;
+  std::map<std::string, AstNode *> symbol_map;
 
-  if (accept(TokenType::Import)) {
-    // ModuleStmt
-    std::string mod_name;
+  while (tokenstream.current != tokenstream.tokens.end()) {
+    if (accept(TokenType::Import)) {
+      // ModuleStmt
+      std::string mod_name;
 
-    bool namespaced = true;
-    if (accept(TokenType::Star)) {
-      namespaced = false;
+      bool namespaced = true;
+      if (accept(TokenType::Star)) {
+        namespaced = false;
+      }
+
+      Token *sym = tokenstream.get();
+      expect(TokenType::Newline);
+      make_module_stmt(sym->lexeme, namespaced);
+    } else if (accept(TokenType::Actor)) {
+      EntityDef *actor = (EntityDef*)parse_actor();
+      symbol_map[actor->name] = (AstNode*)actor;
+    } else if (accept(TokenType::Newline)) {
+      // Skip
+      make_nop();
+    } else {
+      assert(false);
     }
-
-    Token *sym = tokenstream.get();
-    expect(TokenType::Newline);
-    make_module_stmt(sym->lexeme, namespaced);
-  } else if (accept(TokenType::Actor)) {
-    EntityDef *actor = (EntityDef*)parse_actor();
-    symbol_map[actor->name] = (AstNode*)actor;
-  } else if (accept(TokenType::Newline)) {
-    // Skip
-    make_nop();
-  } else {
-    assert(false);
   }
 
   return symbol_map;
