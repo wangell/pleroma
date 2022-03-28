@@ -42,15 +42,15 @@ AstNode *eval_message_node(Vat* vat, Entity* entity, EntityRefNode* entity_ref, 
   // 1. Determine what type of Entity we have - local, far, alien
   // 2. Determine if the call will be sync/async and if we care about the result
   // 3. Insert a row into the Promise stack if we need to.  Yield if we are doing async, otherwise wait for return
+  Entity *target_entity = entity;
+
+  if (entity_ref) {
+    target_entity = resolve_local_entity(vat, entity_ref);
+  }
 
   if (distance == MessageDistance::Local) {
 
     if (comm_mode == CommMode::Sync) {
-      Entity* target_entity = entity;
-
-      if (entity_ref) {
-        target_entity = resolve_local_entity(vat, entity_ref);
-      }
 
       return eval_func_local(vat, target_entity, function_name, args);
     } else {
@@ -61,7 +61,7 @@ AstNode *eval_message_node(Vat* vat, Entity* entity, EntityRefNode* entity_ref, 
   } else if (distance == MessageDistance::Far) {
     Msg m;
     m.entity_id = 0;
-    m.function_name = "test";
+    m.function_name = function_name;
     vat->out_messages.push(m);
 
     return make_nop();

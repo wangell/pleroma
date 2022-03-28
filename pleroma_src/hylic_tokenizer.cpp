@@ -105,6 +105,8 @@ void tokenize_file(FILE *f) {
       add_token(TokenType::RightBrace, "(");
     } else if (c == ':') {
       add_token(TokenType::Colon, "(");
+    } else if (c == '!') {
+      add_token(TokenType::Message, "!");
     } else if (c == '\n') {
       add_token(TokenType::Newline, "\n");
     } else if (c == ',') {

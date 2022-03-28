@@ -49,6 +49,8 @@ enum class TokenType {
   Return,
   Fallthrough,
 
+  Message,
+
   // Literals
   Number,
   String,

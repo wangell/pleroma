@@ -62,10 +62,19 @@ void process_vq() {
       printf("Processing vat %d for step %d\n", our_vat->id, our_vat->run_n);
 
       while (!our_vat->messages.empty()) {
+        Msg m = our_vat->messages.front();
         our_vat->messages.pop();
         printf("got message\n");
-        eval_func_local(our_vat, our_vat->entities[0], "main", {});
+        eval_func_local(our_vat, our_vat->entities[0], m.function_name, {});
       }
+
+      while (!our_vat->out_messages.empty()) {
+        printf("sending msg\n");
+        Msg m = our_vat->out_messages.front();
+        our_vat->out_messages.pop();
+        our_vat->messages.push(m);
+      }
+
       our_vat->message_mtx.unlock();
 
       our_vat->run_n++;
