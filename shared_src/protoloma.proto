@@ -15,6 +15,14 @@ message AnnouncePeer {
   required int32 address = 1;
 }
 
+message Greeting {
+  required string node_name = 1;
+}
+
+message GreetingAck {
+  required int32 node_id = 1;
+}
+
 message LoadProgram {
 }
 

@@ -88,6 +88,11 @@ void send_msg(enet_uint32 host, romabuf::PleromaMessage msg) {
   send_packet(pnet.peers[host], buf.c_str(), buf.length() + 1);
 }
 
+void send_node_msg(int node_id, romabuf::PleromaMessage msg) {
+  std::string buf = msg.SerializeAsString();
+  //send_packet(pnet.peers[host], buf.c_str(), buf.length() + 1);
+}
+
 void setup_server() {
   ENetAddress address;
   printf("here\n");
