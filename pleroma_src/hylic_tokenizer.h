@@ -49,6 +49,12 @@ enum class TokenType {
   Return,
   Fallthrough,
 
+  PromiseType,
+
+  LocVar,
+  FarVar,
+  AlnVar,
+
   Message,
 
   // Literals
@@ -83,3 +89,5 @@ struct TokenStream {
 void add_token(TokenType t, std::string lexeme);
 
 void tokenize_file(FILE *f);
+
+const char *token_type_to_string(TokenType t);

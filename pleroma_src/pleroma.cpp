@@ -90,7 +90,8 @@ void process_vq() {
 }
 
 void inoculate_pleroma(EntityDef* entity_def) {
-  Entity* ent = create_entity(entity_def);
+  EntityAddress address = {0, 0, 0};
+  Entity* ent = create_entity(entity_def, address);
 
   VqNode *c = new VqNode;
   c->claimed = false;

@@ -46,9 +46,8 @@ enum class CommMode {
   Async
 };
 
-struct PType {
-  std::string type;
-  MessageDistance distance;
+enum class PType {
+  u8
 };
 
 struct AstNode {

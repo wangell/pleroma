@@ -54,13 +54,22 @@ AstNode *eval_message_node(Vat* vat, Entity* entity, EntityRefNode* entity_ref, 
 
       return eval_func_local(vat, target_entity, function_name, args);
     } else {
-      // Insert a message into our own vat queue
-      assert(false);
+
+      Msg m;
+      m.entity_id = target_entity->address.entity_id;
+      m.vat_id = target_entity->address.vat_id;
+      m.node_id = target_entity->address.node_id;
+      m.function_name = function_name;
+      vat->messages.push(m);
+
+      return make_nop();
     }
 
   } else if (distance == MessageDistance::Far) {
     Msg m;
-    m.entity_id = 0;
+    m.entity_id = target_entity->address.entity_id;
+    m.vat_id = target_entity->address.vat_id;
+    m.node_id = target_entity->address.node_id;
     m.function_name = function_name;
     vat->out_messages.push(m);
 
@@ -351,9 +360,10 @@ AstNode* find_symbol(std::string sym, Scope* scope) {
   }
 }
 
-Entity *create_entity(EntityDef *entity_def) {
+Entity *create_entity(EntityDef *entity_def, EntityAddress address) {
   Entity* e = new Entity;
   e->entity_def = entity_def;
+  e->address = address;
 
   return e;
 }

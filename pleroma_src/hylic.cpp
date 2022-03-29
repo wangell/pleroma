@@ -19,6 +19,7 @@
 #include "hylic_eval.h"
 #include "hylic_parse.h"
 #include "hylic_tokenizer.h"
+#include "hylic_typesolver.h"
 
 TokenStream tokenstream;
 
@@ -72,21 +73,16 @@ void expect(char c, FILE *f) { assert(fgetc(f) == c); }
 
 void parse_match_blocks() {}
 
-bool typecheck(std::map<std::string, AstNode*> program) {
-  return true;
-}
 
 std::map<std::string, AstNode*> load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
   FILE *f = fopen(path.c_str(), "r");
   tokenize_file(f);
 
+  //auto program = resolve_thunks(parse(tokenstream));
   auto program = parse(tokenstream);
 
-  if (!typecheck(program)) {
-    printf("Typecheck failed\n");
-  }
-  printf("Load success!\n");
+  typesolve(program);
 
   return program;
 }

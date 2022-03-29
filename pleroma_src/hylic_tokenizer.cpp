@@ -72,6 +72,12 @@ void tokenize_file(FILE *f) {
         add_token(TokenType::Return, sym);
       } else if (sym == "whl") {
         add_token(TokenType::While, sym);
+      } else if (sym == "loc") {
+        add_token(TokenType::LocVar, sym);
+      } else if (sym == "far") {
+        add_token(TokenType::FarVar, sym);
+      } else if (sym == "aln") {
+        add_token(TokenType::AlnVar, sym);
       } else {
         add_token(TokenType::Symbol, sym);
       }
@@ -103,6 +109,8 @@ void tokenize_file(FILE *f) {
       add_token(TokenType::LeftBrace, "(");
     } else if (c == '}') {
       add_token(TokenType::RightBrace, "(");
+    } else if (c == '@') {
+      add_token(TokenType::PromiseType, "@");
     } else if (c == ':') {
       add_token(TokenType::Colon, "(");
     } else if (c == '!') {
@@ -147,4 +155,62 @@ void tokenize_file(FILE *f) {
   }
 
   tokenstream.current = tokenstream.tokens.begin();
+}
+
+const char *token_type_to_string(TokenType t) {
+  switch (t) {
+  case TokenType::Newline:
+    return "Newline";
+    break;
+  case TokenType::Tab:
+    return "Tab";
+    break;
+  case TokenType::Symbol:
+    return "Symbol";
+    break;
+  case TokenType::LeftParen:
+    return "Left Paren";
+    break;
+  case TokenType::RightParen:
+    return "Right Paren";
+    break;
+  case TokenType::PromiseType:
+    return "Promise";
+    break;
+  case TokenType::Actor:
+    return "Entity";
+    break;
+  case TokenType::LocVar:
+    return "LocVar";
+    break;
+  case TokenType::FarVar:
+    return "FarVar";
+    break;
+  case TokenType::AlnVar:
+    return "AlnVar";
+    break;
+  case TokenType::Message:
+    return "Message";
+    break;
+  case TokenType::Return:
+    return "Return";
+    break;
+  case TokenType::While:
+    return "While";
+    break;
+  case TokenType::For:
+    return "For";
+    break;
+  case TokenType::Fallthrough:
+    return "Fallthrough";
+    break;
+  case TokenType::Colon:
+    return "Colon";
+    break;
+  case TokenType::Dot:
+    return "Dot";
+    break;
+  }
+
+  return "Unimplemented";
 }
