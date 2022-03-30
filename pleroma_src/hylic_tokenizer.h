@@ -84,6 +84,8 @@ struct TokenStream {
   void go_back(int n);
 
   Token *get();
+
+  void reset();
 };
 
 void add_token(TokenType t, std::string lexeme);

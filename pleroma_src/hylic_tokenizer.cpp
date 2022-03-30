@@ -23,6 +23,10 @@ Token* TokenStream::get() {
   return *c;
 }
 
+void TokenStream::reset() {
+  current = tokens.begin();
+}
+
 void add_token(TokenType t, std::string lexeme) {
   Token *tok = new Token({t, lexeme});
   tokenstream.tokens.push_back(tok);

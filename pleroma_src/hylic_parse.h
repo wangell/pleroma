@@ -7,4 +7,13 @@
 #include "hylic.h"
 #include <cassert>
 
+enum class TLUserType {
+  Entity,
+  Data
+};
+
+struct ParseContext {
+  std::map<std::string, TLUserType> tl_symbol_table;
+};
+
 std::map<std::string, AstNode *> parse(TokenStream stream);

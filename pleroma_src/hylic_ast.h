@@ -132,7 +132,7 @@ struct EntityRefNode : AstNode {
 
 struct MessageNode : AstNode {
   EntityRefNode* entity_ref;
-  SymbolNode* sym;
+  std::string function_name;
 
   MessageDistance message_distance;
   CommMode comm_mode;
@@ -188,6 +188,6 @@ AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body);
 AstNode *make_nop();
-AstNode *make_message_node(EntityRefNode *entity_ref, AstNode *function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
+AstNode *make_message_node(EntityRefNode *entity_ref, std::string function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(EntityDef * actor_def);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
