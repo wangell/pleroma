@@ -131,8 +131,6 @@ AstNode *parse_expr(ParseContext* context) {
     auto tt = accept(TokenType::Symbol);
     auto expr1 = make_symbol(tt->lexeme);
 
-    printf("parsing sym %s\n", tt->lexeme.c_str());
-
     // Namespace access
     if (accept(TokenType::Dot)) {
       return make_namespace_access(tt->lexeme, parse_expr(context));
@@ -171,11 +169,15 @@ AstNode *parse_expr(ParseContext* context) {
 
       if (context->tl_symbol_table.find(tt->lexeme) != context->tl_symbol_table.end()) {
         // Just mkae this a string!
-        return make_create_entity(tt->lexeme, false);
+        auto ret_node = make_create_entity(tt->lexeme, false);
+        return ret_node;
       } else {
         // Just mkae this a string! all vars should be strings
-        return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+        auto ret_node = make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+        return ret_node;
       }
+
+      assert(false);
     }
 
     if (accept(TokenType::Message)) {
@@ -354,9 +356,7 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
       auto expr = parse_expr(context);
       expect(TokenType::Newline);
       return make_assignment(t->lexeme, expr);
-    }
-
-    else if (accept(TokenType::For)) {
+    } else if (accept(TokenType::For)) {
       auto for_generator = parse_expr(context);
       expect(TokenType::Newline);
 
@@ -378,7 +378,9 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
       return make_for(t->lexeme, for_generator, body);
     } else {
       tokenstream.go_back(1);
-      return parse_expr(context);
+      auto expr = parse_expr(context);
+      expect(TokenType::Newline);
+      return expr;
     }
 
   } else if (accept(TokenType::While)) {
@@ -447,8 +449,9 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
     return make_match(match_expr, match_cases);
   } else {
     // try parse expr
-    printf("trying expr\n");
-    return parse_expr(context);
+    auto expr = parse_expr(context);
+    expect(TokenType::Newline);
+    return expr;
   }
 
   // return parse_expr();
@@ -461,8 +464,7 @@ std::vector<AstNode *> parse_block(ParseContext* context, int expected_indent = 
   while (true) {
     int current_indent = 0;
 
-    while (accept(TokenType::Tab))
-      current_indent++;
+    while (accept(TokenType::Tab)) current_indent++;
 
     if (current_indent != expected_indent) {
       tokenstream.go_back(current_indent);
@@ -604,6 +606,7 @@ std::map<std::string, AstNode *> parse(TokenStream stream) {
       // Skip
       make_nop();
     } else {
+      printf("Failed on token %d\n", (*tokenstream.current)->type);
       assert(false);
     }
   }

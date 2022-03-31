@@ -14,7 +14,6 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block, std::vec
 
   // load symbols into scope
   for (auto &[sym, node] : sub_syms) {
-    printf("Sym %s\n", sym.c_str());
     block_scope.table[sym] = node;
   }
 
@@ -42,10 +41,10 @@ Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
 }
 
 AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string function_name, std::vector<AstNode *> args) {
-  printf("Eval: eval_func_local %s %s\n", context->entity->entity_def->name.c_str(), function_name.c_str());
-  auto func = context->entity->entity_def->functions.find(function_name);
+  printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
+  auto func = entity->entity_def->functions.find(function_name);
 
-  assert (func != context->entity->entity_def->functions.end());
+  assert (func != entity->entity_def->functions.end());
 
   FuncStmt *func_def_node = (FuncStmt *)func->second;
     std::vector<std::tuple<std::string, AstNode *>> subs;
@@ -203,6 +202,10 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     auto ref_node = eval(context, find_symbol(node->namespace_table, context->scope));
 
     if (ref_node->type == AstNodeType::EntityRefNode) {
+
+      auto ent_node = (EntityRefNode*) ref_node;
+      auto mess_node = (MessageNode*) node->accessor;
+
       EvalContext new_context;
       new_context.vat = context->vat;
       new_context.entity = resolve_local_entity(context, (EntityRefNode*)ref_node);
@@ -213,7 +216,7 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
       printf("Searching namespace %s\n", node->namespace_table.c_str());
 
-      return eval(&new_context, node->accessor);
+      return eval_message_node(context, ent_node, mess_node->message_distance, mess_node->comm_mode, mess_node->function_name, mess_node->args);
 
     } else {
       assert(false);
