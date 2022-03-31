@@ -65,7 +65,18 @@ void process_vq() {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
         printf("got message\n");
-        eval_func_local(our_vat, our_vat->entities[0], m.function_name, {});
+        EvalContext context;
+        Scope scope;
+        scope.table = our_vat->entities[0]->file_scope;
+        EntityRefNode blah;
+        blah.entity_id = 0;
+        blah.node_id = 0;
+        blah.vat_id = 0;
+        scope.table["self"] = &blah;
+        context.vat = our_vat;
+        context.entity = our_vat->entities[0];
+        context.scope = &scope;
+        eval_func_local(&context, our_vat->entities[0], m.function_name, {});
       }
 
       while (!our_vat->out_messages.empty()) {
@@ -89,14 +100,20 @@ void process_vq() {
   }
 }
 
-void inoculate_pleroma(EntityDef* entity_def) {
+void inoculate_pleroma(std::map<std::string, AstNode*> program, EntityDef* entity_def) {
   EntityAddress address = {0, 0, 0};
-  Entity* ent = create_entity(entity_def, address);
 
   VqNode *c = new VqNode;
   c->claimed = false;
   c->next = c;
   c->vat = new Vat;
+
+  EvalContext context;
+  context.entity = nullptr;
+  context.vat = c->vat;
+
+  Entity *ent = create_entity(&context, entity_def, address);
+  ent->file_scope = program;
 
   c->vat->entities[0] = ent;
 
@@ -111,7 +128,7 @@ int main(int argc, char **argv) {
 
   auto kernel_program = (EntityDef *)program["Kernel"];
 
-  inoculate_pleroma(kernel_program);
+  inoculate_pleroma(program, kernel_program);
 
   Msg m;
   m.entity_id = 0;

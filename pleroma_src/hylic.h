@@ -7,6 +7,7 @@
 #include <list>
 #include "hylic_tokenizer.h"
 #include "hylic_ast.h"
+#include "hylic_eval.h"
 
 extern TokenStream tokenstream;
 

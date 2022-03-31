@@ -21,6 +21,8 @@ bool typesolve_sub(AstNode* node) {
 }
 
 void typesolve(std::map<std::string, AstNode *> program) {
+  return;
+
   bool all_valid = true;
   for (auto &[k, v] : program) {
     all_valid = all_valid && typesolve_sub(v);

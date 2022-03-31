@@ -16,6 +16,8 @@ struct Entity {
   EntityDef *entity_def;
   EntityAddress address;
   std::map<std::string, AstNode *> data;
+
+  std::map<std::string, AstNode*> file_scope;
 };
 
 struct Msg {
@@ -42,11 +44,21 @@ struct Vat {
   std::map<int, Entity *> entities;
 };
 
-struct Context {
+struct Scope {
+  Scope *parent = nullptr;
+  std::map<std::string, AstNode *> table;
 };
 
-AstNode *eval(Vat* vat, Entity* entity, AstNode *obj, Scope *scope = &global_scope);
+extern Scope global_scope;
+
+struct EvalContext {
+  Vat* vat;
+  Entity* entity;
+  Scope *scope;
+};
+
+AstNode *eval(EvalContext* context, AstNode *obj);
 Scope *find_symbol_scope(std::string sym, Scope *scope);
 AstNode *find_symbol(std::string sym, Scope *scope);
-Entity *create_entity(EntityDef *entity_def, EntityAddress address);
-AstNode *eval_func_local(Vat * vat, Entity * entity, std::string function_name, std::vector<AstNode *> args);
+Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress address);
+AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);

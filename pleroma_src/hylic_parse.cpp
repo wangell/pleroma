@@ -148,16 +148,16 @@ AstNode *parse_expr(ParseContext* context) {
 
       if (context->tl_symbol_table.find(tt->lexeme) != context->tl_symbol_table.end()) {
         // Just mkae this a string!
-        return make_create_entity(context->
+        return make_create_entity(tt->lexeme, false);
       } else {
         // Just mkae this a string! all vars should be strings
-        return make_message_node(nullptr, tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+        return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
       }
     }
 
     if (accept(TokenType::Message)) {
 
-      auto target_entity = accept(TokenType::Symbol);
+      auto target_function = accept(TokenType::Symbol);
 
       expect(TokenType::LeftParen);
 
@@ -174,7 +174,8 @@ AstNode *parse_expr(ParseContext* context) {
 
       expect(TokenType::RightParen);
 
-      return make_message_node(nullptr, make_symbol(tt->lexeme), MessageDistance::Far, CommMode::Async, args);
+      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(), tt->lexeme.c_str());
+      return make_message_node(tt->lexeme, target_function->lexeme, MessageDistance::Local, CommMode::Async, args);
     }
 
     if (accept(TokenType::Plus)) {
@@ -258,8 +259,7 @@ AstNode *parse_expr(ParseContext* context) {
 
     expect(TokenType::RightParen);
 
-    return make_message_node(nullptr, make_symbol(tt->lexeme),
-                             MessageDistance::Far, CommMode::Async, args);
+    return make_message_node("self", tt->lexeme, MessageDistance::Far, CommMode::Async, args);
 
   } else if (check(TokenType::True) || check(TokenType::False)) {
     if (accept(TokenType::True)) {
