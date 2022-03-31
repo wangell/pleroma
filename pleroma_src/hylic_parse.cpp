@@ -131,6 +131,29 @@ AstNode *parse_expr(ParseContext* context) {
     auto tt = accept(TokenType::Symbol);
     auto expr1 = make_symbol(tt->lexeme);
 
+    printf("parsing sym %s\n", tt->lexeme.c_str());
+
+    // Namespace access
+    if (accept(TokenType::Dot)) {
+      return make_namespace_access(tt->lexeme, parse_expr(context));
+      //return make_table_access(expr1, , bool breakthrough)
+    }
+    //if (check(TokenType::Dot)) {
+    //  AstNode* taccess = nullptr;
+    //  while (accept(TokenType::Dot)) {
+    //    Token *exp;
+    //    if (check(TokenType::Symbol)) {
+    //      exp = accept(TokenType::Symbol);
+    //    }
+    //    if (taccess) {
+    //      taccess = make_table_access(taccess, exp->lexeme, false);
+    //    } else {
+    //      taccess = make_table_access(expr1, exp->lexeme, false);
+    //    }
+    //  }
+    //  return taccess;
+    //}
+
     if (accept(TokenType::LeftParen)) {
 
       std::vector<AstNode *> args;

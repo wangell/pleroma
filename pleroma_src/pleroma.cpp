@@ -67,16 +67,19 @@ void process_vq() {
         printf("got message\n");
         EvalContext context;
         Scope scope;
-        scope.table = our_vat->entities[0]->file_scope;
+        scope.table = our_vat->entities.find(m.entity_id)->second->file_scope;
         EntityRefNode blah;
         blah.entity_id = 0;
         blah.node_id = 0;
         blah.vat_id = 0;
         scope.table["self"] = &blah;
         context.vat = our_vat;
-        context.entity = our_vat->entities[0];
+        context.entity = our_vat->entities.find(m.entity_id)->second;
         context.scope = &scope;
-        eval_func_local(&context, our_vat->entities[0], m.function_name, {});
+
+        printf(" vat mess %d\n", m.entity_id);
+
+        eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});
       }
 
       while (!our_vat->out_messages.empty()) {

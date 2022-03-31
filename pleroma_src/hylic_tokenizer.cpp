@@ -25,6 +25,8 @@ Token* TokenStream::get() {
 
 void TokenStream::reset() {
   current = tokens.begin();
+  line_number = 0;
+  char_number = 0;
 }
 
 void add_token(TokenType t, std::string lexeme) {

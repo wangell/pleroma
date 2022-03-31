@@ -60,12 +60,12 @@ AstNode* make_match(AstNode* match_expr, std::vector<std::tuple<AstNode*, std::v
   return node;
 }
 
-AstNode* make_table_access(AstNode* table, std::string sym, bool breakthrough) {
-  TableAccess* node = new TableAccess;
-  node->type = AstNodeType::TableAccess;
-  node->table = table;
-  node->access_sym = sym;
-  node->breakthrough = breakthrough;
+AstNode* make_namespace_access(std::string namespace_table, AstNode* accessor) {
+  NamespaceAccess* node = new NamespaceAccess;
+  node->type = AstNodeType::NamespaceAccess;
+  node->namespace_table = namespace_table;
+  node->accessor = accessor;
+  //node->access_sym = sym;
   return node;
 }
 

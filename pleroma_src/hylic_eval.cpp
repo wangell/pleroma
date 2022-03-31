@@ -7,17 +7,23 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block, std::vec
   Scope block_scope;
   block_scope.parent = context->scope;
 
+  EvalContext new_context;
+  new_context.entity = context->entity;
+  new_context.vat = context->vat;
+  new_context.scope = &block_scope;
+
   // load symbols into scope
   for (auto &[sym, node] : sub_syms) {
+    printf("Sym %s\n", sym.c_str());
     block_scope.table[sym] = node;
   }
 
   AstNode* last_val;
   for (auto node : block) {
-    last_val = eval(context, node);
+    last_val = eval(&new_context, node);
     if (last_val->type == AstNodeType::ReturnNode) {
       auto v = (ReturnNode*)last_val;
-      return eval(context, v->expr);
+      return eval(&new_context, v->expr);
     }
   }
   return last_val;
@@ -58,6 +64,8 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
 
   target_entity = resolve_local_entity(context, entity_ref);
   assert(target_entity != nullptr);
+
+  printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (distance == MessageDistance::Local) {
 
@@ -188,34 +196,30 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     return make_nop();
   }
 
-  if (obj->type == AstNodeType::TableAccess) {
-    auto node = (TableAccess *)obj;
+  if (obj->type == AstNodeType::NamespaceAccess) {
+    auto node = (NamespaceAccess *)obj;
 
-    TableNode *table_node;
-    if (node->table->type == AstNodeType::SymbolNode) {
-      auto symbol_node = (SymbolNode *)node->table;
-      table_node = (TableNode *)find_symbol(symbol_node->sym, context->scope);
-    } else if (node->table->type == AstNodeType::TableNode) {
-      table_node = (TableNode *)node->table;
-    } else if (node->table->type == AstNodeType::TableAccess) {
-      table_node = (TableNode *)eval(context, node->table);
+    // Lookup the symbol
+    auto ref_node = eval(context, find_symbol(node->namespace_table, context->scope));
+
+    if (ref_node->type == AstNodeType::EntityRefNode) {
+      EvalContext new_context;
+      new_context.vat = context->vat;
+      new_context.entity = resolve_local_entity(context, (EntityRefNode*)ref_node);
+      Scope new_scope;
+      new_scope.table["a"] = make_number(4);
+      new_scope.table["self"] = new_context.entity->entity_def;
+      new_context.scope = &new_scope;
+
+      printf("Searching namespace %s\n", node->namespace_table.c_str());
+
+      return eval(&new_context, node->accessor);
+
     } else {
       assert(false);
     }
 
-    if (node->breakthrough) {
-      auto sym = find_symbol(node->access_sym, context->scope);
-      assert(sym->type == AstNodeType::NumberNode);
-      auto sym_n = (NumberNode *)sym;
-
-      auto find_sym = table_node->table.find(std::to_string(sym_n->value));
-      assert(find_sym != table_node->table.end());
-      return find_sym->second;
-    } else {
-      auto find_sym = table_node->table.find(node->access_sym);
-      assert(find_sym != table_node->table.end());
-      return find_sym->second;
-    }
+    assert(false);
   }
 
   if (obj->type == AstNodeType::BooleanNode) {
@@ -315,6 +319,10 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     create_entity(context, (EntityDef*)find_symbol(node->entity_def_name, context->scope), e);
 
     return make_entity_ref(0, 0, 1);
+  }
+
+  if (obj->type == AstNodeType::EntityRefNode) {
+    return obj;
   }
 
   printf("Failing to evaluate node type %d\n", obj->type);

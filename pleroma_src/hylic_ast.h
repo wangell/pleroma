@@ -10,7 +10,7 @@ enum class AstNodeType {
   Nop,
 
   TableNode,
-  TableAccess,
+  NamespaceAccess,
 
   CreateEntity,
 
@@ -95,10 +95,9 @@ struct WhileStmt : AstNode {
   std::vector<AstNode*> body;
 };
 
-struct TableAccess : AstNode {
-  AstNode* table;
-  std::string access_sym;
-  bool breakthrough = false;
+struct NamespaceAccess : AstNode {
+  std::string namespace_table;
+  AstNode* accessor;
 };
 
 struct SymbolNode : AstNode {
@@ -170,7 +169,7 @@ AstNode *make_fallthrough();
 AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2);
 AstNode *make_assignment(std::string sym, AstNode *expr);
 AstNode *make_match(AstNode *match_expr, std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> cases);
-AstNode *make_table_access(AstNode *table, std::string sym, bool breakthrough);
+AstNode *make_namespace_access(std::string namespace_table, AstNode *accessor);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
 AstNode *make_module_stmt(std::string s, bool namespaced);
 AstNode *make_table(std::map<std::string, AstNode *> vals);
