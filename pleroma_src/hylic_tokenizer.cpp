@@ -208,6 +208,15 @@ const char *token_type_to_string(TokenType t) {
   case TokenType::While:
     return "While";
     break;
+  case TokenType::True:
+    return "True";
+    break;
+  case TokenType::False:
+    return "False";
+    break;
+  case TokenType::Function:
+    return "Function";
+    break;
   case TokenType::For:
     return "For";
     break;

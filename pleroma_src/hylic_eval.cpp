@@ -188,9 +188,9 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   if (obj->type == AstNodeType::ForStmt) {
     auto node = (ForStmt *)obj;
 
-    auto table = (TableNode *)eval(context, node->generator);
+    auto table = (ListNode *)eval(context, node->generator);
 
-    for (int k = 0; k < table->table.size(); ++k) {
+    for (int k = 0; k < table->list.size(); ++k) {
       // NOTE push k into sub
       std::vector<std::tuple<std::string, AstNode *>> subs;
       subs.push_back(std::make_tuple(node->sym, make_number(k)));
