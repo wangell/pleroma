@@ -1,0 +1,33 @@
+~pleroma.net pnet
+~dist.store
+~pleroma.scheduler sch
+
+ε Markmeister
+  - sch.unique
+  - sch.daemon
+
+  ingress : pnet.Ingress
+  bookmark-store : dist.store.Quickland
+
+	δ main(env: u8) -> int
+    ingress = pnet.add-ingress("/", handle-request)
+
+	δ handle-request(req: pnet.http.request) -> pnet.http.response
+    ? req.path
+      "/bookmark"
+        ? req.method
+
+          pnet.http.post
+            bookmark-store.store(req.post["bookmark"])
+            ↵ pnet.http.resp("")
+
+          pnet.http.get
+            bookmark-store.fetch(req.get["bookmark"])
+            ↵ pnet.http.resp("")
+          _
+            ↵ pnet.http.error("")
+
+      "/bookmarks"
+        ↵ pnet.http.resp(bookmark-store.fetch())
+      _
+        ↵ pnet.http.error("")

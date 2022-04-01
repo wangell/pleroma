@@ -59,12 +59,12 @@ void process_vq() {
     // Take a number of steps
     for (int k = 0; k < 1; ++k) {
       our_vat->message_mtx.lock();
-      printf("Processing vat %d for step %d\n", our_vat->id, our_vat->run_n);
+      ////printf("Processing vat %d for step %d\n", our_vat->id, our_vat->run_n);
 
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        printf("got message\n");
+        //printf("got message\n");
         EvalContext context;
         Scope scope;
         scope.table = our_vat->entities.find(m.entity_id)->second->file_scope;
@@ -77,26 +77,26 @@ void process_vq() {
         context.entity = our_vat->entities.find(m.entity_id)->second;
         context.scope = &scope;
 
-        printf(" vat mess %d\n", m.entity_id);
+        //printf(" vat mess %d\n", m.entity_id);
 
         eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});
       }
 
       while (!our_vat->out_messages.empty()) {
-        printf("sending msg\n");
+        //printf("sending msg\n");
         Msg m = our_vat->out_messages.front();
         our_vat->out_messages.pop();
         our_vat->messages.push(m);
       }
 
+      sleep(1);
       our_vat->message_mtx.unlock();
 
       our_vat->run_n++;
-      sleep(1);
     }
 
     // Place VAT back in queue
-    printf("processed messages for vat\n");
+    //printf("processed messages for vat\n");
     mtx.lock();
     our_node->claimed = false;
     mtx.unlock();

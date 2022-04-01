@@ -29,7 +29,7 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block, std::vec
 }
 
 Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
-  printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
+  //printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
   if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 && entity_ref->node_id == 0) {
     return context->entity;
   } else {
@@ -41,7 +41,7 @@ Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
 }
 
 AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string function_name, std::vector<AstNode *> args) {
-  printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
+  //printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
   auto func = entity->entity_def->functions.find(function_name);
 
   assert (func != entity->entity_def->functions.end());
@@ -64,7 +64,7 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
   target_entity = resolve_local_entity(context, entity_ref);
   assert(target_entity != nullptr);
 
-  printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
+  //printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (distance == MessageDistance::Local) {
 
@@ -214,7 +214,7 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
       new_scope.table["self"] = new_context.entity->entity_def;
       new_context.scope = &new_scope;
 
-      printf("Searching namespace %s\n", node->namespace_table.c_str());
+      //printf("Searching namespace %s\n", node->namespace_table.c_str());
 
       return eval_message_node(context, ent_node, mess_node->message_distance, mess_node->comm_mode, mess_node->function_name, mess_node->args);
 
