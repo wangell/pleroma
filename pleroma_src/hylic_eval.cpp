@@ -80,7 +80,12 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
       m.function_name = function_name;
       context->vat->out_messages.push(m);
 
-      return make_nop();
+      int pid = context->vat->promise_id_base;
+
+      context->vat->promises[pid] = PromiseResult();
+      context->vat->promise_id_base++;
+
+      return make_promise_node(pid);
     }
 
   } else if (distance == MessageDistance::Far) {
@@ -346,6 +351,11 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
   if (obj->type == AstNodeType::EntityRefNode) {
     return obj;
+  }
+
+  if (obj->type == AstNodeType::PromiseResNode) {
+    printf("resolving the promise\n");
+    return make_nop();
   }
 
   printf("Failing to evaluate node type %d\n", obj->type);

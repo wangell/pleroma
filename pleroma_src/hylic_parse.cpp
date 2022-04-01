@@ -405,7 +405,13 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
       expect(TokenType::Newline);
       return expr;
     }
+  } else if (accept(TokenType::PromiseType)) {
 
+    auto prom_sym = accept(TokenType::Symbol);
+    printf("doin a promise\n");
+    expect(TokenType::Newline);
+    auto body = parse_block(context, expected_indent + 1);
+    return make_promise_resolution_node(body);
   } else if (accept(TokenType::While)) {
     printf("Parsing while...\n");
     auto while_expr = parse_expr(context);

@@ -24,10 +24,15 @@ enum class AstNodeType {
   ModuleStmt,
   FuncStmt,
   AssignmentStmt,
+
+  PromiseResNode,
+
   SymbolNode,
   NumberNode,
   ListNode,
   StringNode,
+  PromiseNode,
+
   OperatorExpr,
   BooleanExpr,
   MessageNode,
@@ -125,10 +130,18 @@ struct BooleanNode : AstNode {
   bool value;
 };
 
+struct PromiseNode : AstNode {
+  int promise_id;
+};
+
 struct EntityRefNode : AstNode {
   int node_id;
   int vat_id;
   int entity_id;
+};
+
+struct PromiseResNode : AstNode {
+  std::vector<AstNode*> body;
 };
 
 struct MessageNode : AstNode {
@@ -193,3 +206,5 @@ AstNode *make_message_node(std::string entity_ref_name, std::string function_nam
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
 AstNode *make_list(std::vector<AstNode *> list);
+AstNode *make_promise_node(int promise_id);
+AstNode *make_promise_resolution_node(std::vector<AstNode*> body);

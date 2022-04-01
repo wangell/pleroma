@@ -27,19 +27,22 @@ struct Msg {
   std::string function_name;
 };
 
-struct Promise {
-  AstNode* callback;
+struct PromiseResult {
+  bool resolved = false;
+  int blah;
 };
 
 struct Vat {
   int id = 0;
   int run_n = 0;
 
+  int promise_id_base = 0;
+
   std::mutex message_mtx;
   std::queue<Msg> messages;
   std::queue<Msg> out_messages;
 
-  std::queue<Promise> promises;
+  std::map<int, PromiseResult> promises;
 
   std::map<int, Entity *> entities;
 };

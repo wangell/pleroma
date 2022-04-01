@@ -17,3 +17,5 @@ struct ParseContext {
 };
 
 std::map<std::string, AstNode *> parse(TokenStream stream);
+
+std::vector<AstNode *> parse_block(ParseContext *context, int expected_indent);
