@@ -354,8 +354,20 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::PromiseResNode) {
+    auto node = (PromiseResNode*) obj;
     printf("resolving the promise\n");
-    return make_nop();
+
+    auto prom = (PromiseNode*)find_symbol(node->sym, context->scope);
+
+    assert (context->vat->promises.find(prom->promise_id) != context->vat->promises.end());
+
+    // If available, run now, else stuff the promise into the Promise stack - will be resolved + run by VM
+    if (context->vat->promises[prom->promise_id].resolved) {
+    } else {
+      //interrupt();
+      printf("inerrupt!\n");
+      return obj;
+    }
   }
 
   printf("Failing to evaluate node type %d\n", obj->type);

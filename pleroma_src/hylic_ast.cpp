@@ -212,10 +212,11 @@ AstNode *make_promise_node(int promise_id) {
   return promise_node;
 }
 
-AstNode *make_promise_resolution_node(std::vector<AstNode*> body) {
+AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode*> body) {
   PromiseResNode *promise_res_node = new PromiseResNode;
   promise_res_node->type = AstNodeType::PromiseResNode;
   promise_res_node->body = body;
+  promise_res_node->sym = sym;
 
   return promise_res_node;
 }
