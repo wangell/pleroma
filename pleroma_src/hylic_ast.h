@@ -26,6 +26,7 @@ enum class AstNodeType {
   AssignmentStmt,
   SymbolNode,
   NumberNode,
+  ListNode,
   StringNode,
   OperatorExpr,
   BooleanExpr,
@@ -100,12 +101,20 @@ struct NamespaceAccess : AstNode {
   AstNode* accessor;
 };
 
+// Move all values to this over time
+struct ValueNode : AstNode {
+};
+
 struct SymbolNode : AstNode {
   std::string sym;
 };
 
 struct NumberNode : AstNode {
   int64_t value;
+};
+
+struct ListNode : AstNode {
+  std::vector<AstNode*> list;
 };
 
 struct StringNode : AstNode {
@@ -183,3 +192,4 @@ AstNode *make_nop();
 AstNode *make_message_node(std::string entity_ref_name, std::string function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
+AstNode *make_list(std::vector<AstNode *> list);

@@ -163,6 +163,10 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     return obj;
   }
 
+  if (obj->type == AstNodeType::ListNode) {
+    return obj;
+  }
+
   if (obj->type == AstNodeType::Nop) {
     return obj;
   }
@@ -301,6 +305,22 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
       if (args[0]->type == AstNodeType::NumberNode) {
         printf("%ld\n", ((NumberNode *)args[0])->value);
+      }
+
+      if (args[0]->type == AstNodeType::ListNode) {
+        printf("[");
+        for (auto k : ((ListNode*)args[0])->list) {
+          if (k->type == AstNodeType::StringNode) {
+            printf("%s", ((StringNode *)k)->value.c_str());
+          }
+
+          if (k->type == AstNodeType::NumberNode) {
+            printf("%ld", ((NumberNode *)k)->value);
+          }
+
+          printf(",");
+        }
+        printf("]\n");
       }
 
       return make_nop();

@@ -111,10 +111,14 @@ void tokenize_file(FILE *f) {
       add_token(TokenType::LeftParen, "(");
     } else if (c == ')') {
       add_token(TokenType::RightParen, ")");
+    } else if (c == '[') {
+      add_token(TokenType::LeftBracket, "[");
+    } else if (c == ']') {
+      add_token(TokenType::RightBracket, "]");
     } else if (c == '{') {
-      add_token(TokenType::LeftBrace, "(");
+      add_token(TokenType::LeftBrace, "{");
     } else if (c == '}') {
-      add_token(TokenType::RightBrace, "(");
+      add_token(TokenType::RightBrace, "}");
     } else if (c == '@') {
       add_token(TokenType::PromiseType, "@");
     } else if (c == ':') {

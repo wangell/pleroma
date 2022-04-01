@@ -195,3 +195,11 @@ AstNode *make_entity_ref(int node_id, int vat_id, int entity_id) {
 
   return entity_ref;
 }
+
+AstNode* make_list(std::vector<AstNode*> list) {
+  ListNode* list_node = new ListNode;
+  list_node->type = AstNodeType::ListNode;
+  list_node->list = list;
+
+  return list_node;
+}

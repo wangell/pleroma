@@ -292,6 +292,29 @@ AstNode *parse_expr(ParseContext* context) {
     } else if (accept(TokenType::False)) {
       return make_boolean(false);
     }
+  } else if (accept(TokenType::LeftBracket)) {
+
+    if (accept(TokenType::RightBracket)) {
+      // Empty list
+      return make_list({});
+    }
+
+    std::vector<AstNode*> list;
+    while (true) {
+      auto lexpr = parse_expr(context);
+      list.push_back(lexpr);
+
+      if (check(TokenType::RightBracket)) {
+        break;
+      }
+
+      expect(TokenType::Comma);
+    }
+
+    expect(TokenType::RightBracket);
+
+    return make_list(list);
+
   } else if (accept(TokenType::LeftBrace)) {
     // While next token does not equal right paren
     std::map<std::string, AstNode *> table_vals;
