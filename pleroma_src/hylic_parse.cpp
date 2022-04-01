@@ -284,7 +284,7 @@ AstNode *parse_expr(ParseContext* context) {
 
     expect(TokenType::RightParen);
 
-    return make_message_node("self", tt->lexeme, MessageDistance::Far, CommMode::Async, args);
+    return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Async, args);
 
   } else if (check(TokenType::True) || check(TokenType::False)) {
     if (accept(TokenType::True)) {
