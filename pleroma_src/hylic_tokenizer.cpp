@@ -74,9 +74,7 @@ void tokenize_file(FILE *f) {
           }
       }
 
-      if (sym == "ret") {
-        add_token(TokenType::Return, sym);
-      } else if (sym == "whl") {
+      if (sym == "whl") {
         add_token(TokenType::While, sym);
       } else if (sym == "loc") {
         add_token(TokenType::LocVar, sym);
@@ -91,6 +89,8 @@ void tokenize_file(FILE *f) {
       add_token(TokenType::Function, "δ");
     } else if (c == U'λ') {
       add_token(TokenType::Pure, "λ");
+    } else if (c == U'↵') {
+      add_token(TokenType::Return, "↵");
     } else if (c == '+') {
       add_token(TokenType::Plus, "+");
     } else if (c == '-') {
