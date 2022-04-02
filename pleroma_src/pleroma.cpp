@@ -21,6 +21,8 @@ const int MAX_STEPS = 3;
 std::mutex mtx;
 std::map<int, Vat *> vats;
 
+PleromaNode this_pleroma_node;
+
 struct VqNode {
   VqNode* next;
 
@@ -84,7 +86,8 @@ void process_vq() {
 
         // Return vs call
         if (m.response) {
-          our_vat->promises[m.promise_id].result = make_number(4);
+          printf("%p\n", m.value);
+          our_vat->promises[m.promise_id].result = m.value;
           eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, (PromiseResNode*)our_vat->promises[m.promise_id].callback, (AstNode*)our_vat->promises[m.promise_id].result);
         } else {
           //auto result = eval(&context, eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {}));
@@ -100,6 +103,9 @@ void process_vq() {
           response_m.src_node_id = m.node_id;
           response_m.promise_id = m.promise_id;
 
+          // FIXME move
+          response_m.value = (ValueNode *)result;
+
           if (m.function_name != "main") {
             printf("pushed response %s\n", m.function_name.c_str());
             our_vat->out_messages.push(response_m);
@@ -107,12 +113,18 @@ void process_vq() {
         }
       }
 
+      net_mtx.lock();
       while (!our_vat->out_messages.empty()) {
         //printf("sending msg\n");
         Msg m = our_vat->out_messages.front();
         our_vat->out_messages.pop();
-        our_vat->messages.push(m);
+        if (m.node_id == this_pleroma_node.node_id) {
+          our_vat->messages.push(m);
+        } else {
+          net_queue.push(m);
+        }
       }
+      net_mtx.unlock();
 
       sleep(1);
       our_vat->message_mtx.unlock();

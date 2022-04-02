@@ -106,38 +106,50 @@ struct NamespaceAccess : AstNode {
   AstNode* accessor;
 };
 
+enum class ValueType {
+  String,
+  Number,
+  Boolean,
+  User
+};
+
 // Move all values to this over time
 struct ValueNode : AstNode {
+  ValueType value_type;
 };
 
 struct SymbolNode : AstNode {
   std::string sym;
 };
 
-struct NumberNode : AstNode {
+struct NumberNode : ValueNode {
   int64_t value;
 };
 
-struct ListNode : AstNode {
+struct ListNode : ValueNode {
   std::vector<AstNode*> list;
 };
 
-struct StringNode : AstNode {
+struct StringNode : ValueNode {
   std::string value;
 };
 
-struct BooleanNode : AstNode {
+struct BooleanNode : ValueNode {
   bool value;
 };
 
-struct PromiseNode : AstNode {
+struct PromiseNode : ValueNode {
   int promise_id;
 };
 
-struct EntityRefNode : AstNode {
+struct EntityRefNode : ValueNode {
   int node_id;
   int vat_id;
   int entity_id;
+};
+
+struct UsertypeValueNode : ValueNode {
+  std::map<std::string, ValueNode*> table;
 };
 
 struct PromiseResNode : AstNode {

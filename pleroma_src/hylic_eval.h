@@ -15,8 +15,8 @@ struct EntityAddress {
 struct Entity {
   EntityDef *entity_def;
   EntityAddress address;
-  std::map<std::string, AstNode *> data;
 
+  std::map<std::string, AstNode *> data;
   std::map<std::string, AstNode*> file_scope;
 };
 
@@ -34,11 +34,13 @@ struct Msg {
   int src_node_id;
 
   std::string function_name;
+
+  ValueNode* value;
 };
 
 struct PromiseResult {
   bool resolved = false;
-  AstNode* result;
+  ValueNode* result;
   AstNode* callback;
 };
 

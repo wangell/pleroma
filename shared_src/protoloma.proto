@@ -5,6 +5,10 @@ package romabuf;
 message Peer {
 }
 
+message NumVal {
+  required int32 value = 1;
+}
+
 message PleromaMessage {
   required int32 node_id = 1;
   required int32 vat_id = 2;
@@ -18,6 +22,10 @@ message PleromaMessage {
 
   required bool response = 9;
   required int32 promise_id = 10;
+
+  oneof pvalue {
+    NumVal num_val = 11;
+  }
 }
 
 message AnnouncePeer {

@@ -1,5 +1,6 @@
 #include "netcode.h"
 #include <arpa/inet.h>
+#include "hylic_ast.h"
 #include "pleroma.h"
 #include <cstdio>
 #include "../shared_src/protoloma.pb.h"
@@ -10,9 +11,13 @@
 #include <vector>
 #include <map>
 
+std::mutex net_mtx;
+std::queue<Msg> net_queue;
+
 struct PleromaNetwork {
   ENetHost *server;
   std::map<enet_uint32, ENetPeer*> peers;
+  std::map<int, enet_uint32> node_host_map;
 } pnet;
 
 void net_loop() {
@@ -48,6 +53,12 @@ void net_loop() {
       event.peer->data = NULL;
     }
   }
+
+  while (!net_queue.empty()) {
+    Msg m = net_queue.front();
+    net_queue.pop();
+    send_node_msg(m);
+  }
 }
 
 void on_receive_packet(ENetEvent *event) {
@@ -71,6 +82,9 @@ void on_receive_packet(ENetEvent *event) {
 
     local_m.promise_id = message.promise_id();
     local_m.response = message.response();
+
+    local_m.value = (ValueNode*)make_number(100);
+    printf("bunk0\n");
 
     vats[message.vat_id()]->messages.push(local_m);
     vats[message.vat_id()]->message_mtx.unlock();
@@ -101,14 +115,23 @@ void send_msg(enet_uint32 host, romabuf::PleromaMessage msg) {
   send_packet(pnet.peers[host], buf.c_str(), buf.length() + 1);
 }
 
-void send_node_msg(int node_id, romabuf::PleromaMessage msg) {
-  std::string buf = msg.SerializeAsString();
-  //send_packet(pnet.peers[host], buf.c_str(), buf.length() + 1);
+void send_node_msg(Msg m) {
+  romabuf::PleromaMessage message;
+  message.set_node_id(m.node_id);
+  message.set_entity_id(m.entity_id);
+  message.set_vat_id(m.vat_id);
+
+  message.set_src_node_id(m.src_node_id);
+  message.set_src_entity_id(m.src_entity_id);
+  message.set_src_vat_id(m.src_vat_id);
+
+  message.set_promise_id(m.promise_id);
+  std::string buf = message.SerializeAsString();
+  send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(), buf.length() + 1);
 }
 
 void setup_server() {
   ENetAddress address;
-  printf("here\n");
   /* Bind the server to the default localhost.     */
   /* A specific host address can be specified by   */
   /* enet_address_set_host (& address, "x.x.x.x"); */
