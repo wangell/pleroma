@@ -68,18 +68,42 @@ void process_vq() {
         EvalContext context;
         Scope scope;
         scope.table = our_vat->entities.find(m.entity_id)->second->file_scope;
+
         EntityRefNode blah;
         blah.entity_id = 0;
         blah.node_id = 0;
         blah.vat_id = 0;
+
         scope.table["self"] = &blah;
+
         context.vat = our_vat;
         context.entity = our_vat->entities.find(m.entity_id)->second;
         context.scope = &scope;
 
         //printf(" vat mess %d\n", m.entity_id);
 
-        eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});
+        // Return vs call
+        if (m.response) {
+          eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, (PromiseResNode*)our_vat->promises[m.promise_id].callback, (PromiseResult*)our_vat->promises[m.promise_id].result);
+        } else {
+          //auto result = eval(&context, eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {}));
+          auto result = eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});
+          Msg response_m;
+          response_m.entity_id = m.src_entity_id;
+          response_m.vat_id = m.src_vat_id;
+          response_m.node_id = m.src_node_id;
+          response_m.response = true;
+
+          response_m.src_entity_id = m.entity_id;
+          response_m.src_vat_id = m.vat_id;
+          response_m.src_node_id = m.node_id;
+          response_m.promise_id = m.promise_id;
+
+          if (m.function_name != "main") {
+            printf("pushed response %s\n", m.function_name.c_str());
+            our_vat->out_messages.push(response_m);
+          }
+        }
       }
 
       while (!our_vat->out_messages.empty()) {

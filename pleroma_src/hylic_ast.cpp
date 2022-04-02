@@ -4,6 +4,14 @@ AstNode *static_nop;
 AstNode *static_true;
 AstNode *static_false;
 
+std::string ast_type_to_string(AstNodeType t) {
+  switch (t) {
+  case AstNodeType::PromiseNode:
+    return "PromiseNode";
+    break;
+  }
+}
+
 AstNode* make_for(std::string sym, AstNode* gen, std::vector<AstNode*> body) {
   ForStmt *node = new ForStmt;
   node->type = AstNodeType::ForStmt;

@@ -19,7 +19,7 @@ void net_loop() {
   ENetEvent event;
   romabuf::PleromaMessage message;
   message.set_vat_id(0);
-  message.set_actor_id(0);
+  message.set_entity_id(0);
   message.set_function_id(0);
 
   /* Wait up to 1000 milliseconds for an event. */
@@ -59,7 +59,20 @@ void on_receive_packet(ENetEvent *event) {
   if (vats.find(message.vat_id()) != vats.end()) {
     printf("putting a message on!\n");
     vats[message.vat_id()]->message_mtx.lock();
-    vats[message.vat_id()]->messages.push({0, 0});
+
+    Msg local_m;
+    local_m.entity_id = message.entity_id();
+    local_m.vat_id = message.vat_id();
+    local_m.node_id = message.node_id();
+
+    local_m.src_entity_id = message.src_entity_id();
+    local_m.src_vat_id = message.src_vat_id();
+    local_m.src_node_id = message.src_node_id();
+
+    local_m.promise_id = message.promise_id();
+    local_m.response = message.response();
+
+    vats[message.vat_id()]->messages.push(local_m);
     vats[message.vat_id()]->message_mtx.unlock();
     printf("message put on!\n");
   }

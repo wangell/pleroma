@@ -210,3 +210,5 @@ AstNode *make_list(std::vector<AstNode *> list);
 AstNode *make_promise_node(int promise_id);
 // HACK Make this an AstNode and then eval + check in symbol table
 AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode*> body);
+
+std::string ast_type_to_string(AstNodeType t);

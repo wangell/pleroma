@@ -40,6 +40,16 @@ Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
   }
 }
 
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode* resolve_node, PromiseResult* result_node) {
+
+  std::vector<std::tuple<std::string, AstNode *>> subs;
+  //for (int i = 0; i < args.size(); ++i) {
+  //  subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
+  //}
+
+  return eval_block(context, resolve_node->body, subs);
+}
+
 AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string function_name, std::vector<AstNode *> args) {
   //printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
   auto func = entity->entity_def->functions.find(function_name);
@@ -78,9 +88,13 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
       m.vat_id = target_entity->address.vat_id;
       m.node_id = target_entity->address.node_id;
       m.function_name = function_name;
-      context->vat->out_messages.push(m);
+
+      m.response = false;
 
       int pid = context->vat->promise_id_base;
+      m.promise_id = pid;
+
+      context->vat->out_messages.push(m);
 
       context->vat->promises[pid] = PromiseResult();
       context->vat->promise_id_base++;
@@ -94,6 +108,7 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
     m.vat_id = target_entity->address.vat_id;
     m.node_id = target_entity->address.node_id;
     m.function_name = function_name;
+    m.response = false;
     context->vat->out_messages.push(m);
 
     return make_nop();
@@ -363,14 +378,18 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
     // If available, run now, else stuff the promise into the Promise stack - will be resolved + run by VM
     if (context->vat->promises[prom->promise_id].resolved) {
+      return eval(context, context->vat->promises[prom->promise_id].result);
     } else {
-      //interrupt();
-      printf("inerrupt!\n");
+      context->vat->promises[prom->promise_id].callback = obj;
       return obj;
     }
   }
 
-  printf("Failing to evaluate node type %d\n", obj->type);
+  if (obj->type == AstNodeType::PromiseNode) {
+    return obj;
+  }
+
+  printf("Failing to evaluate node type %s\n", ast_type_to_string(obj->type).c_str());
   assert(false);
 }
 
