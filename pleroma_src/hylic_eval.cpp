@@ -85,6 +85,7 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
       m.entity_id = target_entity->address.entity_id;
       m.vat_id = target_entity->address.vat_id;
       m.node_id = target_entity->address.node_id;
+      m.src_node_id = 0;
       m.function_name = function_name;
 
       m.response = false;
@@ -105,6 +106,7 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
     m.entity_id = target_entity->address.entity_id;
     m.vat_id = target_entity->address.vat_id;
     m.node_id = target_entity->address.node_id;
+    m.src_node_id = 0;
     m.function_name = function_name;
     m.response = false;
     context->vat->out_messages.push(m);

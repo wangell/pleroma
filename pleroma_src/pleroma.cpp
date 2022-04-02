@@ -84,6 +84,7 @@ void process_vq() {
 
         //printf(" vat mess %d\n", m.entity_id);
 
+
         // Return vs call
         if (m.response) {
           printf("%p\n", m.value);
@@ -108,6 +109,7 @@ void process_vq() {
 
           if (m.function_name != "main") {
             printf("pushed response %s\n", m.function_name.c_str());
+            printf("node %d\n", m.src_node_id);
             our_vat->out_messages.push(response_m);
           }
         }
@@ -173,6 +175,8 @@ int main(int argc, char **argv) {
   Msg m;
   m.entity_id = 0;
   m.function_name = "main";
+  m.node_id = 0;
+  m.src_node_id = 0;
   queue->vat->messages.push(m);
 
   init_network();
