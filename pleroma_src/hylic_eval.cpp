@@ -40,12 +40,10 @@ Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
   }
 }
 
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode* resolve_node, PromiseResult* result_node) {
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode* resolve_node, AstNode* result_node) {
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
-  //for (int i = 0; i < args.size(); ++i) {
-  //  subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
-  //}
+  subs.push_back(std::make_tuple(resolve_node->sym, result_node));
 
   return eval_block(context, resolve_node->body, subs);
 }

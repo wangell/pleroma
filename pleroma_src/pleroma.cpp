@@ -84,7 +84,8 @@ void process_vq() {
 
         // Return vs call
         if (m.response) {
-          eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, (PromiseResNode*)our_vat->promises[m.promise_id].callback, (PromiseResult*)our_vat->promises[m.promise_id].result);
+          our_vat->promises[m.promise_id].result = make_number(4);
+          eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, (PromiseResNode*)our_vat->promises[m.promise_id].callback, (AstNode*)our_vat->promises[m.promise_id].result);
         } else {
           //auto result = eval(&context, eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {}));
           auto result = eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});

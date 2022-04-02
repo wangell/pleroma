@@ -75,4 +75,4 @@ Scope *find_symbol_scope(std::string sym, Scope *scope);
 AstNode *find_symbol(std::string sym, Scope *scope);
 Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress address);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode *resolve_node, PromiseResult *result_node);
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode *resolve_node, AstNode *result_node);
