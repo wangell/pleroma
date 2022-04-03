@@ -40,12 +40,14 @@ Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
   }
 }
 
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResNode* resolve_node, AstNode* result_node) {
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult* resolve_node) {
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
-  subs.push_back(std::make_tuple(resolve_node->sym, result_node));
+  for (int i = 0; i < resolve_node->results.size(); ++i) {
+    subs.push_back(std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
+  }
 
-  return eval_block(context, resolve_node->body, subs);
+  return eval_block(context, resolve_node->callback->body, subs);
 }
 
 AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string function_name, std::vector<AstNode *> args) {
@@ -55,11 +57,13 @@ AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string funct
   assert (func != entity->entity_def->functions.end());
 
   FuncStmt *func_def_node = (FuncStmt *)func->second;
-    std::vector<std::tuple<std::string, AstNode *>> subs;
-    for (int i = 0; i < args.size(); ++i) {
-      subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
-    }
-    return eval_block(context, func_def_node->body, subs);
+  assert(func_def_node->args.size() == args.size());
+
+  std::vector<std::tuple<std::string, AstNode *>> subs;
+  for (int i = 0; i < func_def_node->args.size(); ++i) {
+    subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
+  }
+  return eval_block(context, func_def_node->body, subs);
 }
 
 AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, MessageDistance distance, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args) {
@@ -86,9 +90,15 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
       m.vat_id = target_entity->address.vat_id;
       m.node_id = target_entity->address.node_id;
       m.src_node_id = 0;
+      m.src_entity_id = 0;
+      m.src_vat_id = 0;
       m.function_name = function_name;
 
       m.response = false;
+
+      for (auto varg : args) {
+        m.values.push_back((ValueNode *)varg);
+      }
 
       int pid = context->vat->promise_id_base;
       m.promise_id = pid;
@@ -106,7 +116,11 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
     m.entity_id = target_entity->address.entity_id;
     m.vat_id = target_entity->address.vat_id;
     m.node_id = target_entity->address.node_id;
+
     m.src_node_id = 0;
+    m.src_entity_id = 0;
+    m.src_vat_id = 0;
+
     m.function_name = function_name;
     m.response = false;
     context->vat->out_messages.push(m);
@@ -370,17 +384,19 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
   if (obj->type == AstNodeType::PromiseResNode) {
     auto node = (PromiseResNode*) obj;
-    printf("resolving the promise\n");
 
-    auto prom = (PromiseNode*)find_symbol(node->sym, context->scope);
+    auto prom_sym = find_symbol(node->sym, context->scope);
+    assert(prom_sym->type == AstNodeType::PromiseNode);
+    auto prom = (PromiseNode*) prom_sym;
 
     assert (context->vat->promises.find(prom->promise_id) != context->vat->promises.end());
 
     // If available, run now, else stuff the promise into the Promise stack - will be resolved + run by VM
     if (context->vat->promises[prom->promise_id].resolved) {
-      return eval(context, context->vat->promises[prom->promise_id].result);
+      assert(false);
+      //return eval(context, context->vat->promises[prom->promise_id].result);
     } else {
-      context->vat->promises[prom->promise_id].callback = obj;
+      context->vat->promises[prom->promise_id].callback = node;
       return obj;
     }
   }

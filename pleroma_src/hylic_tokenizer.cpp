@@ -66,7 +66,7 @@ void tokenize_file(FILE *f) {
       std::string sym;
       sym.push_back(c);
       while ((c = fgetwc(f))) {
-        if (!isalpha(c) && !isdigit(c)) {
+        if (!isalpha(c) && !isdigit(c) && c != '-') {
             ungetwc(c, f);
             break;
           } else {

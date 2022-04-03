@@ -69,6 +69,11 @@ void process_vq() {
         //printf("got message\n");
         EvalContext context;
         Scope scope;
+
+        //printf("Looking for entity %d in vat %d but couldn't find it in our vat.\n", m.entity_id, m.vat_id);
+        //printf("Total entities in vat %lu\n", our_vat->entities.size());
+        assert(our_vat->entities.find(m.entity_id) != our_vat->entities.end());
+
         scope.table = our_vat->entities.find(m.entity_id)->second->file_scope;
 
         EntityRefNode blah;
@@ -87,12 +92,20 @@ void process_vq() {
 
         // Return vs call
         if (m.response) {
-          printf("%p\n", m.value);
-          our_vat->promises[m.promise_id].result = m.value;
-          eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, (PromiseResNode*)our_vat->promises[m.promise_id].callback, (AstNode*)our_vat->promises[m.promise_id].result);
+          // If we didn't setup a promise to resolve, then ignore the result
+          if (our_vat->promises.find(m.promise_id) != our_vat->promises.end() && our_vat->promises[m.promise_id].callback) {
+            our_vat->promises[m.promise_id].results = m.values;
+            eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+          }
         } else {
           //auto result = eval(&context, eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {}));
-          auto result = eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {});
+          std::vector<AstNode*> args;
+
+          for (int zz = 0; zz < m.values.size(); ++zz) {
+            args.push_back(m.values[zz]);
+          }
+
+          auto result = eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, args);
           Msg response_m;
           response_m.entity_id = m.src_entity_id;
           response_m.vat_id = m.src_vat_id;
@@ -104,12 +117,11 @@ void process_vq() {
           response_m.src_node_id = m.node_id;
           response_m.promise_id = m.promise_id;
 
-          // FIXME move
-          response_m.value = (ValueNode *)result;
+          // All return values are singular - we use tuples to represent multiple return values
+          // FIXME might not work if we handle tuples differently
+          response_m.values.push_back((ValueNode *)result);
 
           if (m.function_name != "main") {
-            printf("pushed response %s\n", m.function_name.c_str());
-            printf("node %d\n", m.src_node_id);
             our_vat->out_messages.push(response_m);
           }
         }
@@ -176,7 +188,12 @@ int main(int argc, char **argv) {
   m.entity_id = 0;
   m.function_name = "main";
   m.node_id = 0;
-  m.src_node_id = 0;
+
+  m.src_entity_id = -1;
+  m.src_node_id = -1;
+  m.src_vat_id = -1;
+
+  m.values.push_back((ValueNode*)make_number(99));
   queue->vat->messages.push(m);
 
   init_network();

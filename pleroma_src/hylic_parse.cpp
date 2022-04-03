@@ -408,7 +408,6 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
   } else if (accept(TokenType::PromiseType)) {
 
     auto prom_sym = accept(TokenType::Symbol);
-    printf("doin a promise\n");
     expect(TokenType::Newline);
     auto body = parse_block(context, expected_indent + 1);
     return make_promise_resolution_node(prom_sym->lexeme, body);
@@ -546,7 +545,26 @@ AstNode *parse_actor(ParseContext *context) {
   std::map<std::string, AstNode *> data;
 
   Token *actor_name;
-  if (!(actor_name = accept(TokenType::Symbol))) {
+  assert (actor_name = accept(TokenType::Symbol));
+
+  // Parse inoculation list
+  if (accept(TokenType::LeftBrace)) {
+    while (true) {
+      accept(TokenType::Symbol);
+      expect(TokenType::Colon);
+      parse_type();
+
+      if (check(TokenType::RightBrace)) {
+        break;
+      } else if (check(TokenType::Comma)) {
+        accept(TokenType::Comma);
+      } else {
+        printf("%d\n", tokenstream.peek()->type);
+        assert(false);
+      }
+    }
+
+    expect(TokenType::RightBrace);
   }
 
   expect(TokenType::Newline);

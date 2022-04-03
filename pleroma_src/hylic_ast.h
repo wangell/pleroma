@@ -32,6 +32,7 @@ enum class AstNodeType {
   ListNode,
   StringNode,
   PromiseNode,
+  TupleNode,
 
   OperatorExpr,
   BooleanExpr,
@@ -146,6 +147,11 @@ struct EntityRefNode : ValueNode {
   int node_id;
   int vat_id;
   int entity_id;
+};
+
+struct TupleNode : ValueNode {
+  int tuple_size;
+  std::vector<AstNode*> value;
 };
 
 struct UsertypeValueNode : ValueNode {

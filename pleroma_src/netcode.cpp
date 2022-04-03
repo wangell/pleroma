@@ -83,7 +83,7 @@ void on_receive_packet(ENetEvent *event) {
     local_m.promise_id = message.promise_id();
     local_m.response = message.response();
 
-    local_m.value = (ValueNode*)make_number(100);
+    local_m.values.push_back((ValueNode*)make_number(100));
     printf("bunk0\n");
 
     vats[message.vat_id()]->messages.push(local_m);
