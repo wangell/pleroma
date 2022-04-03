@@ -8,7 +8,3 @@
 #include "common.h"
 
 extern std::map<int, Vat *> vats;
-
-struct PleromaNode {
-  u32 node_id;
-};

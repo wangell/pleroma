@@ -157,8 +157,6 @@ void process_vq() {
 }
 
 void inoculate_pleroma(std::map<std::string, AstNode*> program, EntityDef* entity_def) {
-  EntityAddress address = {0, 0, 0};
-
   VqNode *c = new VqNode;
   c->claimed = false;
   c->next = c;
@@ -167,8 +165,9 @@ void inoculate_pleroma(std::map<std::string, AstNode*> program, EntityDef* entit
   EvalContext context;
   context.entity = nullptr;
   context.vat = c->vat;
+  context.node = &this_pleroma_node;
 
-  Entity *ent = create_entity(&context, entity_def, address);
+  Entity *ent = create_entity(&context, entity_def);
   ent->file_scope = program;
 
   c->vat->entities[0] = ent;

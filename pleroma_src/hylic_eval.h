@@ -2,6 +2,7 @@
 
 #include <vector>
 #include "hylic_ast.h"
+#include "common.h"
 #include <mutex>
 #include <queue>
 #include <string>
@@ -47,6 +48,7 @@ struct PromiseResult {
 struct Vat {
   int id = 0;
   int run_n = 0;
+  int entity_id_base = 0;
 
   int promise_id_base = 0;
 
@@ -66,7 +68,12 @@ struct Scope {
 
 extern Scope global_scope;
 
+struct PleromaNode {
+  u32 node_id = 0;
+};
+
 struct EvalContext {
+  PleromaNode* node;
   Vat* vat;
   Entity* entity;
   Scope *scope;
@@ -75,7 +82,7 @@ struct EvalContext {
 AstNode *eval(EvalContext* context, AstNode *obj);
 Scope *find_symbol_scope(std::string sym, Scope *scope);
 AstNode *find_symbol(std::string sym, Scope *scope);
-Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress address);
+Entity *create_entity(EvalContext* context, EntityDef *entity_def);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
 AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
 void print_value_node(ValueNode *value_node);

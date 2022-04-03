@@ -3,7 +3,8 @@
 #include "pleroma.h"
 #include <cassert>
 
-AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block, std::vector<std::tuple<std::string, AstNode*>> sub_syms) {
+AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
+                    std::vector<std::tuple<std::string, AstNode *>> sub_syms) {
   Scope block_scope;
   block_scope.parent = context->scope;
 
@@ -17,44 +18,51 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block, std::vec
     block_scope.table[sym] = node;
   }
 
-  AstNode* last_val;
+  AstNode *last_val;
   for (auto node : block) {
     last_val = eval(&new_context, node);
     if (last_val->type == AstNodeType::ReturnNode) {
-      auto v = (ReturnNode*)last_val;
+      auto v = (ReturnNode *)last_val;
       return eval(&new_context, v->expr);
     }
   }
   return last_val;
 }
 
-Entity* resolve_local_entity(EvalContext *context, EntityRefNode* entity_ref) {
-  //printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
-  if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 && entity_ref->node_id == 0) {
+Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
+  // printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id,
+  // entity_ref->vat_id, entity_ref->node_id);
+  if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 &&
+      entity_ref->node_id == 0) {
     return context->entity;
   } else {
     auto found_ent = context->vat->entities.find(entity_ref->entity_id);
-    assert (found_ent != context->vat->entities.end());
+    assert(found_ent != context->vat->entities.end());
 
     return found_ent->second;
   }
 }
 
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult* resolve_node) {
+AstNode *eval_promise_local(EvalContext *context, Entity *entity,
+                            PromiseResult *resolve_node) {
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
   for (int i = 0; i < resolve_node->results.size(); ++i) {
-    subs.push_back(std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
+    subs.push_back(
+        std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
   }
 
   return eval_block(context, resolve_node->callback->body, subs);
 }
 
-AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string function_name, std::vector<AstNode *> args) {
-  //printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
+AstNode *eval_func_local(EvalContext *context, Entity *entity,
+                         std::string function_name,
+                         std::vector<AstNode *> args) {
+  // printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(),
+  // function_name.c_str());
   auto func = entity->entity_def->functions.find(function_name);
 
-  assert (func != entity->entity_def->functions.end());
+  assert(func != entity->entity_def->functions.end());
 
   FuncStmt *func_def_node = (FuncStmt *)func->second;
   assert(func_def_node->args.size() == args.size());
@@ -66,17 +74,22 @@ AstNode *eval_func_local(EvalContext *context, Entity* entity, std::string funct
   return eval_block(context, func_def_node->body, subs);
 }
 
-AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, MessageDistance distance, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args) {
+AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
+                           MessageDistance distance, CommMode comm_mode,
+                           std::string function_name,
+                           std::vector<AstNode *> args) {
 
   // 1. Determine what type of Entity we have - local, far, alien
   // 2. Determine if the call will be sync/async and if we care about the result
-  // 3. Insert a row into the Promise stack if we need to.  Yield if we are doing async, otherwise wait for return
+  // 3. Insert a row into the Promise stack if we need to.  Yield if we are
+  // doing async, otherwise wait for return
   Entity *target_entity = context->entity;
 
   target_entity = resolve_local_entity(context, entity_ref);
   assert(target_entity != nullptr);
 
-  //printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
+  // printf("Eval: message node %s %s\n",
+  // target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (distance == MessageDistance::Local) {
 
@@ -135,7 +148,7 @@ AstNode *eval_message_node(EvalContext* context, EntityRefNode* entity_ref, Mess
   assert(false);
 }
 
-AstNode *eval(EvalContext* context, AstNode *obj) {
+AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::AssignmentStmt) {
     auto ass_stmt = (AssignmentStmt *)obj;
 
@@ -237,24 +250,28 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     auto node = (NamespaceAccess *)obj;
 
     // Lookup the symbol
-    auto ref_node = eval(context, find_symbol(node->namespace_table, context->scope));
+    auto ref_node =
+        eval(context, find_symbol(node->namespace_table, context->scope));
 
     if (ref_node->type == AstNodeType::EntityRefNode) {
 
-      auto ent_node = (EntityRefNode*) ref_node;
-      auto mess_node = (MessageNode*) node->accessor;
+      auto ent_node = (EntityRefNode *)ref_node;
+      auto mess_node = (MessageNode *)node->accessor;
 
       EvalContext new_context;
       new_context.vat = context->vat;
-      new_context.entity = resolve_local_entity(context, (EntityRefNode*)ref_node);
+      new_context.entity =
+          resolve_local_entity(context, (EntityRefNode *)ref_node);
       Scope new_scope;
       new_scope.table["a"] = make_number(4);
       new_scope.table["self"] = new_context.entity->entity_def;
       new_context.scope = &new_scope;
 
-      //printf("Searching namespace %s\n", node->namespace_table.c_str());
+      // printf("Searching namespace %s\n", node->namespace_table.c_str());
 
-      return eval_message_node(context, ent_node, mess_node->message_distance, mess_node->comm_mode, mess_node->function_name, mess_node->args);
+      return eval_message_node(context, ent_node, mess_node->message_distance,
+                               mess_node->comm_mode, mess_node->function_name,
+                               mess_node->args);
 
     } else {
       assert(false);
@@ -268,13 +285,16 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::BooleanExpr) {
-    auto node = (BooleanExpr*) obj;
-    if (node->op == BooleanExpr::GreaterThan || node->op == BooleanExpr::LessThan || node->op == BooleanExpr::GreaterThanEqual || node->op == BooleanExpr::LessThanEqual) {
+    auto node = (BooleanExpr *)obj;
+    if (node->op == BooleanExpr::GreaterThan ||
+        node->op == BooleanExpr::LessThan ||
+        node->op == BooleanExpr::GreaterThanEqual ||
+        node->op == BooleanExpr::LessThanEqual) {
       auto term1 = eval(context, node->term1);
       auto term2 = eval(context, node->term2);
 
-      NumberNode* n1 = (NumberNode*)term1;
-      NumberNode* n2 = (NumberNode*)term2;
+      NumberNode *n1 = (NumberNode *)term1;
+      NumberNode *n2 = (NumberNode *)term2;
 
       switch (node->op) {
       case BooleanExpr::GreaterThan:
@@ -289,6 +309,9 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
       case BooleanExpr::LessThanEqual:
         return make_boolean(n1->value <= n2->value);
         break;
+      case BooleanExpr::Equals:
+        assert(false);
+        break;
       }
     }
 
@@ -298,16 +321,16 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::MatchNode) {
-    auto node = (MatchNode*) obj;
+    auto node = (MatchNode *)obj;
     // FIXME only handles boolean
-    auto mexpr = (BooleanNode*)eval(context, node->match_expr);
+    auto mexpr = (BooleanNode *)eval(context, node->match_expr);
 
     for (auto match_case : node->cases) {
       // TODO Make it so the order doesn't matter for fallthrough
       if (std::get<0>(match_case)->type == AstNodeType::FallthroughExpr) {
         return eval_block(context, std::get<1>(match_case), {});
       } else {
-        auto mca_eval = (BooleanNode*)eval(context, std::get<0>(match_case));
+        auto mca_eval = (BooleanNode *)eval(context, std::get<0>(match_case));
         if (mexpr->value == mca_eval->value) {
           return eval_block(context, std::get<1>(match_case), {});
         }
@@ -317,16 +340,16 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::FuncStmt) {
-    auto node = (FuncStmt*)obj;
+    auto node = (FuncStmt *)obj;
     std::string sym;
-      sym = node->name;
+    sym = node->name;
     global_scope.table[sym] = node;
     return make_nop();
   }
 
   if (obj->type == AstNodeType::MessageNode) {
-    auto node = (MessageNode*)obj;
-    std::vector<AstNode*> args;
+    auto node = (MessageNode *)obj;
+    std::vector<AstNode *> args;
 
     for (auto arg : node->args) {
       args.push_back(eval(context, arg));
@@ -334,7 +357,7 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
     if (node->function_name == "print") {
       if (args[0]->type == AstNodeType::StringNode) {
-        printf("%s\n", ((StringNode*)args[0])->value.c_str());
+        printf("%s\n", ((StringNode *)args[0])->value.c_str());
       }
 
       if (args[0]->type == AstNodeType::NumberNode) {
@@ -343,7 +366,7 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
       if (args[0]->type == AstNodeType::ListNode) {
         printf("[");
-        for (auto k : ((ListNode*)args[0])->list) {
+        for (auto k : ((ListNode *)args[0])->list) {
           if (k->type == AstNodeType::StringNode) {
             printf("%s", ((StringNode *)k)->value.c_str());
           }
@@ -359,23 +382,22 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
 
       return make_nop();
     } else {
-      return eval_message_node(context, (EntityRefNode*)find_symbol(node->entity_ref_name, context->scope), node->message_distance, node->comm_mode, node->function_name, args);
+      return eval_message_node(
+          context,
+          (EntityRefNode *)find_symbol(node->entity_ref_name, context->scope),
+          node->message_distance, node->comm_mode, node->function_name, args);
     }
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
-    return find_symbol(((SymbolNode*)obj)->sym, context->scope);
+    return find_symbol(((SymbolNode *)obj)->sym, context->scope);
   }
 
   if (obj->type == AstNodeType::CreateEntity) {
-    auto node = (CreateEntityNode*)obj;
-    EntityAddress e;
-    e.entity_id = 1;
-    e.vat_id = 0;
-    e.node_id = 0;
-    create_entity(context, (EntityDef*)find_symbol(node->entity_def_name, context->scope), e);
+    auto node = (CreateEntityNode *)obj;
+    Entity* ent = create_entity(context, (EntityDef *)find_symbol(node->entity_def_name, context->scope));
 
-    return make_entity_ref(0, 0, 1);
+    return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
   }
 
   if (obj->type == AstNodeType::EntityRefNode) {
@@ -383,18 +405,20 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::PromiseResNode) {
-    auto node = (PromiseResNode*) obj;
+    auto node = (PromiseResNode *)obj;
 
     auto prom_sym = find_symbol(node->sym, context->scope);
     assert(prom_sym->type == AstNodeType::PromiseNode);
-    auto prom = (PromiseNode*) prom_sym;
+    auto prom = (PromiseNode *)prom_sym;
 
-    assert (context->vat->promises.find(prom->promise_id) != context->vat->promises.end());
+    assert(context->vat->promises.find(prom->promise_id) !=
+           context->vat->promises.end());
 
-    // If available, run now, else stuff the promise into the Promise stack - will be resolved + run by VM
+    // If available, run now, else stuff the promise into the Promise stack -
+    // will be resolved + run by VM
     if (context->vat->promises[prom->promise_id].resolved) {
       assert(false);
-      //return eval(context, context->vat->promises[prom->promise_id].result);
+      // return eval(context, context->vat->promises[prom->promise_id].result);
     } else {
       context->vat->promises[prom->promise_id].callback = node;
       return obj;
@@ -405,11 +429,12 @@ AstNode *eval(EvalContext* context, AstNode *obj) {
     return obj;
   }
 
-  printf("Failing to evaluate node type %s\n", ast_type_to_string(obj->type).c_str());
+  printf("Failing to evaluate node type %s\n",
+         ast_type_to_string(obj->type).c_str());
   assert(false);
 }
 
-Scope* find_symbol_scope(std::string sym, Scope* scope) {
+Scope *find_symbol_scope(std::string sym, Scope *scope) {
   Scope *s = scope;
 
   auto first_find = scope->table.find(sym);
@@ -439,8 +464,8 @@ Scope* find_symbol_scope(std::string sym, Scope* scope) {
   }
 }
 
-AstNode* find_symbol(std::string sym, Scope* scope) {
-  Scope* s = scope;
+AstNode *find_symbol(std::string sym, Scope *scope) {
+  Scope *s = scope;
 
   auto first_find = scope->table.find(sym);
   if (first_find != s->table.end()) {
@@ -471,20 +496,43 @@ AstNode* find_symbol(std::string sym, Scope* scope) {
   }
 }
 
-Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress address) {
-  Entity* e = new Entity;
+Entity *create_entity(EvalContext *context, EntityDef *entity_def) {
+  Entity *e = new Entity;
   e->entity_def = entity_def;
-  e->address = address;
+
+  e->address.entity_id = context->vat->entity_id_base;
+  e->address.vat_id = context->vat->id;
+  e->address.node_id = context->node->node_id;
+
+  context->vat->entity_id_base++;
 
   context->vat->entities[e->address.entity_id] = e;
 
   return e;
 }
 
-void print_value_node(ValueNode* value_node) {
+void print_value_node(ValueNode *value_node) {
   switch (value_node->value_type) {
   case ValueType::Number:
-    printf("%d", ((NumberNode*)value_node)->value);
+    printf("%ld", ((NumberNode *)value_node)->value);
+    break;
+  case ValueType::String:
+    printf("%s", ((StringNode *)value_node)->value.c_str());
+    break;
+  case ValueType::Boolean: {
+    auto bval = (BooleanNode *)value_node;
+    if (bval->value) {
+      printf("#t");
+    } else {
+      printf("#f");
+    }
+    break;
+  }
+  case ValueType::Character:
+    assert(false);
+    break;
+  case ValueType::User:
+    assert(false);
     break;
   }
 }
@@ -495,12 +543,15 @@ void print_msg(Msg *m) {
   } else {
     printf("Msg => %s\n", m->function_name.c_str());
   }
-  printf("\tTarget: Node: %d, Vat: %d, Entity: %d\n", m->node_id, m->vat_id, m->entity_id);
-  printf("\tSource: Node: %d, Vat: %d, Entity: %d\n", m->src_node_id, m->src_vat_id, m->src_entity_id);
+
+  printf("\tTarget: Node: %d, Vat: %d, Entity: %d\n", m->node_id, m->vat_id,
+         m->entity_id);
+  printf("\tSource: Node: %d, Vat: %d, Entity: %d\n", m->src_node_id,
+         m->src_vat_id, m->src_entity_id);
   printf("\tOther: Promise: %d\n", m->promise_id);
   printf("\tPayload (%zu): ", m->values.size());
-  for (auto k: m->values) {
+  for (auto k : m->values) {
     print_value_node(k);
   }
-  printf("\n");
+  printf("\n\n");
 }

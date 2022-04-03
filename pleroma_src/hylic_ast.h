@@ -31,6 +31,7 @@ enum class AstNodeType {
   NumberNode,
   ListNode,
   StringNode,
+  CharacterNode,
   PromiseNode,
   TupleNode,
 
@@ -111,7 +112,8 @@ enum class ValueType {
   String,
   Number,
   Boolean,
-  User
+  Character,
+  User,
 };
 
 // Move all values to this over time
