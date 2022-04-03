@@ -8,9 +8,9 @@
 #include <string>
 
 struct EntityAddress {
-  int node_id;
-  int vat_id;
-  int entity_id;
+  int node_id = 0;
+  int vat_id = 0;
+  int entity_id = 0;
 };
 
 struct Entity {
@@ -22,17 +22,17 @@ struct Entity {
 };
 
 struct Msg {
-  int entity_id;
-  int vat_id;
-  int node_id;
+  int entity_id = 0;
+  int vat_id = 0;
+  int node_id = 0;
 
-  int promise_id;
+  int promise_id = 0;
 
   bool response = false;
 
-  int src_entity_id;
-  int src_vat_id;
-  int src_node_id;
+  int src_entity_id = 0;
+  int src_vat_id = 0 ;
+  int src_node_id = 0;
 
   std::string function_name;
 
