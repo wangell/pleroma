@@ -78,3 +78,5 @@ AstNode *find_symbol(std::string sym, Scope *scope);
 Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress address);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
 AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
+void print_value_node(ValueNode *value_node);
+void print_msg(Msg *m);

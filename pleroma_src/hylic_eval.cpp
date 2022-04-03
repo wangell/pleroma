@@ -480,3 +480,27 @@ Entity *create_entity(EvalContext* context, EntityDef *entity_def, EntityAddress
 
   return e;
 }
+
+void print_value_node(ValueNode* value_node) {
+  switch (value_node->value_type) {
+  case ValueType::Number:
+    printf("%d", ((NumberNode*)value_node)->value);
+    break;
+  }
+}
+
+void print_msg(Msg *m) {
+  if (m->response) {
+    printf("MsgResponse => %s\n", m->function_name.c_str());
+  } else {
+    printf("Msg => %s\n", m->function_name.c_str());
+  }
+  printf("\tTarget: Node: %d, Vat: %d, Entity: %d\n", m->node_id, m->vat_id, m->entity_id);
+  printf("\tSource: Node: %d, Vat: %d, Entity: %d\n", m->src_node_id, m->src_vat_id, m->src_entity_id);
+  printf("\tOther: Promise: %d\n", m->promise_id);
+  printf("\tPayload (%zu): ", m->values.size());
+  for (auto k: m->values) {
+    print_value_node(k);
+  }
+  printf("\n");
+}

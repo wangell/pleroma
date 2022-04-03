@@ -105,6 +105,7 @@ AstNode* make_table(std::map<std::string, AstNode*> vals) {
 AstNode *make_number(int64_t v) {
   NumberNode *symbol_node = new NumberNode;
   symbol_node->type = AstNodeType::NumberNode;
+  symbol_node->value_type = ValueType::Number;
   //symbol_node->value = strtol(s.c_str(), nullptr, 10);
   symbol_node->value = v;
   return symbol_node;

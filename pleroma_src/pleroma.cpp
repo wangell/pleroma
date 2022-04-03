@@ -66,7 +66,9 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        //printf("got message\n");
+
+        print_msg(&m);
+
         EvalContext context;
         Scope scope;
 
