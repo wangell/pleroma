@@ -91,7 +91,6 @@ void process_vq() {
 
         //printf(" vat mess %d\n", m.entity_id);
 
-
         // Return vs call
         if (m.response) {
           // If we didn't setup a promise to resolve, then ignore the result
@@ -193,8 +192,10 @@ int main(int argc, char **argv) {
   m.src_entity_id = -1;
   m.src_node_id = -1;
   m.src_vat_id = -1;
+  m.promise_id = -1;
 
   m.values.push_back((ValueNode*)make_number(99));
+
   queue->vat->messages.push(m);
 
   init_network();
