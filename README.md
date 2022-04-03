@@ -4,6 +4,7 @@
 ![forest](https://github.com/wangell/pleroma-docs/raw/main/forest.png)
 ![abba](https://github.com/wangell/pleroma-docs/raw/main/desertfathers.png)
 ![sands](https://github.com/wangell/pleroma-docs/raw/main/desert.png)
+![comet](https://github.com/wangell/pleroma-docs/raw/main/comet.png)
 
 Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Plan9.
 
