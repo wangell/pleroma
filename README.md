@@ -1,6 +1,10 @@
 # pleroma // [guide](https://wangell.github.io/pleroma-docs/)
 
-![blue sky utopian dream](https://i.imgur.com/FdQcgOf.png)
+[![blue sky utopian dream](https://i.imgur.com/FdQcgOf.png)](#pleroma)
+[![forest](https://github.com/wangell/pleroma-docs/raw/main/forest.png)](#pleroma)
+[![abba](https://github.com/wangell/pleroma-docs/raw/main/desertfathers.png)](#pleroma)
+[![sands](https://github.com/wangell/pleroma-docs/raw/main/desert.png)](#pleroma)
+[![comet](https://github.com/wangell/pleroma-docs/raw/main/comet.png)](#pleroma)
 
 Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Plan9.
 
