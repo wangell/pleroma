@@ -555,3 +555,15 @@ void print_msg(Msg *m) {
   }
   printf("\n\n");
 }
+
+void start_stack(EvalContext* context, Scope *scope, Vat* vat, Entity *entity) {
+  scope->table = entity->file_scope;
+  scope->table["self"] = make_entity_ref(0, 0, 0);
+
+  context->vat = vat;
+  context->entity = entity;
+  context->scope = scope;
+}
+
+EvalContext push_stack_frame() {
+}

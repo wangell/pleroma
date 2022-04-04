@@ -26,7 +26,8 @@ void expect(TokenType t) {
     exit(1);
   }
 
-  tokenstream.line_number++;
+  if (curr->type == TokenType::Newline)
+    tokenstream.line_number++;
 }
 
 Token *check(TokenType t) {

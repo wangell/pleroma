@@ -1,20 +1,20 @@
-#include <locale>
-#include <mutex>
-#include <stdio.h>
-#include <map>
-#include <queue>
-#include <unistd.h>
-#include <vector>
+#include "pleroma.h"
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
-#include "pleroma.h"
+#include <locale>
+#include <map>
+#include <mutex>
+#include <queue>
+#include <stdio.h>
+#include <unistd.h>
+#include <vector>
 
 #include <thread>
 
 #include "netcode.h"
 
-//const auto processor_count = std::thread::hardware_concurrency();
+// const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
@@ -24,14 +24,32 @@ std::map<int, Vat *> vats;
 PleromaNode this_pleroma_node;
 
 struct VqNode {
-  VqNode* next;
+  VqNode *next;
 
-  Vat* vat;
+  Vat *vat;
 
   bool claimed = false;
 };
 
 VqNode *queue;
+
+Msg create_response(Msg msg_in, ValueNode *return_val) {
+  Msg response_m;
+  response_m.response = true;
+
+  response_m.entity_id = msg_in.src_entity_id;
+  response_m.vat_id = msg_in.src_vat_id;
+  response_m.node_id = msg_in.src_node_id;
+
+  response_m.src_entity_id = msg_in.entity_id;
+  response_m.src_vat_id = msg_in.vat_id;
+  response_m.src_node_id = msg_in.node_id;
+  response_m.promise_id = msg_in.promise_id;
+
+  response_m.values.push_back(return_val);
+
+  return response_m;
+}
 
 void process_vq() {
   while (true) {
@@ -43,7 +61,7 @@ void process_vq() {
       continue;
     }
 
-    VqNode* start = queue;
+    VqNode *start = queue;
     while (queue->claimed) {
       queue = queue->next;
 
@@ -61,7 +79,6 @@ void process_vq() {
     // Take a number of steps
     for (int k = 0; k < 1; ++k) {
       our_vat->message_mtx.lock();
-      ////printf("Processing vat %d for step %d\n", our_vat->id, our_vat->run_n);
 
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
@@ -69,27 +86,13 @@ void process_vq() {
 
         print_msg(&m);
 
+        auto find_entity = our_vat->entities.find(m.entity_id);
+        assert(find_entity != our_vat->entities.end());
+        Entity* target_entity = find_entity->second;
+
         EvalContext context;
         Scope scope;
-
-        //printf("Looking for entity %d in vat %d but couldn't find it in our vat.\n", m.entity_id, m.vat_id);
-        //printf("Total entities in vat %lu\n", our_vat->entities.size());
-        assert(our_vat->entities.find(m.entity_id) != our_vat->entities.end());
-
-        scope.table = our_vat->entities.find(m.entity_id)->second->file_scope;
-
-        EntityRefNode blah;
-        blah.entity_id = 0;
-        blah.node_id = 0;
-        blah.vat_id = 0;
-
-        scope.table["self"] = &blah;
-
-        context.vat = our_vat;
-        context.entity = our_vat->entities.find(m.entity_id)->second;
-        context.scope = &scope;
-
-        //printf(" vat mess %d\n", m.entity_id);
+        start_stack(&context, &scope, our_vat, target_entity);
 
         // Return vs call
         if (m.response) {
@@ -99,29 +102,20 @@ void process_vq() {
             eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
           }
         } else {
-          //auto result = eval(&context, eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, {}));
-          std::vector<AstNode*> args;
+          std::vector<AstNode *> args;
 
           for (int zz = 0; zz < m.values.size(); ++zz) {
             args.push_back(m.values[zz]);
           }
 
-          auto result = eval_func_local(&context, our_vat->entities.find(m.entity_id)->second, m.function_name, args);
-          Msg response_m;
-          response_m.entity_id = m.src_entity_id;
-          response_m.vat_id = m.src_vat_id;
-          response_m.node_id = m.src_node_id;
-          response_m.response = true;
+          auto result = eval_func_local(&context, target_entity, m.function_name, args);
 
-          response_m.src_entity_id = m.entity_id;
-          response_m.src_vat_id = m.vat_id;
-          response_m.src_node_id = m.node_id;
-          response_m.promise_id = m.promise_id;
-
-          // All return values are singular - we use tuples to represent multiple return values
+          // All return values are singular - we use tuples to represent
+          // multiple return values
           // FIXME might not work if we handle tuples differently
-          response_m.values.push_back((ValueNode *)result);
+          Msg response_m = create_response(m, (ValueNode *)result);
 
+          // Main cannot be called by any function except ours, move this logic into typechecker
           if (m.function_name != "main") {
             our_vat->out_messages.push(response_m);
           }
@@ -130,10 +124,11 @@ void process_vq() {
 
       net_mtx.lock();
       while (!our_vat->out_messages.empty()) {
-        //printf("sending msg\n");
         Msg m = our_vat->out_messages.front();
         our_vat->out_messages.pop();
-        if (m.node_id == this_pleroma_node.node_id) {
+
+        // If we're communicating on the same node, we don't have to use the router
+        if (m.node_id == this_pleroma_node.node_id && m.vat_id == our_vat->id) {
           our_vat->messages.push(m);
         } else {
           net_queue.push(m);
@@ -148,14 +143,16 @@ void process_vq() {
     }
 
     // Place VAT back in queue
-    //printf("processed messages for vat\n");
+    // printf("processed messages for vat\n");
     mtx.lock();
     our_node->claimed = false;
+    // Insert vat here
     mtx.unlock();
   }
 }
 
-void inoculate_pleroma(std::map<std::string, AstNode*> program, EntityDef* entity_def) {
+void inoculate_pleroma(std::map<std::string, AstNode *> program,
+                       EntityDef *entity_def) {
   VqNode *c = new VqNode;
   c->claimed = false;
   c->next = c;
@@ -194,7 +191,7 @@ int main(int argc, char **argv) {
   m.src_vat_id = -1;
   m.promise_id = -1;
 
-  m.values.push_back((ValueNode*)make_number(99));
+  m.values.push_back((ValueNode *)make_number(99));
 
   queue->vat->messages.push(m);
 
@@ -211,13 +208,12 @@ int main(int argc, char **argv) {
     burners[k] = std::thread(process_vq);
   }
 
-
   while (true) {
     net_loop();
   }
 
-  //sleep(2);
-  //start->vat->messages.push(Msg());
+  // sleep(2);
+  // start->vat->messages.push(Msg());
 
   for (int k = 0; k < processor_count; ++k) {
     burners[k].join();

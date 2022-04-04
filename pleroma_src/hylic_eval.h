@@ -87,3 +87,6 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string funct
 AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
 void print_value_node(ValueNode *value_node);
 void print_msg(Msg *m);
+
+void start_stack(EvalContext *context, Scope* scope, Vat *vat, Entity *entity);
+EvalContext push_stack_frame();

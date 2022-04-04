@@ -14,6 +14,9 @@ Token* TokenStream::peek_forward() {
 void TokenStream::go_back(int n) {
   for (int q = 0; q < n; ++q) {
     current--;
+    if ((*current)->type == TokenType::Newline) {
+      line_number--;
+    }
   }
 }
 
