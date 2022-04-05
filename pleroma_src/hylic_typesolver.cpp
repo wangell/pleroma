@@ -113,7 +113,7 @@ void typesolve(std::map<std::string, AstNode *> program) {
   bool all_valid = true;
   for (auto &[k, v] : program) {
     // all_valid = all_valid && typesolve_sub(v);
-    typesolve_sub(&context, v);
+    //typesolve_sub(&context, v);
   }
 
   assert(all_valid);

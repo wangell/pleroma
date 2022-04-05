@@ -1,9 +1,36 @@
 #include "kernel.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
+#include <string>
 #include <vector>
+#include <iostream>
 
 std::map<std::string, AstNode *> kernel_map;
+
+AstNode *io_print(EvalContext *context, std::vector<AstNode *> args) {
+
+  auto pval = eval(context, args[0]);
+
+  if (pval->type == AstNodeType::StringNode) {
+    printf("%s\n", ((StringNode *)pval)->value.c_str());
+  }
+
+  if (pval->type == AstNodeType::NumberNode) {
+    printf("%ld\n", ((NumberNode *)pval)->value);
+  }
+
+  return make_nop();
+}
+
+AstNode *io_readline(EvalContext *context, std::vector<AstNode *> args) {
+
+  std::string user_input;
+
+
+  std::getline(std::cin, user_input);
+
+  return make_string(user_input);
+}
 
 // Context may be unnecessary
 AstNode* test_ffi (EvalContext* context, std::vector<AstNode*> args) {
@@ -45,4 +72,11 @@ void load_kernel() {
   functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {});
 
   kernel_map["Kernel"] = make_actor("Kernel", functions, {});
+
+  std::map<std::string, FuncStmt *> io_functions;
+
+  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {});
+  io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {});
+
+  kernel_map["Io"] = make_actor("Io", io_functions, {});
 }

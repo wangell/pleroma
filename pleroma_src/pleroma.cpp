@@ -152,8 +152,7 @@ void process_vq() {
   }
 }
 
-void inoculate_pleroma(std::map<std::string, AstNode *> program,
-                       EntityDef *entity_def) {
+void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *entity_def) {
   VqNode *c = new VqNode;
   c->claimed = false;
   c->next = c;
@@ -178,11 +177,13 @@ int main(int argc, char **argv) {
   setlocale(LC_ALL, "");
   auto program = load_file("examples/kernel.po");
 
-  // auto kernel_program = (EntityDef *)program["Kernel"];
   load_kernel();
-  auto kernel_program = (EntityDef *)kernel_map["Kernel"];
+  auto kernel_program = (EntityDef *)kernel_map["Io"];
 
-  inoculate_pleroma(program, kernel_program);
+  auto user_program = (EntityDef *)program["Test"];
+  program["Io"] = kernel_program;
+
+  inoculate_pleroma(program, user_program);
 
   Msg m;
   m.entity_id = 0;

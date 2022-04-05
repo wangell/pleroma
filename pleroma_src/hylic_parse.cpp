@@ -181,8 +181,10 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
+      // Check to see if we're creating an object or calling a function
+      // TODO don't check directly for Io string here
       if (context->tl_symbol_table.find(tt->lexeme) !=
-          context->tl_symbol_table.end()) {
+          context->tl_symbol_table.end() || tt->lexeme == "Io") {
         // Just mkae this a string!
         auto ret_node = make_create_entity(tt->lexeme, false);
         return ret_node;
