@@ -429,6 +429,17 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     return obj;
   }
 
+  if (obj->type == AstNodeType::ForeignFunc) {
+    auto ffc = (ForeignFuncCall*)obj;
+
+    std::vector<AstNode*> args;
+    for (auto k : ffc->args) {
+      args.push_back(eval(context, k));
+    }
+
+    return ffc->foreign_func(context, args);
+  }
+
   printf("Failing to evaluate node type %s\n",
          ast_type_to_string(obj->type).c_str());
   assert(false);

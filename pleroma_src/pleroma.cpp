@@ -13,6 +13,7 @@
 #include <thread>
 
 #include "netcode.h"
+#include "kernel.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
@@ -177,7 +178,9 @@ int main(int argc, char **argv) {
   setlocale(LC_ALL, "");
   auto program = load_file("examples/kernel.po");
 
-  auto kernel_program = (EntityDef *)program["Kernel"];
+  // auto kernel_program = (EntityDef *)program["Kernel"];
+  load_kernel();
+  auto kernel_program = (EntityDef *)kernel_map["Kernel"];
 
   inoculate_pleroma(program, kernel_program);
 
