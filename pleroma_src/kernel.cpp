@@ -42,7 +42,7 @@ void do_test() {
 void load_kernel() {
   std::map<std::string, FuncStmt *> functions;
   // functions["main"] = setup_test();
-  // functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {});
+  functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {});
 
   kernel_map["Kernel"] = make_actor("Kernel", functions, {});
 }
