@@ -232,6 +232,9 @@ const char *token_type_to_string(TokenType t) {
   case TokenType::Dot:
     return "Dot";
     break;
+  case TokenType::Plus:
+    return "Plus";
+    break;
   }
 
   return "Unimplemented";

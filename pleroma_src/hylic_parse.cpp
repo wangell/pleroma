@@ -1,4 +1,5 @@
 #include "hylic_parse.h"
+#include "common.h"
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_tokenizer.h"
@@ -113,12 +114,23 @@ PType *parse_type() {
   } else {
     assert(check(TokenType::Symbol));
     Token *basic_type = accept(TokenType::Symbol);
+
+    // Move this to tokenizer
+    if (basic_type->lexeme == "u8") {
+      *var_type = PType::u8;
+    } else if (basic_type->lexeme == "str") {
+      *var_type = PType::str;
+    } else if (basic_type->lexeme == "void") {
+      *var_type = PType::None;
+    } else {
+      *var_type = PType::NotAssigned;
+    }
   }
 
   return var_type;
 }
 
-AstNode *parse_expr(ParseContext* context) {
+AstNode *parse_expr(ParseContext *context) {
   if (accept(TokenType::LeftParen)) {
     auto body = parse_expr(context);
     expect(TokenType::RightParen);
@@ -126,6 +138,7 @@ AstNode *parse_expr(ParseContext* context) {
   } else if (accept(TokenType::Return)) {
     return make_return(parse_expr(context));
   } else if (check(TokenType::String)) {
+    // FIXME - handle operator expressions
     auto s = accept(TokenType::String);
     return make_string(s->lexeme);
   } else if (check(TokenType::Symbol)) {
@@ -135,9 +148,9 @@ AstNode *parse_expr(ParseContext* context) {
     // Namespace access
     if (accept(TokenType::Dot)) {
       return make_namespace_access(tt->lexeme, parse_expr(context));
-      //return make_table_access(expr1, , bool breakthrough)
+      // return make_table_access(expr1, , bool breakthrough)
     }
-    //if (check(TokenType::Dot)) {
+    // if (check(TokenType::Dot)) {
     //  AstNode* taccess = nullptr;
     //  while (accept(TokenType::Dot)) {
     //    Token *exp;
@@ -168,13 +181,15 @@ AstNode *parse_expr(ParseContext* context) {
 
       expect(TokenType::RightParen);
 
-      if (context->tl_symbol_table.find(tt->lexeme) != context->tl_symbol_table.end()) {
+      if (context->tl_symbol_table.find(tt->lexeme) !=
+          context->tl_symbol_table.end()) {
         // Just mkae this a string!
         auto ret_node = make_create_entity(tt->lexeme, false);
         return ret_node;
       } else {
         // Just mkae this a string! all vars should be strings
-        auto ret_node = make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+        auto ret_node = make_message_node(
+            "self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
         return ret_node;
       }
 
@@ -200,8 +215,10 @@ AstNode *parse_expr(ParseContext* context) {
 
       expect(TokenType::RightParen);
 
-      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(), tt->lexeme.c_str());
-      return make_message_node(tt->lexeme, target_function->lexeme, MessageDistance::Local, CommMode::Async, args);
+      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(),
+             tt->lexeme.c_str());
+      return make_message_node(tt->lexeme, target_function->lexeme,
+                               MessageDistance::Local, CommMode::Async, args);
     }
 
     if (accept(TokenType::Plus)) {
@@ -267,7 +284,6 @@ AstNode *parse_expr(ParseContext* context) {
     }
 
     return expr1;
-
   } else if (accept(TokenType::Message)) {
     auto tt = accept(TokenType::Symbol);
     expect(TokenType::LeftParen);
@@ -285,7 +301,8 @@ AstNode *parse_expr(ParseContext* context) {
 
     expect(TokenType::RightParen);
 
-    return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Async, args);
+    return make_message_node("self", tt->lexeme, MessageDistance::Local,
+                             CommMode::Async, args);
 
   } else if (check(TokenType::True) || check(TokenType::False)) {
     if (accept(TokenType::True)) {
@@ -300,7 +317,7 @@ AstNode *parse_expr(ParseContext* context) {
       return make_list({});
     }
 
-    std::vector<AstNode*> list;
+    std::vector<AstNode *> list;
     while (true) {
       auto lexpr = parse_expr(context);
       list.push_back(lexpr);
@@ -352,7 +369,7 @@ AstNode *parse_expr(ParseContext* context) {
   }
 }
 
-AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
+AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
   // NOTE create function to accept row of symbols
   Token *t;
@@ -361,11 +378,12 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
     // Creating a variable
     if (t->lexeme == "let") {
       Token *new_variable = accept(TokenType::Symbol);
+      SymbolNode *sym_node = (SymbolNode *)make_symbol(new_variable->lexeme);
 
       expect(TokenType::Colon);
 
       // We can either take a nothing, a loc, or a far
-      PType *var_type = parse_type();
+      sym_node->ptype = *parse_type();
 
       expect(TokenType::Equals);
 
@@ -373,13 +391,14 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
 
       expect(TokenType::Newline);
 
-      return make_assignment(new_variable->lexeme, expr);
+      return make_assignment(sym_node, expr);
     }
 
     if (accept(TokenType::Equals)) {
       auto expr = parse_expr(context);
       expect(TokenType::Newline);
-      return make_assignment(t->lexeme, expr);
+      // FIXME remove this
+      assert(false);
     } else if (accept(TokenType::For)) {
       auto for_generator = parse_expr(context);
       expect(TokenType::Newline);
@@ -488,12 +507,14 @@ AstNode *parse_stmt(ParseContext* context, int expected_indent = 0) {
   assert(false);
 }
 
-std::vector<AstNode *> parse_block(ParseContext* context, int expected_indent = 0) {
+std::vector<AstNode *> parse_block(ParseContext *context,
+                                   int expected_indent = 0) {
   std::vector<AstNode *> block;
   while (true) {
     int current_indent = 0;
 
-    while (accept(TokenType::Tab)) current_indent++;
+    while (accept(TokenType::Tab))
+      current_indent++;
 
     if (current_indent != expected_indent) {
       tokenstream.go_back(current_indent);
@@ -516,15 +537,17 @@ AstNode *parse_function(ParseContext *context) {
   auto func_name = accept(TokenType::Symbol);
 
   std::vector<std::string> args;
+  std::vector<PType*> param_types;
 
   Token *arg;
   expect(TokenType::LeftParen);
   while ((arg = accept(TokenType::Symbol))) {
 
     expect(TokenType::Colon);
-    auto type_spec = accept(TokenType::Symbol);
+    PType* type_spec = parse_type();
 
     args.push_back(arg->lexeme);
+    param_types.push_back(type_spec);
   }
   expect(TokenType::RightParen);
 
@@ -532,13 +555,15 @@ AstNode *parse_function(ParseContext *context) {
   expect(TokenType::Minus);
   expect(TokenType::GreaterThan);
 
-  expect(TokenType::Symbol);
+  PType *return_type = parse_type();
 
   expect(TokenType::Newline);
 
   auto body = parse_block(context, 2);
 
-  return make_function(func_name->lexeme, args, body);
+  auto func_stmt = make_function(func_name->lexeme, args, body, param_types);
+  func_stmt->ptype = *return_type;
+  return func_stmt;
 }
 
 AstNode *parse_actor(ParseContext *context) {
@@ -546,7 +571,7 @@ AstNode *parse_actor(ParseContext *context) {
   std::map<std::string, AstNode *> data;
 
   Token *actor_name;
-  assert (actor_name = accept(TokenType::Symbol));
+  assert(actor_name = accept(TokenType::Symbol));
 
   // Parse inoculation list
   if (accept(TokenType::LeftBrace)) {
@@ -614,12 +639,11 @@ std::map<std::string, TLUserType> get_tl_types(TokenStream stream) {
   while (tokenstream.current != tokenstream.tokens.end()) {
 
     if (accept(TokenType::Actor)) {
-      Token* sym = accept(TokenType::Symbol);
+      Token *sym = accept(TokenType::Symbol);
       tl_types[sym->lexeme] = TLUserType::Entity;
     } else {
       tokenstream.get();
     }
-
   }
 
   tokenstream.reset();
@@ -650,6 +674,7 @@ std::map<std::string, AstNode *> parse(TokenStream stream) {
     } else if (accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;
+      print_ast(actor);
     } else if (accept(TokenType::Newline)) {
       // Skip
       make_nop();

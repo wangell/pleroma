@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common.h"
 #include <string>
 #include <map>
 #include <vector>
@@ -55,7 +56,19 @@ enum class CommMode {
 };
 
 enum class PType {
-  u8
+  NotAssigned,
+
+  None,
+  Nil,
+
+  u8,
+  u16,
+  u32,
+  u64,
+
+  str,
+
+  boolean
 };
 
 struct AstNode {
@@ -83,13 +96,11 @@ struct ModuleStmt : AstNode {
 
 struct FuncStmt : AstNode {
   std::string name;
-  std::vector<std::string> args;
-  std::vector<AstNode*> body;
-};
 
-struct AssignmentStmt : AstNode {
-  std::string sym;
-  AstNode* value;
+  std::vector<PType*> param_types;
+  std::vector<std::string> args;
+
+  std::vector<AstNode*> body;
 };
 
 struct ForStmt : AstNode {
@@ -205,12 +216,17 @@ struct CreateEntityNode : AstNode {
   std::string entity_def_name;
 };
 
+struct AssignmentStmt : AstNode {
+  SymbolNode *sym;
+  AstNode *value;
+};
+
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body);
 AstNode *make_return(AstNode *a);
 AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1, AstNode *expr2);
 AstNode *make_fallthrough();
 AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2);
-AstNode *make_assignment(std::string sym, AstNode *expr);
+AstNode *make_assignment(SymbolNode* sym, AstNode *expr);
 AstNode *make_match(AstNode *match_expr, std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> cases);
 AstNode *make_namespace_access(std::string namespace_table, AstNode *accessor);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
@@ -221,14 +237,20 @@ AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
 AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body);
-AstNode *make_nop();
-AstNode *make_message_node(std::string entity_ref_name, std::string function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
-AstNode *make_create_entity(std::string entity_name, bool new_vat);
-AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
-AstNode *make_list(std::vector<AstNode *> list);
-AstNode *make_promise_node(int promise_id);
-// HACK Make this an AstNode and then eval + check in symbol table
-AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode*> body);
+AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<PType*> param_types);
+  AstNode *make_nop();
+  AstNode *make_message_node(std::string entity_ref_name,
+                             std::string function_name, MessageDistance dist,
+                             CommMode comm_mode, std::vector<AstNode *> args);
+  AstNode *make_create_entity(std::string entity_name, bool new_vat);
+  AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
+  AstNode *make_list(std::vector<AstNode *> list);
+  AstNode *make_promise_node(int promise_id);
+  // HACK Make this an AstNode and then eval + check in symbol table
+  AstNode *make_promise_resolution_node(std::string sym,
+                                        std::vector<AstNode *> body);
 
-std::string ast_type_to_string(AstNodeType t);
+  std::string ast_type_to_string(AstNodeType t);
+
+  void print_ast(AstNode * node, int indent_level = 0);
+  void print_ast_block(std::vector<AstNode *> block);

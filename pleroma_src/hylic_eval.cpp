@@ -152,15 +152,15 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::AssignmentStmt) {
     auto ass_stmt = (AssignmentStmt *)obj;
 
-    std::string sym;
+    SymbolNode* sym;
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
-    auto find_it = find_symbol_scope(sym, context->scope);
+    auto find_it = find_symbol_scope(sym->sym, context->scope);
     if (find_it) {
-      find_it->table[sym] = expr;
+      find_it->table[sym->sym] = expr;
     } else {
-      context->scope->table[sym] = expr;
+      context->scope->table[sym->sym] = expr;
     }
 
     return expr;
