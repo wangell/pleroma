@@ -23,12 +23,26 @@ FuncStmt *setup_test() {
   return (FuncStmt*)make_function("main", {"sys"}, body, {});
 }
 
+FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *, std::vector<AstNode *>), std::string name, std::vector<std::string> args, std::vector<PType *> arg_types) {
+  std::vector<AstNode *> body;
+  std::vector<AstNode *> nu_args;
+
+  for (auto k : args) {
+    nu_args.push_back(make_symbol(k));
+  }
+
+  body.push_back(make_foreign_func_call(foreign_func, nu_args));
+
+  return (FuncStmt *)make_function(name, args, body, arg_types);
+}
+
 void do_test() {
 }
 
 void load_kernel() {
   std::map<std::string, FuncStmt *> functions;
-  functions["main"] = setup_test();
+  // functions["main"] = setup_test();
+  // functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {});
 
   kernel_map["Kernel"] = make_actor("Kernel", functions, {});
 }
