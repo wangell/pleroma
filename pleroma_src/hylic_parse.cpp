@@ -90,8 +90,8 @@ Token *accept(TokenType t) {
   }
 }
 
-PType *parse_type() {
-  PType *var_type = new PType;
+CType *parse_type() {
+  CType *var_type = new CType;
 
   MessageDistance dist = MessageDistance::Local;
 
@@ -104,12 +104,16 @@ PType *parse_type() {
   } else if (accept(TokenType::PromiseType)) {
     // All promises are local
     dist = MessageDistance::Local;
-    PType *sub_type = parse_type();
+    CType *sub_type = parse_type();
+    var_type->basetype = PType::Promise;
+    var_type->subtype = sub_type;
     return var_type;
   }
 
   if (accept(TokenType::LeftBracket)) {
-    PType *sub_type = parse_type();
+    CType *sub_type = parse_type();
+    var_type->basetype = PType::List;
+    var_type->subtype = sub_type;
     expect(TokenType::RightBracket);
   } else {
     assert(check(TokenType::Symbol));
@@ -117,13 +121,13 @@ PType *parse_type() {
 
     // Move this to tokenizer
     if (basic_type->lexeme == "u8") {
-      *var_type = PType::u8;
+      var_type->basetype = PType::u8;
     } else if (basic_type->lexeme == "str") {
-      *var_type = PType::str;
+      var_type->basetype = PType::str;
     } else if (basic_type->lexeme == "void") {
-      *var_type = PType::None;
+      var_type->basetype = PType::None;
     } else {
-      *var_type = PType::NotAssigned;
+      var_type->basetype = PType::NotAssigned;
     }
   }
 
@@ -183,15 +187,15 @@ AstNode *parse_expr(ParseContext *context) {
 
       // Check to see if we're creating an object or calling a function
       // TODO don't check directly for Io string here
+      // FIXME ASAP
       if (context->tl_symbol_table.find(tt->lexeme) !=
-          context->tl_symbol_table.end() || tt->lexeme == "Io") {
+          context->tl_symbol_table.end() || tt->lexeme == "Io" || tt->lexeme == "Amoeba") {
         // Just mkae this a string!
         auto ret_node = make_create_entity(tt->lexeme, false);
         return ret_node;
       } else {
         // Just mkae this a string! all vars should be strings
-        auto ret_node = make_message_node(
-            "self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+        auto ret_node = make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
         return ret_node;
       }
 
@@ -314,9 +318,12 @@ AstNode *parse_expr(ParseContext *context) {
     }
   } else if (accept(TokenType::LeftBracket)) {
 
+    CType *ctype = new CType;
+    ctype->basetype = PType::NotAssigned;
+
     if (accept(TokenType::RightBracket)) {
       // Empty list
-      return make_list({});
+      return make_list({}, ctype);
     }
 
     std::vector<AstNode *> list;
@@ -333,7 +340,11 @@ AstNode *parse_expr(ParseContext *context) {
 
     expect(TokenType::RightBracket);
 
-    return make_list(list);
+    // FIXME
+    ctype->basetype = list[0]->ctype.basetype;
+    ctype->subtype = list[0]->ctype.subtype;
+
+    return make_list(list, ctype);
 
   } else if (accept(TokenType::LeftBrace)) {
     // While next token does not equal right paren
@@ -385,7 +396,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
       expect(TokenType::Colon);
 
       // We can either take a nothing, a loc, or a far
-      sym_node->ptype = *parse_type();
+      sym_node->ctype = *parse_type();
 
       expect(TokenType::Equals);
 
@@ -539,14 +550,14 @@ AstNode *parse_function(ParseContext *context) {
   auto func_name = accept(TokenType::Symbol);
 
   std::vector<std::string> args;
-  std::vector<PType*> param_types;
+  std::vector<CType*> param_types;
 
   Token *arg;
   expect(TokenType::LeftParen);
   while ((arg = accept(TokenType::Symbol))) {
 
     expect(TokenType::Colon);
-    PType* type_spec = parse_type();
+    CType* type_spec = parse_type();
 
     args.push_back(arg->lexeme);
     param_types.push_back(type_spec);
@@ -557,14 +568,14 @@ AstNode *parse_function(ParseContext *context) {
   expect(TokenType::Minus);
   expect(TokenType::GreaterThan);
 
-  PType *return_type = parse_type();
+  CType *return_type = parse_type();
 
   expect(TokenType::Newline);
 
   auto body = parse_block(context, 2);
 
   auto func_stmt = make_function(func_name->lexeme, args, body, param_types);
-  func_stmt->ptype = *return_type;
+  func_stmt->ctype = *return_type;
   return func_stmt;
 }
 

@@ -63,14 +63,26 @@ enum class PType {
 
   str,
 
-  boolean
+  boolean,
+
+  List,
+  UserType,
+  Promise,
+  Entity
+};
+
+struct CType {
+  PType basetype;
+
+  CType* subtype;
+  std::string entity_name;
 };
 
 struct AstNode {
   AstNodeType type;
   AstNode *parent;
 
-  PType ptype;
+  CType ctype;
 };
 
 struct Nop : AstNode {};
@@ -91,7 +103,7 @@ struct ModuleStmt : AstNode {
 struct FuncStmt : AstNode {
   std::string name;
 
-  std::vector<PType *> param_types;
+  std::vector<CType *> param_types;
   std::vector<std::string> args;
 
   std::vector<AstNode *> body;
@@ -238,12 +250,12 @@ AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
 AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<PType *> param_types);
+AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
 AstNode *make_nop();
 AstNode *make_message_node(std::string entity_ref_name, std::string function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
-AstNode *make_list(std::vector<AstNode *> list);
+AstNode *make_list(std::vector<AstNode *> list, CType* ctype);
 AstNode *make_promise_node(int promise_id);
 // HACK Make this an AstNode and then eval + check in symbol table
 AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);

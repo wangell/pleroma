@@ -152,7 +152,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::AssignmentStmt) {
     auto ass_stmt = (AssignmentStmt *)obj;
 
-    SymbolNode* sym;
+    SymbolNode *sym;
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
@@ -355,38 +355,10 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       args.push_back(eval(context, arg));
     }
 
-    if (node->function_name == "print") {
-      if (args[0]->type == AstNodeType::StringNode) {
-        printf("%s\n", ((StringNode *)args[0])->value.c_str());
-      }
-
-      if (args[0]->type == AstNodeType::NumberNode) {
-        printf("%ld\n", ((NumberNode *)args[0])->value);
-      }
-
-      if (args[0]->type == AstNodeType::ListNode) {
-        printf("[");
-        for (auto k : ((ListNode *)args[0])->list) {
-          if (k->type == AstNodeType::StringNode) {
-            printf("%s", ((StringNode *)k)->value.c_str());
-          }
-
-          if (k->type == AstNodeType::NumberNode) {
-            printf("%ld", ((NumberNode *)k)->value);
-          }
-
-          printf(",");
-        }
-        printf("]\n");
-      }
-
-      return make_nop();
-    } else {
-      return eval_message_node(
-          context,
-          (EntityRefNode *)find_symbol(node->entity_ref_name, context->scope),
-          node->message_distance, node->comm_mode, node->function_name, args);
-    }
+    return eval_message_node(
+        context,
+        (EntityRefNode *)find_symbol(node->entity_ref_name, context->scope),
+        node->message_distance, node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
@@ -395,9 +367,12 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity* ent = create_entity(context, (EntityDef *)find_symbol(node->entity_def_name, context->scope));
+    Entity *ent =
+        create_entity(context, (EntityDef *)find_symbol(node->entity_def_name,
+                                                        context->scope));
 
-    return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
+    return make_entity_ref(ent->address.node_id, ent->address.vat_id,
+                           ent->address.entity_id);
   }
 
   if (obj->type == AstNodeType::EntityRefNode) {
@@ -430,9 +405,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::ForeignFunc) {
-    auto ffc = (ForeignFuncCall*)obj;
+    auto ffc = (ForeignFuncCall *)obj;
 
-    std::vector<AstNode*> args;
+    std::vector<AstNode *> args;
     for (auto k : ffc->args) {
       args.push_back(eval(context, k));
     }
@@ -567,7 +542,7 @@ void print_msg(Msg *m) {
   printf("\n\n");
 }
 
-void start_stack(EvalContext* context, Scope *scope, Vat* vat, Entity *entity) {
+void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity) {
   scope->table = entity->file_scope;
   scope->table["self"] = make_entity_ref(0, 0, 0);
 
@@ -576,5 +551,4 @@ void start_stack(EvalContext* context, Scope *scope, Vat* vat, Entity *entity) {
   context->scope = scope;
 }
 
-EvalContext push_stack_frame() {
-}
+EvalContext push_stack_frame() {}

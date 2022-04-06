@@ -7,28 +7,53 @@ struct TypeContext {
   std::map<std::string, PType> typestore;
 };
 
-void exact_match(PType a, PType b) {
-  if (a != b) {
-    printf("A incompatible with type B: %d, %d\n", a, b);
+bool is_complex(CType a) {
+  return a.basetype == PType::List ||
+    a.basetype == PType::Promise ||
+    a.basetype == PType::UserType;
+}
+
+void exact_match(CType a, CType b) {
+  if (a.basetype != b.basetype) {
+    // printf("A incompatible with type B: %d, %d\n", a, b);
+    printf("A incompatible with type B: %d, %d\n", a.basetype, b.basetype);
     exit(1);
+  }
+
+  if (is_complex(a) || is_complex(b)) {
+    exact_match(*a.subtype, *b.subtype);
   }
 }
 
-PType typesolve_sub(TypeContext* context, AstNode *node) {
+CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::ListNode: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::StringNode: {
-    return node->ptype;
+    return node->ctype;
   } break;
 
   case AstNodeType::NumberNode: {
-    return node->ptype;
+    return node->ctype;
+  } break;
+
+  case AstNodeType::NamespaceAccess: {
+    auto ns_node = (NamespaceAccess *)node;
+    return typesolve_sub(context, ns_node->accessor);
   } break;
 
   case AstNodeType::ReturnNode: {
     auto ret_node = (ReturnNode*)node;
     return typesolve_sub(context, ret_node->expr);
+  } break;
+
+  case AstNodeType::CreateEntity: {
+    auto ce_node = (CreateEntityNode *)node;
+    return ce_node->ctype;
   } break;
 
   case AstNodeType::FuncStmt: {
@@ -44,18 +69,18 @@ PType typesolve_sub(TypeContext* context, AstNode *node) {
     for (auto blocknode : func_node->body) {
       if (blocknode->type == AstNodeType::ReturnNode) {
         has_return = true;
-        printf("%d\n", func_node->ptype);
-        assert(typesolve_sub(context, blocknode) == func_node->ptype);
+        //printf("%d\n", func_node->ctype);
+        exact_match(typesolve_sub(context, blocknode), func_node->ctype);
       } else {
         typesolve_sub(context, blocknode);
       }
     }
 
     if (!has_return) {
-      assert(func_node->ptype == PType::None);
+      assert(func_node->ctype.basetype == PType::None);
     }
 
-    return PType();
+    return CType();
 
   } break;
 
@@ -65,13 +90,13 @@ PType typesolve_sub(TypeContext* context, AstNode *node) {
     auto lexpr = typesolve_sub(context, op_expr->term1);
     auto rexpr = typesolve_sub(context, op_expr->term2);
 
-    if (lexpr == PType::str) {
+    if (lexpr.basetype == PType::str) {
       if (op_expr->op != OperatorExpr::Op::Plus) {
         printf("Can only add strings\n");
         exit(1);
       }
       exact_match(lexpr, rexpr);
-    } else if (lexpr == PType::u8) {
+    } else if (lexpr.basetype == PType::u8) {
       exact_match(lexpr, rexpr);
     } else {
       printf("Only numbers and strings can be operated on.\n");
@@ -84,10 +109,14 @@ PType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::AssignmentStmt: {
     auto assmt_node = (AssignmentStmt *)node;
-    PType lexpr = assmt_node->sym->ptype;
-    PType rexpr = typesolve_sub(context, assmt_node->value);
+    CType lexpr = assmt_node->sym->ctype;
+    CType rexpr = typesolve_sub(context, assmt_node->value);
 
-    exact_match(lexpr, rexpr);
+    if (is_complex(rexpr)) {
+      exact_match(lexpr, rexpr);
+    } else {
+
+    }
 
     return rexpr;
   } break;
@@ -98,12 +127,12 @@ PType typesolve_sub(TypeContext* context, AstNode *node) {
       typesolve_sub(context, v);
       // all_valid = all_valid && typesolve_sub(v);
     }
-    return PType();
+    return CType();
   } break;
   }
 
   // We should never reach here
-  printf("Didn't handle type %d\n", node->type);
+  printf("Didn't handle type %s\n", ast_type_to_string(node->type).c_str());
   assert(false);
 }
 
@@ -112,8 +141,8 @@ void typesolve(std::map<std::string, AstNode *> program) {
 
   bool all_valid = true;
   for (auto &[k, v] : program) {
-    // all_valid = all_valid && typesolve_sub(v);
-    //typesolve_sub(&context, v);
+    //all_valid = all_valid && typesolve_sub(v);
+    typesolve_sub(&context, v);
   }
 
   assert(all_valid);

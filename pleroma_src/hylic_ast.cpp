@@ -8,6 +8,12 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
+  case AstNodeType::MessageNode:
+    return "MessageNode";
+    break;
+  case AstNodeType::NamespaceAccess:
+    return "NamespaceAccess";
+    break;
   case AstNodeType::PromiseNode:
     return "PromiseNode";
     break;
@@ -19,6 +25,33 @@ std::string ast_type_to_string(AstNodeType t) {
     break;
   case AstNodeType::ForeignFunc:
     return "ForeignFunc";
+    break;
+  case AstNodeType::ListNode:
+    return "ListNode";
+    break;
+  case AstNodeType::SymbolNode:
+    return "SymbolNode";
+    break;
+  case AstNodeType::StringNode:
+    return "StringNode";
+    break;
+  case AstNodeType::CharacterNode:
+    return "CharacterNode";
+    break;
+  case AstNodeType::TupleNode:
+    return "TupleNode";
+    break;
+  case AstNodeType::OperatorExpr:
+    return "OperatorExpr";
+    break;
+  case AstNodeType::BooleanExpr:
+    return "BooleanExpr";
+    break;
+  case AstNodeType::NumberNode:
+    return "NumberNode";
+    break;
+  case AstNodeType::CreateEntity:
+    return "CreateEntity";
     break;
   }
 
@@ -123,7 +156,7 @@ AstNode *make_number(int64_t v) {
   NumberNode *symbol_node = new NumberNode;
   symbol_node->type = AstNodeType::NumberNode;
   symbol_node->value_type = ValueType::Number;
-  symbol_node->ptype = PType::u8;
+  symbol_node->ctype.basetype = PType::u8;
   // symbol_node->value = strtol(s.c_str(), nullptr, 10);
   symbol_node->value = v;
   return symbol_node;
@@ -132,7 +165,7 @@ AstNode *make_number(int64_t v) {
 AstNode *make_string(std::string s) {
   StringNode *node = new StringNode;
   node->type = AstNodeType::StringNode;
-  node->ptype = PType::str;
+  node->ctype.basetype = PType::str;
   node->value = s;
   return node;
 }
@@ -176,7 +209,7 @@ AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions,
   return actor_def;
 }
 
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<PType*> param_types) {
+AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType*> param_types) {
   FuncStmt *func_stmt = new FuncStmt;
   func_stmt->type = AstNodeType::FuncStmt;
   func_stmt->name = s;
@@ -205,6 +238,7 @@ AstNode *make_message_node(std::string entity_ref_name,
   func_call->message_distance = dist;
   func_call->comm_mode = comm_mode;
   func_call->args = args;
+
   return func_call;
 }
 
@@ -212,6 +246,8 @@ AstNode *make_create_entity(std::string entity_def_name, bool new_vat) {
   CreateEntityNode *entity_node = new CreateEntityNode;
   entity_node->type = AstNodeType::CreateEntity;
   entity_node->entity_def_name = entity_def_name;
+  entity_node->ctype.basetype = PType::Entity;
+  entity_node->ctype.entity_name = entity_def_name;
 
   return entity_node;
 }
@@ -227,10 +263,12 @@ AstNode *make_entity_ref(int node_id, int vat_id, int entity_id) {
   return entity_ref;
 }
 
-AstNode *make_list(std::vector<AstNode *> list) {
+AstNode *make_list(std::vector<AstNode *> list, CType *ctype) {
   ListNode *list_node = new ListNode;
   list_node->type = AstNodeType::ListNode;
   list_node->list = list;
+  list_node->ctype.basetype = PType::List;
+  list_node->ctype.subtype = ctype;
 
   return list_node;
 }

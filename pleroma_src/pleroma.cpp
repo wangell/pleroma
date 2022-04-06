@@ -178,10 +178,11 @@ int main(int argc, char **argv) {
   auto program = load_file("examples/kernel.po");
 
   load_kernel();
-  auto kernel_program = (EntityDef *)kernel_map["Io"];
 
   auto user_program = (EntityDef *)program["Test"];
-  program["Io"] = kernel_program;
+
+  program["Io"] = (EntityDef *)kernel_map["Io"];
+  program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
 
   inoculate_pleroma(program, user_program);
 
