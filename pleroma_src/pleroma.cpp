@@ -12,6 +12,7 @@
 
 #include <thread>
 
+#include "hylic_typesolver.h"
 #include "netcode.h"
 #include "kernel.h"
 
@@ -182,7 +183,9 @@ int main(int argc, char **argv) {
   auto user_program = (EntityDef *)program["Test"];
 
   program["Io"] = (EntityDef *)kernel_map["Io"];
-  program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
+  //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
+
+  typesolve(program);
 
   inoculate_pleroma(program, user_program);
 

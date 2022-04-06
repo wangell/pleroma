@@ -24,7 +24,7 @@ AstNode *io_print(EvalContext *context, std::vector<AstNode *> args) {
     printf("%ld\n", ((NumberNode *)pval)->value);
   }
 
-  return make_nop();
+  return make_number(0);
 }
 
 AstNode *io_readline(EvalContext *context, std::vector<AstNode *> args) {
@@ -54,10 +54,7 @@ FuncStmt *setup_test() {
   return (FuncStmt *)make_function("main", {"sys"}, body, {});
 }
 
-FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
-                                                     std::vector<AstNode *>),
-                            std::string name, std::vector<std::string> args,
-                            std::vector<CType *> arg_types) {
+FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *, std::vector<AstNode *>), std::string name, std::vector<std::string> args, std::vector<CType *> arg_types, CType ctype) {
   std::vector<AstNode *> body;
   std::vector<AstNode *> nu_args;
 
@@ -65,7 +62,10 @@ FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
     nu_args.push_back(make_symbol(k));
   }
 
-  body.push_back(make_foreign_func_call(foreign_func, nu_args));
+  auto ffi = make_foreign_func_call(foreign_func, nu_args);
+  ffi->ctype.basetype = ctype.basetype;
+
+  body.push_back(make_return(ffi));
 
   return (FuncStmt *)make_function(name, args, body, arg_types);
 }
@@ -99,32 +99,41 @@ AstNode *amoeba_window(EvalContext *context, std::vector<AstNode *> args) {
 AstNode *amoeba_close(EvalContext *context, std::vector<AstNode *> args) {
   //SDL_DestroyWindow();
   SDL_Quit();
-  return make_nop();
+  return make_number(0);
 }
 
 void load_amoeba() {
   std::map<std::string, FuncStmt *> functions;
 
-  functions["init"] = setup_direct_call(amoeba_init, "init", {}, {});
-  functions["window"] = setup_direct_call(amoeba_window, "window", {}, {});
-  functions["close"] = setup_direct_call(amoeba_close, "close", {}, {});
+  CType test_type;
+  test_type.basetype = PType::u8;
+
+  functions["init"] = setup_direct_call(amoeba_init, "init", {}, {}, test_type);
+  functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, test_type);
+  functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, test_type);
 
   kernel_map["Amoeba"] = make_actor("Amoeba", functions, {});
 }
 
 void load_kernel() {
+  CType test_type;
+  test_type.basetype = PType::u8;
+
   std::map<std::string, FuncStmt *> functions;
   // functions["main"] = setup_test();
-  functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {});
+  functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {}, test_type);
 
   kernel_map["Kernel"] = make_actor("Kernel", functions, {});
 
   std::map<std::string, FuncStmt *> io_functions;
 
-  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {});
-  io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {});
+  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {}, test_type);
+  //io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {});
+
+  io_functions["print"]->ctype.basetype = PType::u8;
+  //io_functions["readline"]->ctype.basetype = PType::str;
 
   kernel_map["Io"] = make_actor("Io", io_functions, {});
 
-  load_amoeba();
+  //load_amoeba();
 }

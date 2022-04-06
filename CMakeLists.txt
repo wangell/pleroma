@@ -8,7 +8,7 @@ set(CMAKE_BUILD_TYPE Debug)
 find_package(Threads REQUIRED)
 
 link_directories(/usr/local/lib/)
-include_directories(/usr/local/include/)
+include_directories(/usr/local/include/ /usr/include/SDL2)
 
 add_compile_options (-fcolor-diagnostics)
 add_compile_options (-Wshadow)
@@ -43,7 +43,7 @@ add_executable(allo ${allo_SRC})
 # For SoLoud
 
 target_link_libraries(allo pthread enet protobuf)
-target_link_libraries(pleroma pthread enet protobuf)
+target_link_libraries(pleroma pthread enet protobuf SDL2)
 
 target_compile_features(pleroma PUBLIC cxx_std_17)
 target_compile_features(allo PUBLIC cxx_std_17)

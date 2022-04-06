@@ -73,7 +73,6 @@ void expect(char c, FILE *f) { assert(fgetc(f) == c); }
 
 void parse_match_blocks() {}
 
-
 std::map<std::string, AstNode*> load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
   FILE *f = fopen(path.c_str(), "r");

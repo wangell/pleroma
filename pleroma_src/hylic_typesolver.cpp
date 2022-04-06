@@ -1,10 +1,12 @@
 #include "hylic_typesolver.h"
 #include "hylic_ast.h"
+#include "hylic_eval.h"
 #include <cassert>
 #include <map>
 
 struct TypeContext {
-  std::map<std::string, PType> typestore;
+  std::map<std::string, CType> typestore;
+  std::map<std::string, AstNode*> program;
 };
 
 bool is_complex(CType a) {
@@ -17,7 +19,7 @@ void exact_match(CType a, CType b) {
   if (a.basetype != b.basetype) {
     // printf("A incompatible with type B: %d, %d\n", a, b);
     printf("A incompatible with type B: %d, %d\n", a.basetype, b.basetype);
-    exit(1);
+    assert(false);
   }
 
   if (is_complex(a) || is_complex(b)) {
@@ -29,6 +31,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::ForeignFunc: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::ListNode: {
     return node->ctype;
   } break;
@@ -39,6 +45,25 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::NumberNode: {
     return node->ctype;
+  } break;
+
+  case AstNodeType::MessageNode: {
+    auto mess_node = (MessageNode *)node;
+
+    // Find the entity definition
+    printf("%s\n", mess_node->entity_ref_name.c_str());
+    assert(context->typestore.find(mess_node->entity_ref_name) != context->typestore.end());
+
+    CType entity_node_type = context->typestore[mess_node->entity_ref_name];
+    assert(entity_node_type.basetype == PType::Entity);
+    assert(context->program.find(entity_node_type.subtype->entity_name) != context->program.end());
+
+    EntityDef* entity_def = (EntityDef*)context->program[entity_node_type.subtype->entity_name];
+
+    //context[mess_node->entity_ref_name
+    // TODO Check that the parameters passed to are solved
+    // Look up the return value and return that values
+    return entity_def->ctype;
   } break;
 
   case AstNodeType::NamespaceAccess: {
@@ -112,11 +137,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     CType lexpr = assmt_node->sym->ctype;
     CType rexpr = typesolve_sub(context, assmt_node->value);
 
-    if (is_complex(rexpr)) {
-      exact_match(lexpr, rexpr);
-    } else {
+    exact_match(lexpr, rexpr);
 
-    }
+    context->typestore[assmt_node->sym->sym] = lexpr;
 
     return rexpr;
   } break;

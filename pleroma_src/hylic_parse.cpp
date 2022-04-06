@@ -127,7 +127,8 @@ CType *parse_type() {
     } else if (basic_type->lexeme == "void") {
       var_type->basetype = PType::None;
     } else {
-      var_type->basetype = PType::NotAssigned;
+      var_type->basetype = PType::Entity;
+      var_type->entity_name = basic_type->lexeme;
     }
   }
 
@@ -185,21 +186,7 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
-      // Check to see if we're creating an object or calling a function
-      // TODO don't check directly for Io string here
-      // FIXME ASAP
-      if (context->tl_symbol_table.find(tt->lexeme) !=
-          context->tl_symbol_table.end() || tt->lexeme == "Io" || tt->lexeme == "Amoeba") {
-        // Just mkae this a string!
-        auto ret_node = make_create_entity(tt->lexeme, false);
-        return ret_node;
-      } else {
-        // Just mkae this a string! all vars should be strings
-        auto ret_node = make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
-        return ret_node;
-      }
-
-      assert(false);
+      return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
     }
 
     if (accept(TokenType::Message)) {
