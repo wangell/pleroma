@@ -108,6 +108,8 @@ void tokenize_file(FILE *f) {
       add_token(TokenType::Star, "*");
     } else if (c == U'ε') {
       add_token(TokenType::Actor, "ε");
+    } else if (c == U'$') {
+      add_token(TokenType::Dollar, "$");
     } else if (c == '/') {
       add_token(TokenType::Slash, "/");
     } else if (c == '(') {

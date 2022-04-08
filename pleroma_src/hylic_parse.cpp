@@ -153,23 +153,7 @@ AstNode *parse_expr(ParseContext *context) {
     // Namespace access
     if (accept(TokenType::Dot)) {
       return make_namespace_access(tt->lexeme, parse_expr(context));
-      // return make_table_access(expr1, , bool breakthrough)
     }
-    // if (check(TokenType::Dot)) {
-    //  AstNode* taccess = nullptr;
-    //  while (accept(TokenType::Dot)) {
-    //    Token *exp;
-    //    if (check(TokenType::Symbol)) {
-    //      exp = accept(TokenType::Symbol);
-    //    }
-    //    if (taccess) {
-    //      taccess = make_table_access(taccess, exp->lexeme, false);
-    //    } else {
-    //      taccess = make_table_access(expr1, exp->lexeme, false);
-    //    }
-    //  }
-    //  return taccess;
-    //}
 
     if (accept(TokenType::LeftParen)) {
 
@@ -186,7 +170,7 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
-      return make_message_node("self", tt->lexeme, MessageDistance::Local, CommMode::Sync, args);
+      return make_message_node(tt->lexeme, CommMode::Sync, args);
     }
 
     if (accept(TokenType::Message)) {
@@ -208,10 +192,8 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
-      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(),
-             tt->lexeme.c_str());
-      return make_message_node(tt->lexeme, target_function->lexeme,
-                               MessageDistance::Local, CommMode::Async, args);
+      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(), tt->lexeme.c_str());
+      return make_message_node(target_function->lexeme, CommMode::Async, args);
     }
 
     if (accept(TokenType::Plus)) {
@@ -294,8 +276,8 @@ AstNode *parse_expr(ParseContext *context) {
 
     expect(TokenType::RightParen);
 
-    return make_message_node("self", tt->lexeme, MessageDistance::Local,
-                             CommMode::Async, args);
+    assert(false);
+    return make_message_node(tt->lexeme, CommMode::Async, args);
 
   } else if (check(TokenType::True) || check(TokenType::False)) {
     if (accept(TokenType::True)) {
@@ -537,14 +519,14 @@ AstNode *parse_function(ParseContext *context) {
   auto func_name = accept(TokenType::Symbol);
 
   std::vector<std::string> args;
-  std::vector<CType*> param_types;
+  std::vector<CType *> param_types;
 
   Token *arg;
   expect(TokenType::LeftParen);
   while ((arg = accept(TokenType::Symbol))) {
 
     expect(TokenType::Colon);
-    CType* type_spec = parse_type();
+    CType *type_spec = parse_type();
 
     args.push_back(arg->lexeme);
     param_types.push_back(type_spec);

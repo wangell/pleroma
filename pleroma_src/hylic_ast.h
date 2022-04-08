@@ -183,7 +183,6 @@ struct PromiseResNode : AstNode {
 };
 
 struct MessageNode : AstNode {
-  std::string entity_ref_name;
   std::string function_name;
 
   MessageDistance message_distance;
@@ -252,7 +251,7 @@ AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
 AstNode *make_nop();
-AstNode *make_message_node(std::string entity_ref_name, std::string function_name, MessageDistance dist, CommMode comm_mode, std::vector<AstNode *> args);
+AstNode *make_message_node(std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
 AstNode *make_list(std::vector<AstNode *> list, CType* ctype);

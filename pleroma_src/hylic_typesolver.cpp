@@ -51,19 +51,20 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     auto mess_node = (MessageNode *)node;
 
     // Find the entity definition
-    printf("%s\n", mess_node->entity_ref_name.c_str());
-    assert(context->typestore.find(mess_node->entity_ref_name) != context->typestore.end());
+    //printf("%s\n", mess_node->entity_ref_name.c_str());
+    //assert(context->typestore.find(mess_node->entity_ref_name) != context->typestore.end());
 
-    CType entity_node_type = context->typestore[mess_node->entity_ref_name];
-    assert(entity_node_type.basetype == PType::Entity);
-    assert(context->program.find(entity_node_type.subtype->entity_name) != context->program.end());
+    //CType entity_node_type = context->typestore[mess_node->entity_ref_name];
+    //assert(entity_node_type.basetype == PType::Entity);
+    //assert(context->program.find(entity_node_type.subtype->entity_name) != context->program.end());
 
-    EntityDef* entity_def = (EntityDef*)context->program[entity_node_type.subtype->entity_name];
+    //EntityDef* entity_def = (EntityDef*)context->program[entity_node_type.subtype->entity_name];
 
-    //context[mess_node->entity_ref_name
-    // TODO Check that the parameters passed to are solved
-    // Look up the return value and return that values
-    return entity_def->ctype;
+    ////context[mess_node->entity_ref_name
+    //// TODO Check that the parameters passed to are solved
+    //// Look up the return value and return that values
+    //return entity_def->ctype;
+    return node->ctype;
   } break;
 
   case AstNodeType::NamespaceAccess: {
@@ -165,7 +166,7 @@ void typesolve(std::map<std::string, AstNode *> program) {
   bool all_valid = true;
   for (auto &[k, v] : program) {
     //all_valid = all_valid && typesolve_sub(v);
-    typesolve_sub(&context, v);
+    //typesolve_sub(&context, v);
   }
 
   assert(all_valid);
