@@ -60,18 +60,24 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::vector<AstNode *> args) {
   // printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(),
   // function_name.c_str());
-  auto func = entity->entity_def->functions.find(function_name);
 
-  assert(func != entity->entity_def->functions.end());
+  if (function_name == "print") {
+    auto nn = (NumberNode*)args[0];
+    printf("%d\n", nn->value);
+    return make_nop();
+  } else {
+    auto func = entity->entity_def->functions.find(function_name);
+    assert(func != entity->entity_def->functions.end());
 
-  FuncStmt *func_def_node = (FuncStmt *)func->second;
-  assert(func_def_node->args.size() == args.size());
+    FuncStmt *func_def_node = (FuncStmt *)func->second;
+    assert(func_def_node->args.size() == args.size());
 
-  std::vector<std::tuple<std::string, AstNode *>> subs;
-  for (int i = 0; i < func_def_node->args.size(); ++i) {
-    subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
+    std::vector<std::tuple<std::string, AstNode *>> subs;
+    for (int i = 0; i < func_def_node->args.size(); ++i) {
+      subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
+    }
+    return eval_block(context, func_def_node->body, subs);
   }
-  return eval_block(context, func_def_node->body, subs);
 }
 
 AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
@@ -355,10 +361,15 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       args.push_back(eval(context, arg));
     }
 
+    // Are we calling this on our self?
+    //EntityRefNode* ref = nullptr;;
+    //if (node->entity_ref != nullptr) {
+    //  ref = (EntityRefNode *)eval(context, node->entity_ref);
+    //}
+
     return eval_message_node(
-        context,
-        (EntityRefNode *)find_symbol(node->entity_ref_name, context->scope),
-        node->message_distance, node->comm_mode, node->function_name, args);
+                             context, (EntityRefNode*)eval(context, node->entity_ref),
+        MessageDistance::Local, node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {

@@ -228,9 +228,10 @@ AstNode *make_nop() {
   return static_nop;
 }
 
-AstNode *make_message_node(std::string function_name, CommMode comm_mode, std::vector<AstNode *> args) {
+AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args) {
   MessageNode *func_call = new MessageNode;
   func_call->type = AstNodeType::MessageNode;
+  func_call->entity_ref = entity_ref;
   func_call->function_name = function_name;
   func_call->comm_mode = comm_mode;
   func_call->args = args;

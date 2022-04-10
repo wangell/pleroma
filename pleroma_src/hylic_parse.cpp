@@ -3,6 +3,13 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_tokenizer.h"
+#include <functional>
+#include <tuple>
+
+struct ParseRes {
+  bool success;
+  AstNode *node;
+};
 
 bool check_type(std::string type) {
   // check type against symbol table
@@ -136,6 +143,98 @@ CType *parse_type() {
 }
 
 AstNode *parse_expr(ParseContext *context) {
+  std::stack<InfixOp> op_stack;
+  std::stack<AstNode *> val_stack;
+
+  while (!check(TokenType::Newline) && !check(TokenType::RightParen)) {
+    if (accept(TokenType::LeftParen)) {
+      auto body = parse_expr(context);
+      expect(TokenType::RightParen);
+      return body;
+    } else if (check(TokenType::Number)) {
+      auto expr1 = make_number(
+          strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+      val_stack.push(expr1);
+    } else if (check(TokenType::Symbol)) {
+      auto tt = accept(TokenType::Symbol);
+      auto expr1 = make_symbol(tt->lexeme);
+
+      if (accept(TokenType::LeftParen)) {
+
+        int n_args = 0;
+        // While next token does not equal right paren
+        while (!check(TokenType::RightParen)) {
+          auto expr = parse_expr(context);
+          val_stack.push(expr);
+          n_args++;
+
+          if (!check(TokenType::RightParen)) {
+            expect(TokenType::Comma);
+          }
+        }
+
+        expect(TokenType::RightParen);
+
+        InfixOp op;
+        op.type = InfixOpType::Function;
+        op.n_args = n_args;
+        op.name = tt->lexeme;
+        op_stack.push(op);
+        // val_stack.push(make_message_node(, tt->lexeme, CommMode::Sync,
+        // args));
+      } else {
+        val_stack.push(expr1);
+      }
+
+    } else if (check(TokenType::Plus)) {
+      accept(TokenType::Plus);
+      InfixOp op;
+      op.type = InfixOpType::Plus;
+      op.n_args = 2;
+      op.name = "Plus";
+      op_stack.push(op);
+    } else {
+      assert(false);
+    }
+  }
+
+  AstNode *ret_expr;
+
+  while (!op_stack.empty()) {
+    InfixOp op = op_stack.top();
+    op_stack.pop();
+
+    if (op.type == InfixOpType::Plus) {
+      auto expr1 = val_stack.top();
+      val_stack.pop();
+      auto expr2 = val_stack.top();
+      val_stack.pop();
+
+      val_stack.push(make_operator_expr(OperatorExpr::Plus, expr1, expr2));
+    }
+
+    if (op.type == InfixOpType::Function) {
+      std::vector<AstNode *> args;
+      for (int k = 0; k < op.n_args; ++k) {
+        args.push_back(val_stack.top());
+        val_stack.pop();
+      }
+
+      if (val_stack.empty()) {
+        val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, CommMode::Sync, args));
+      } else {
+        val_stack.push(make_message_node(val_stack.top(), op.name, CommMode::Sync, args));
+        val_stack.pop();
+      }
+    }
+  }
+
+  assert(val_stack.size() == 1);
+
+  return val_stack.top();
+}
+
+AstNode *parse_expr_old(ParseContext *context) {
   if (accept(TokenType::LeftParen)) {
     auto body = parse_expr(context);
     expect(TokenType::RightParen);
@@ -170,7 +269,7 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
-      return make_message_node(tt->lexeme, CommMode::Sync, args);
+      // return make_message_node(tt->lexeme, CommMode::Sync, args);
     }
 
     if (accept(TokenType::Message)) {
@@ -192,8 +291,10 @@ AstNode *parse_expr(ParseContext *context) {
 
       expect(TokenType::RightParen);
 
-      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(), tt->lexeme.c_str());
-      return make_message_node(target_function->lexeme, CommMode::Async, args);
+      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(),
+             tt->lexeme.c_str());
+      // return make_message_node(target_function->lexeme, CommMode::Async,
+      // args);
     }
 
     if (accept(TokenType::Plus)) {
@@ -277,7 +378,7 @@ AstNode *parse_expr(ParseContext *context) {
     expect(TokenType::RightParen);
 
     assert(false);
-    return make_message_node(tt->lexeme, CommMode::Async, args);
+    // return make_message_node(tt->lexeme, CommMode::Async, args);
 
   } else if (check(TokenType::True) || check(TokenType::False)) {
     if (accept(TokenType::True)) {
