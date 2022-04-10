@@ -118,11 +118,11 @@ make_match(AstNode *match_expr,
   return node;
 }
 
-AstNode *make_namespace_access(std::string namespace_table, AstNode *accessor) {
+AstNode *make_namespace_access(AstNode* ref, AstNode* field) {
   NamespaceAccess *node = new NamespaceAccess;
   node->type = AstNodeType::NamespaceAccess;
-  node->namespace_table = namespace_table;
-  node->accessor = accessor;
+  node->ref = ref;
+  node->field = field;
   // node->access_sym = sym;
   return node;
 }

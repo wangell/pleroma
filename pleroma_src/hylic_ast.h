@@ -121,8 +121,8 @@ struct WhileStmt : AstNode {
 };
 
 struct NamespaceAccess : AstNode {
-  std::string namespace_table;
-  AstNode *accessor;
+  AstNode *ref;
+  AstNode *field;
 };
 
 enum class ValueType {
@@ -241,7 +241,7 @@ AstNode *make_fallthrough();
 AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2);
 AstNode *make_assignment(SymbolNode *sym, AstNode *expr);
 AstNode *make_match(AstNode *match_expr, std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> cases);
-AstNode *make_namespace_access(std::string namespace_table, AstNode *accessor);
+AstNode *make_namespace_access(AstNode* ref, AstNode* field);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
 AstNode *make_module_stmt(std::string s, bool namespaced);
 AstNode *make_table(std::map<std::string, AstNode *> vals);

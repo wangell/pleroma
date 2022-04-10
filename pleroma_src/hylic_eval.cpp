@@ -58,12 +58,15 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
 AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::string function_name,
                          std::vector<AstNode *> args) {
-  // printf("Eval: eval_func_local %s %s\n", entity->entity_def->name.c_str(),
-  // function_name.c_str());
 
   if (function_name == "print") {
-    auto nn = (NumberNode*)args[0];
-    printf("%d\n", nn->value);
+
+    auto node_val = eval(context, args[0]);
+    if (args[0]->type == AstNodeType::NumberNode) {
+      auto nn = (NumberNode*)args[0];
+      printf("%ld\n", nn->value);
+    }
+
     return make_nop();
   } else {
     auto func = entity->entity_def->functions.find(function_name);
@@ -94,8 +97,7 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   target_entity = resolve_local_entity(context, entity_ref);
   assert(target_entity != nullptr);
 
-  // printf("Eval: message node %s %s\n",
-  // target_entity->entity_def->name.c_str(), function_name.c_str());
+  printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (distance == MessageDistance::Local) {
 
@@ -256,13 +258,12 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     auto node = (NamespaceAccess *)obj;
 
     // Lookup the symbol
-    auto ref_node =
-        eval(context, find_symbol(node->namespace_table, context->scope));
+    auto ref_node = eval(context, node->ref);
 
     if (ref_node->type == AstNodeType::EntityRefNode) {
 
       auto ent_node = (EntityRefNode *)ref_node;
-      auto mess_node = (MessageNode *)node->accessor;
+      auto mess_node = (MessageNode *)node->field;
 
       EvalContext new_context;
       new_context.vat = context->vat;
@@ -275,8 +276,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
       // printf("Searching namespace %s\n", node->namespace_table.c_str());
 
-      return eval_message_node(context, ent_node, mess_node->message_distance,
-                               mess_node->comm_mode, mess_node->function_name,
+      return eval_message_node(context, ent_node, MessageDistance::Local,
+                               CommMode::Sync, mess_node->function_name,
                                mess_node->args);
 
     } else {

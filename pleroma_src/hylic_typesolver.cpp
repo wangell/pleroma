@@ -69,7 +69,8 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::NamespaceAccess: {
     auto ns_node = (NamespaceAccess *)node;
-    return typesolve_sub(context, ns_node->accessor);
+    //return typesolve_sub(context, ns_node->accessor);
+    assert(false);
   } break;
 
   case AstNodeType::ReturnNode: {

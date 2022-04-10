@@ -4,6 +4,7 @@
 #include "hylic_ast.h"
 #include "hylic_tokenizer.h"
 #include <functional>
+#include <new>
 #include <tuple>
 
 struct ParseRes {
@@ -185,6 +186,32 @@ AstNode *parse_expr(ParseContext *context) {
       } else {
         val_stack.push(expr1);
       }
+    } else if (check(TokenType::Message)) {
+      accept(TokenType::Message);
+      auto tt = accept(TokenType::Symbol);
+      auto expr1 = make_symbol(tt->lexeme);
+
+      accept(TokenType::LeftParen);
+
+      int n_args = 0;
+      // While next token does not equal right paren
+      while (!check(TokenType::RightParen)) {
+        auto expr = parse_expr(context);
+        val_stack.push(expr);
+        n_args++;
+
+        if (!check(TokenType::RightParen)) {
+          expect(TokenType::Comma);
+        }
+      }
+
+      expect(TokenType::RightParen);
+
+      InfixOp op;
+      op.type = InfixOpType::Function;
+      op.n_args = n_args;
+      op.name = tt->lexeme;
+      op_stack.push(op);
 
     } else if (check(TokenType::Plus)) {
       accept(TokenType::Plus);
@@ -193,6 +220,14 @@ AstNode *parse_expr(ParseContext *context) {
       op.n_args = 2;
       op.name = "Plus";
       op_stack.push(op);
+    } else if (check(TokenType::Dot)) {
+      accept(TokenType::Dot);
+      InfixOp op;
+      op.type = InfixOpType::Namespace;
+      op.n_args = 1;
+      op.name = "Namespace";
+      op_stack.push(op);
+      val_stack.push(parse_expr(context));
     } else {
       assert(false);
     }
@@ -213,6 +248,18 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.push(make_operator_expr(OperatorExpr::Plus, expr1, expr2));
     }
 
+    if (op.type == InfixOpType::Namespace) {
+      // Field
+      auto expr2 = val_stack.top();
+      val_stack.pop();
+
+      // Accessing
+      auto expr1 = val_stack.top();
+      val_stack.pop();
+
+      val_stack.push(make_namespace_access(expr1, expr2));
+    }
+
     if (op.type == InfixOpType::Function) {
       std::vector<AstNode *> args;
       for (int k = 0; k < op.n_args; ++k) {
@@ -221,10 +268,18 @@ AstNode *parse_expr(ParseContext *context) {
       }
 
       if (val_stack.empty()) {
-        val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, CommMode::Sync, args));
+        // FIXME
+        if (op.name == "Io") {
+          val_stack.push(make_create_entity("Io", false));
+        } else {
+          val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name,
+                                           CommMode::Sync, args));
+        }
       } else {
-        val_stack.push(make_message_node(val_stack.top(), op.name, CommMode::Sync, args));
+        printf("pushie\n");
+        auto topstack = val_stack.top();
         val_stack.pop();
+        val_stack.push(make_message_node(topstack, op.name, CommMode::Sync, args));
       }
     }
   }
@@ -251,7 +306,7 @@ AstNode *parse_expr_old(ParseContext *context) {
 
     // Namespace access
     if (accept(TokenType::Dot)) {
-      return make_namespace_access(tt->lexeme, parse_expr(context));
+      // return make_namespace_access(tt->lexeme, parse_expr(context));
     }
 
     if (accept(TokenType::LeftParen)) {
