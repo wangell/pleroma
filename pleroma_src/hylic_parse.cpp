@@ -156,6 +156,9 @@ AstNode *parse_expr(ParseContext *context) {
       auto expr1 = make_number(
           strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
       val_stack.push(expr1);
+    } else if (check(TokenType::String)) {
+      auto expr = accept(TokenType::String);
+      val_stack.push(make_string(expr->lexeme));
     } else if (check(TokenType::Symbol)) {
       auto tt = accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
@@ -177,7 +180,7 @@ AstNode *parse_expr(ParseContext *context) {
         expect(TokenType::RightParen);
 
         InfixOp op;
-        op.type = InfixOpType::Function;
+        op.type = InfixOpType::MessageSync;
         op.n_args = n_args;
         op.name = tt->lexeme;
         op_stack.push(op);
@@ -208,7 +211,7 @@ AstNode *parse_expr(ParseContext *context) {
       expect(TokenType::RightParen);
 
       InfixOp op;
-      op.type = InfixOpType::Function;
+      op.type = InfixOpType::MessageAsync;
       op.n_args = n_args;
       op.name = tt->lexeme;
       op_stack.push(op);
@@ -260,25 +263,34 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.push(make_namespace_access(expr1, expr2));
     }
 
-    if (op.type == InfixOpType::Function) {
+    if (op.type == InfixOpType::MessageSync || op.type == InfixOpType::MessageAsync) {
       std::vector<AstNode *> args;
       for (int k = 0; k < op.n_args; ++k) {
         args.push_back(val_stack.top());
         val_stack.pop();
       }
 
+      CommMode mode;
+      if (op.type == InfixOpType::MessageAsync) {
+        mode = CommMode::Async;
+      } else {
+        mode = CommMode::Sync;
+      }
+
       if (val_stack.empty()) {
         // FIXME
-        if (op.name == "Io") {
+        if (op.name == "Net") {
+          val_stack.push(make_create_entity("Net", false));
+        } else if (op.name == "Io") {
           val_stack.push(make_create_entity("Io", false));
         } else {
           val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name,
-                                           CommMode::Sync, args));
+                                           mode, args));
         }
       } else {
         auto topstack = val_stack.top();
         val_stack.pop();
-        val_stack.push(make_message_node(topstack, op.name, CommMode::Sync, args));
+        val_stack.push(make_message_node(topstack, op.name, mode, args));
       }
     }
   }

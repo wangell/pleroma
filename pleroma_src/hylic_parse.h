@@ -19,7 +19,8 @@ enum class InfixOpType {
   Divide,
   Multiply,
 
-  Function,
+  MessageSync,
+  MessageAsync,
   Namespace
 };
 

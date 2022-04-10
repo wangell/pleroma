@@ -13,14 +13,17 @@ message PleromaMessage {
   required int32 node_id = 1;
   required int32 vat_id = 2;
   required int32 entity_id = 3;
-  required int32 function_id = 4;
+
+  required string function_id = 4;
 
   required int32 src_node_id = 5;
   required int32 src_vat_id = 6;
   required int32 src_entity_id = 7;
-  required int32 src_function_id = 8;
+
+  required string src_function_id = 8;
 
   required bool response = 9;
+
   required int32 promise_id = 10;
 
   oneof pvalue {

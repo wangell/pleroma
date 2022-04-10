@@ -1,6 +1,9 @@
 #include "kernel.h"
-#include "hylic_ast.h"
-#include "hylic_eval.h"
+#include "../hylic_ast.h"
+#include "../hylic_eval.h"
+#include "ffi.h"
+#include "net.h"
+
 #include <SDL2/SDL.h>
 #include <iostream>
 #include <string>
@@ -53,24 +56,6 @@ FuncStmt *setup_test() {
 
   return (FuncStmt *)make_function("main", {"sys"}, body, {});
 }
-
-FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *, std::vector<AstNode *>), std::string name, std::vector<std::string> args, std::vector<CType *> arg_types, CType ctype) {
-  std::vector<AstNode *> body;
-  std::vector<AstNode *> nu_args;
-
-  for (auto k : args) {
-    nu_args.push_back(make_symbol(k));
-  }
-
-  auto ffi = make_foreign_func_call(foreign_func, nu_args);
-  ffi->ctype.basetype = ctype.basetype;
-
-  body.push_back(make_return(ffi));
-
-  return (FuncStmt *)make_function(name, args, body, arg_types);
-}
-
-void do_test() {}
 
 AstNode *amoeba_init(EvalContext *context, std::vector<AstNode *> args) {
   if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -134,6 +119,8 @@ void load_kernel() {
   //io_functions["readline"]->ctype.basetype = PType::str;
 
   kernel_map["Io"] = make_actor("Io", io_functions, {});
+
+  load_net();
 
   //load_amoeba();
 }

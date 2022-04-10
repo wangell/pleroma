@@ -25,7 +25,7 @@ void net_loop() {
   romabuf::PleromaMessage message;
   message.set_vat_id(0);
   message.set_entity_id(0);
-  message.set_function_id(0);
+  message.set_function_id("");
 
   /* Wait up to 1000 milliseconds for an event. */
   while (enet_host_service(pnet.server, &event, 1000) > 0) {
@@ -124,6 +124,11 @@ void send_node_msg(Msg m) {
   message.set_src_node_id(m.src_node_id);
   message.set_src_entity_id(m.src_entity_id);
   message.set_src_vat_id(m.src_vat_id);
+
+  message.set_response(m.response);
+
+  message.set_function_id(m.function_name);
+  message.set_src_function_id(m.function_name);
 
   message.set_promise_id(m.promise_id);
   std::string buf = message.SerializeAsString();

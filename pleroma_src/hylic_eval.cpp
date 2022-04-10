@@ -12,6 +12,7 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
   new_context.entity = context->entity;
   new_context.vat = context->vat;
   new_context.scope = &block_scope;
+  new_context.node = context->node;
 
   // load symbols into scope
   for (auto &[sym, node] : sub_syms) {
@@ -59,28 +60,18 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::string function_name,
                          std::vector<AstNode *> args) {
 
-  if (function_name == "print") {
+  printf("%s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
+  auto func = entity->entity_def->functions.find(function_name);
+  assert(func != entity->entity_def->functions.end());
 
-    auto node_val = eval(context, args[0]);
-    if (args[0]->type == AstNodeType::NumberNode) {
-      auto nn = (NumberNode*)args[0];
-      printf("%ld\n", nn->value);
-    }
+  FuncStmt *func_def_node = (FuncStmt *)func->second;
+  assert(func_def_node->args.size() == args.size());
 
-    return make_nop();
-  } else {
-    auto func = entity->entity_def->functions.find(function_name);
-    assert(func != entity->entity_def->functions.end());
-
-    FuncStmt *func_def_node = (FuncStmt *)func->second;
-    assert(func_def_node->args.size() == args.size());
-
-    std::vector<std::tuple<std::string, AstNode *>> subs;
-    for (int i = 0; i < func_def_node->args.size(); ++i) {
-      subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
-    }
-    return eval_block(context, func_def_node->body, subs);
+  std::vector<std::tuple<std::string, AstNode *>> subs;
+  for (int i = 0; i < func_def_node->args.size(); ++i) {
+    subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
   }
+  return eval_block(context, func_def_node->body, subs);
 }
 
 AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
@@ -97,7 +88,8 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   target_entity = resolve_local_entity(context, entity_ref);
   assert(target_entity != nullptr);
 
-  printf("Eval: message node %s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
+  // printf("Eval: message node %s %s\n",
+  // target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (distance == MessageDistance::Local) {
 
@@ -277,7 +269,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       // printf("Searching namespace %s\n", node->namespace_table.c_str());
 
       return eval_message_node(context, ent_node, MessageDistance::Local,
-                               CommMode::Sync, mess_node->function_name,
+                               mess_node->comm_mode, mess_node->function_name,
                                mess_node->args);
 
     } else {
@@ -363,13 +355,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     }
 
     // Are we calling this on our self?
-    //EntityRefNode* ref = nullptr;;
-    //if (node->entity_ref != nullptr) {
+    // EntityRefNode* ref = nullptr;;
+    // if (node->entity_ref != nullptr) {
     //  ref = (EntityRefNode *)eval(context, node->entity_ref);
     //}
 
     return eval_message_node(
-                             context, (EntityRefNode*)eval(context, node->entity_ref),
+        context, (EntityRefNode *)eval(context, node->entity_ref),
         MessageDistance::Local, node->comm_mode, node->function_name, args);
   }
 

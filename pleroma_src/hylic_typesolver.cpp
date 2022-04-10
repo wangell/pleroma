@@ -69,6 +69,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::NamespaceAccess: {
     auto ns_node = (NamespaceAccess *)node;
+    // TODO change context
     return typesolve_sub(context, ns_node->field);
   } break;
 
@@ -166,7 +167,7 @@ void typesolve(std::map<std::string, AstNode *> program) {
   bool all_valid = true;
   for (auto &[k, v] : program) {
     //all_valid = all_valid && typesolve_sub(v);
-    typesolve_sub(&context, v);
+    //typesolve_sub(&context, v);
   }
 
   assert(all_valid);

@@ -2,7 +2,7 @@
 
 #include <map>
 #include <string>
-#include "hylic_ast.h"
+#include "../hylic_ast.h"
 
 extern std::map<std::string, AstNode *> kernel_map;
 

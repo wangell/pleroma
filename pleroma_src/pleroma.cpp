@@ -14,7 +14,7 @@
 
 #include "hylic_typesolver.h"
 #include "netcode.h"
-#include "kernel.h"
+#include "core/kernel.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
@@ -95,6 +95,7 @@ void process_vq() {
         EvalContext context;
         Scope scope;
         start_stack(&context, &scope, our_vat, target_entity);
+        context.node = &this_pleroma_node;
 
         // Return vs call
         if (m.response) {
@@ -183,6 +184,7 @@ int main(int argc, char **argv) {
   auto user_program = (EntityDef *)program["Test"];
 
   program["Io"] = (EntityDef *)kernel_map["Io"];
+  program["Net"] = (EntityDef *)kernel_map["Net"];
   //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
 
   typesolve(program);
