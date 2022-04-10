@@ -276,7 +276,6 @@ AstNode *parse_expr(ParseContext *context) {
                                            CommMode::Sync, args));
         }
       } else {
-        printf("pushie\n");
         auto topstack = val_stack.top();
         val_stack.pop();
         val_stack.push(make_message_node(topstack, op.name, CommMode::Sync, args));
