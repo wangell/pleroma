@@ -64,6 +64,7 @@ struct Vat {
 struct Scope {
   Scope *parent = nullptr;
   std::map<std::string, AstNode *> table;
+  bool readonly = false;
 };
 
 extern Scope global_scope;
@@ -80,13 +81,22 @@ struct EvalContext {
 };
 
 AstNode *eval(EvalContext* context, AstNode *obj);
-Scope *find_symbol_scope(std::string sym, Scope *scope);
-AstNode *find_symbol(std::string sym, Scope *scope);
-Entity *create_entity(EvalContext* context, EntityDef *entity_def);
-AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
-void print_value_node(ValueNode *value_node);
-void print_msg(Msg *m);
+std::map<std::string, AstNode *> * find_symbol_table(EvalContext *context, Scope *scope, std::string sym);
+  AstNode *find_symbol(EvalContext * context, std::string sym);
+  Entity *create_entity(EvalContext * context, EntityDef * entity_def);
+  AstNode *eval_func_local(EvalContext * context, Entity * entity,
+                           std::string function_name,
+                           std::vector<AstNode *> args);
+  AstNode *eval_promise_local(EvalContext * context, Entity * entity,
+                              PromiseResult * resolve_node);
+  void print_value_node(ValueNode * value_node);
+  void print_msg(Msg * m);
 
-void start_stack(EvalContext *context, Scope* scope, Vat *vat, Entity *entity);
-EvalContext push_stack_frame();
+  void start_stack(EvalContext * context, Scope * scope, Vat * vat,
+                   Entity * entity);
+  EvalContext push_stack_frame();
+
+  AstNode *eval_message_node(EvalContext * context, EntityRefNode * entity_ref,
+                             MessageDistance distance, CommMode comm_mode,
+                             std::string function_name,
+                             std::vector<AstNode *> args);

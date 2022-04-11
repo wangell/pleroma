@@ -164,6 +164,9 @@ void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *enti
   context.entity = nullptr;
   context.vat = c->vat;
   context.node = &this_pleroma_node;
+  Scope scope;
+  scope.table = program;
+  context.scope = &scope;
 
   Entity *ent = create_entity(&context, entity_def);
   ent->file_scope = program;

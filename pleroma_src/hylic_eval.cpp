@@ -60,7 +60,6 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::string function_name,
                          std::vector<AstNode *> args) {
 
-  printf("%s %s\n", entity->entity_def->name.c_str(), function_name.c_str());
   auto func = entity->entity_def->functions.find(function_name);
   assert(func != entity->entity_def->functions.end());
 
@@ -156,9 +155,15 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
-    auto find_it = find_symbol_scope(sym->sym, context->scope);
+    if (expr->type == AstNodeType::EntityRefNode) {
+      auto eref = (EntityRefNode *)expr;
+      printf("Dbug Entity ref %d %d %d\n", eref->node_id, eref->vat_id,
+             eref->entity_id);
+    }
+
+    std::map<std::string, AstNode*> *find_it = find_symbol_table(context, context->scope, sym->sym);
     if (find_it) {
-      find_it->table[sym->sym] = expr;
+      (*find_it)[sym->sym] = expr;
     } else {
       context->scope->table[sym->sym] = expr;
     }
@@ -262,7 +267,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       new_context.entity =
           resolve_local_entity(context, (EntityRefNode *)ref_node);
       Scope new_scope;
-      new_scope.table["a"] = make_number(4);
       new_scope.table["self"] = new_context.entity->entity_def;
       new_context.scope = &new_scope;
 
@@ -366,14 +370,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
-    return find_symbol(((SymbolNode *)obj)->sym, context->scope);
+    return find_symbol(context, ((SymbolNode *)obj)->sym);
   }
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity *ent =
-        create_entity(context, (EntityDef *)find_symbol(node->entity_def_name,
-                                                        context->scope));
+    Entity *ent = create_entity(
+        context, (EntityDef *)find_symbol(context, node->entity_def_name));
 
     return make_entity_ref(ent->address.node_id, ent->address.vat_id,
                            ent->address.entity_id);
@@ -386,7 +389,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::PromiseResNode) {
     auto node = (PromiseResNode *)obj;
 
-    auto prom_sym = find_symbol(node->sym, context->scope);
+    auto prom_sym = find_symbol(context, node->sym);
     assert(prom_sym->type == AstNodeType::PromiseNode);
     auto prom = (PromiseNode *)prom_sym;
 
@@ -424,12 +427,12 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   assert(false);
 }
 
-Scope *find_symbol_scope(std::string sym, Scope *scope) {
+std::map<std::string, AstNode*> *find_symbol_table(EvalContext *context, Scope *scope, std::string sym) {
   Scope *s = scope;
 
   auto first_find = scope->table.find(sym);
   if (first_find != s->table.end()) {
-    return scope;
+    return &scope->table;
   }
 
   while (true) {
@@ -441,23 +444,24 @@ Scope *find_symbol_scope(std::string sym, Scope *scope) {
         continue;
       }
 
-      return s;
+      return &s->table;
     } else {
-      // Global
-      auto sym_find = global_scope.table.find(sym);
-      if (sym_find == global_scope.table.end()) {
-        return nullptr;
-      }
-
-      return &global_scope;
+      // reached the end, search entity scope
+      break;
     }
   }
+
+  if (context->entity->data.find(sym) != context->entity->data.end()) {
+    return &context->entity->data;
+  }
+
+  return nullptr;
 }
 
-AstNode *find_symbol(std::string sym, Scope *scope) {
-  Scope *s = scope;
+AstNode *find_symbol(EvalContext *context, std::string sym) {
+  Scope *s = context->scope;
 
-  auto first_find = scope->table.find(sym);
+  auto first_find = context->scope->table.find(sym);
   if (first_find != s->table.end()) {
     return first_find->second;
   }
@@ -473,17 +477,22 @@ AstNode *find_symbol(std::string sym, Scope *scope) {
 
       return sym_find->second;
     } else {
-      // Global
-      auto sym_find = global_scope.table.find(sym);
-      if (sym_find == global_scope.table.end()) {
-        // NOTE could return nil here
-        printf("Failed to find symbol %s\n", sym.c_str());
-        exit(1);
-      }
-
-      return sym_find->second;
+      break;
     }
   }
+
+  // Search entity data
+  if (context->entity->data.find(sym) != context->entity->data.end()) {
+    return context->entity->data.find(sym)->second;
+  }
+
+  // Search file scope
+  if (context->entity->file_scope.find(sym) != context->entity->file_scope.end()) {
+    return context->entity->file_scope.find(sym)->second;
+  }
+
+  printf("Failed to find symbol %s\n", sym.c_str());
+  assert(false);
 }
 
 Entity *create_entity(EvalContext *context, EntityDef *entity_def) {
@@ -497,6 +506,21 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def) {
   context->vat->entity_id_base++;
 
   context->vat->entities[e->address.entity_id] = e;
+
+  for (auto &[k, v]: entity_def->data) {
+    e->data[k] = v;
+  }
+
+  EvalContext new_cont;
+  new_cont.entity = e;
+  new_cont.node = context->node;
+  new_cont.vat = context->vat;
+  Scope *scope = context->scope;
+  while (scope->parent) scope = scope->parent;
+  new_cont.scope = scope;
+
+  eval_func_local(&new_cont, e, "create", {});
+
 
   return e;
 }
@@ -549,6 +573,7 @@ void print_msg(Msg *m) {
 void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity) {
   scope->table = entity->file_scope;
   scope->table["self"] = make_entity_ref(0, 0, 0);
+  scope->readonly = true;
 
   context->vat = vat;
   context->entity = entity;

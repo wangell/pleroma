@@ -228,6 +228,11 @@ AstNode *make_nop() {
   return static_nop;
 }
 
+AstNode *make_undefined() {
+  AstNode* und = new AstNode;
+  assert(false);
+}
+
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args) {
   MessageNode *func_call = new MessageNode;
   func_call->type = AstNodeType::MessageNode;

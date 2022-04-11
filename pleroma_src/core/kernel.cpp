@@ -27,6 +27,11 @@ AstNode *io_print(EvalContext *context, std::vector<AstNode *> args) {
     printf("%ld\n", ((NumberNode *)pval)->value);
   }
 
+  if (pval->type == AstNodeType::EntityRefNode) {
+    auto eref = (EntityRefNode*)pval;
+    printf("EntityRef(%d, %d, %d)\n", eref->node_id, eref->vat_id, eref->entity_id);
+  }
+
   return make_number(0);
 }
 
@@ -37,6 +42,10 @@ AstNode *io_readline(EvalContext *context, std::vector<AstNode *> args) {
   std::getline(std::cin, user_input);
 
   return make_string(user_input);
+}
+
+AstNode *io_create(EvalContext *context, std::vector<AstNode*> args) {
+  return make_number(0);
 }
 
 // Context may be unnecessary
@@ -116,6 +125,9 @@ void load_kernel() {
   //io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {});
 
   io_functions["print"]->ctype.basetype = PType::u8;
+  io_functions["create"] = setup_direct_call(io_create, "create", {}, {}, test_type);
+  io_functions["create"]->ctype.basetype = PType::u8;
+
   //io_functions["readline"]->ctype.basetype = PType::str;
 
   kernel_map["Io"] = make_actor("Io", io_functions, {});

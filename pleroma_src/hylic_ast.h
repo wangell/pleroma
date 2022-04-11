@@ -43,7 +43,9 @@ enum class AstNodeType {
   BooleanNode,
   MatchNode,
 
-  ForeignFunc
+  ForeignFunc,
+
+  UndefinedNode
 };
 
 enum class MessageDistance { Local, Far, Alien };
@@ -252,6 +254,7 @@ AstNode *make_symbol(std::string s);
 AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
 AstNode *make_nop();
+AstNode *make_undefined();
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);

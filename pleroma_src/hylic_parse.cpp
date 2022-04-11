@@ -187,7 +187,13 @@ AstNode *parse_expr(ParseContext *context) {
         // val_stack.push(make_message_node(, tt->lexeme, CommMode::Sync,
         // args));
       } else {
-        val_stack.push(expr1);
+
+        // TODO make a keyword
+        if (tt->lexeme == "self") {
+          val_stack.push(make_entity_ref(0, 0, 0));
+        } else {
+          val_stack.push(expr1);
+        }
       }
     } else if (check(TokenType::Message)) {
       accept(TokenType::Message);
@@ -283,6 +289,8 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(make_create_entity("Net", false));
         } else if (op.name == "Io") {
           val_stack.push(make_create_entity("Io", false));
+        } else if (context->tl_symbol_table.find(op.name) != context->tl_symbol_table.end()) {
+          val_stack.push(make_create_entity(op.name, false));
         } else {
           val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name,
                                            mode, args));
@@ -544,10 +552,10 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     }
 
     if (accept(TokenType::Equals)) {
+      SymbolNode *sym_node = (SymbolNode *)make_symbol(t->lexeme);
       auto expr = parse_expr(context);
       expect(TokenType::Newline);
-      // FIXME remove this
-      assert(false);
+      return make_assignment(sym_node, expr);
     } else if (accept(TokenType::For)) {
       auto for_generator = parse_expr(context);
       expect(TokenType::Newline);
@@ -772,8 +780,23 @@ AstNode *parse_actor(ParseContext *context) {
       break;
     }
 
-    FuncStmt *func = (FuncStmt *)parse_function(context);
-    functions[func->name] = func;
+    // Parse data section
+    if (check(TokenType::Symbol)) {
+      Token *data_sym = accept(TokenType::Symbol);
+
+      expect(TokenType::Colon);
+
+      CType *data_type = parse_type();
+
+      data[data_sym->lexeme] = new AstNode;
+
+    } else if (check(TokenType::Function)) {
+      // Parse functions
+      FuncStmt *func = (FuncStmt *)parse_function(context);
+      functions[func->name] = func;
+    } else {
+      assert(false);
+    }
 
     expect(TokenType::Newline);
   }

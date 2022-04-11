@@ -1,26 +1,29 @@
 #include "net.h"
 
-#include "ffi.h"
 #include "../hylic_ast.h"
+#include "../hylic_eval.h"
+#include "ffi.h"
 
-#include <unistd.h>
-#include <sys/socket.h>
+#include <cstring>
 #include <netinet/in.h>
-#include <string>
 #include <stdio.h>
 #include <stdlib.h>
-#include <cstring>
+#include <string>
+#include <sys/socket.h>
+#include <unistd.h>
 
 extern std::map<std::string, AstNode *> kernel_map;
 
-AstNode *net_test(EvalContext *context, std::vector<AstNode *> args) {
+int server_fd, new_socket, valread;
+struct sockaddr_in address;
+int opt = 1;
+int addrlen = sizeof(address);
+char buffer[1024] = {0};
+char *hello = "Hello from server";
 
-  int server_fd, new_socket, valread;
-  struct sockaddr_in address;
-  int opt = 1;
-  int addrlen = sizeof(address);
-  char buffer[1024] = {0};
-  char *hello = "Hello from server";
+AstNode* entity_ref;
+
+AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
 
   // Creating socket file descriptor
   if ((server_fd = socket(AF_INET, SOCK_STREAM, 0)) == 0) {
@@ -47,17 +50,38 @@ AstNode *net_test(EvalContext *context, std::vector<AstNode *> args) {
     perror("listen");
     exit(EXIT_FAILURE);
   }
+
+  entity_ref = eval(context, args[0]);
+
+  //printf("%d Entity ref %d %d %d\n", eref->type, eref->node_id, eref->vat_id, eref->entity_id);
+
+  return make_number(0);
+}
+
+AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
                            (socklen_t *)&addrlen)) < 0) {
     perror("accept");
     exit(EXIT_FAILURE);
   }
   valread = read(new_socket, buffer, 1024);
-  printf("%s\n", buffer);
-  send(new_socket, hello, strlen(hello), 0);
-  printf("Hello message sent\n");
+  //printf("%s\n", buffer);
 
-  return make_nop();
+  // Call our function here
+  //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
+  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
+
+  auto res_str = (StringNode*) eval(context, res);
+
+  send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
+  //printf("Hello message sent\n");
+  close(new_socket);
+
+  return make_number(0);
+}
+
+AstNode *net_create(EvalContext *context, std::vector<AstNode *> args) {
+  return make_number(0);
 }
 
 void load_net() {
@@ -66,6 +90,13 @@ void load_net() {
   CType test_type;
   test_type.basetype = PType::u8;
 
-  functions["test"] = setup_direct_call(net_test, "test", {}, {}, test_type);
+  CType blah;
+  blah.basetype = PType::Entity;
+
+  functions["start"] = setup_direct_call(net_start, "start", {"ent"}, {&blah}, test_type);
+  functions["next"] = setup_direct_call(net_next, "next", {}, {}, test_type);
+  functions["create"] = setup_direct_call(net_create, "create", {}, {}, test_type);
+  functions["create"]->ctype.basetype = PType::u8;
+
   kernel_map["Net"] = make_actor("Net", functions, {});
 }
