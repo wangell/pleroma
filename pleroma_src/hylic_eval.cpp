@@ -155,12 +155,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
-    if (expr->type == AstNodeType::EntityRefNode) {
-      auto eref = (EntityRefNode *)expr;
-      printf("Dbug Entity ref %d %d %d\n", eref->node_id, eref->vat_id,
-             eref->entity_id);
-    }
-
     std::map<std::string, AstNode*> *find_it = find_symbol_table(context, context->scope, sym->sym);
     if (find_it) {
       (*find_it)[sym->sym] = expr;
@@ -343,10 +337,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::FuncStmt) {
-    auto node = (FuncStmt *)obj;
-    std::string sym;
-    sym = node->name;
-    global_scope.table[sym] = node;
     return make_nop();
   }
 

@@ -1,7 +1,8 @@
 #pragma once
 
-#include <string>
+#include "hylic_compex.h"
 #include <list>
+#include <string>
 
 enum class TokenType {
   Newline,
@@ -86,6 +87,9 @@ struct TokenStream {
   Token *get();
 
   void reset();
+};
+
+struct TokenizerException : CompileException {
 };
 
 void add_token(TokenType t, std::string lexeme);

@@ -5,8 +5,10 @@
 #include <map>
 
 struct TypeContext {
-  std::map<std::string, CType> typestore;
+  Scope* scope;
   std::map<std::string, AstNode*> program;
+
+  std::vector<TypesolverException*> exceptions;
 };
 
 bool is_complex(CType a) {
@@ -15,16 +17,16 @@ bool is_complex(CType a) {
     a.basetype == PType::UserType;
 }
 
-void exact_match(CType a, CType b) {
+bool exact_match(CType a, CType b) {
   if (a.basetype != b.basetype) {
-    // printf("A incompatible with type B: %d, %d\n", a, b);
-    printf("A incompatible with type B: %d, %d\n", a.basetype, b.basetype);
-    assert(false);
+    return false;
   }
 
   if (is_complex(a) || is_complex(b)) {
-    exact_match(*a.subtype, *b.subtype);
+    return exact_match(*a.subtype, *b.subtype);
   }
+
+  return true;
 }
 
 CType typesolve_sub(TypeContext* context, AstNode *node) {
@@ -92,19 +94,27 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     for (auto param : func_node->param_types) {
     }
 
+
     bool has_return = false;
     for (auto blocknode : func_node->body) {
       if (blocknode->type == AstNodeType::ReturnNode) {
         has_return = true;
-        //printf("%d\n", func_node->ctype);
-        exact_match(typesolve_sub(context, blocknode), func_node->ctype);
+        if (!exact_match(typesolve_sub(context, blocknode), func_node->ctype)) {
+          TypesolverException *exc = new TypesolverException;
+          exc->msg = "Function return type differs from a body return value";
+          context->exceptions.push_back(exc);
+        }
       } else {
         typesolve_sub(context, blocknode);
       }
     }
 
     if (!has_return) {
-      assert(func_node->ctype.basetype == PType::None);
+      if (func_node->ctype.basetype != PType::None) {
+        TypesolverException *exc = new TypesolverException;
+        exc->msg = "Function is marked void, but returns a value in the body";
+        context->exceptions.push_back(exc);
+      }
     }
 
     return CType();
@@ -136,18 +146,31 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::AssignmentStmt: {
     auto assmt_node = (AssignmentStmt *)node;
-    CType lexpr = assmt_node->sym->ctype;
+    CType lexpr;
+    //if (typestore_find_symbol(context, assmt_node->sym)) {
+    //}
+
     CType rexpr = typesolve_sub(context, assmt_node->value);
 
-    exact_match(lexpr, rexpr);
+    if (!exact_match(lexpr, rexpr)) {
+      auto *exc = new TypesolverException;
 
-    context->typestore[assmt_node->sym->sym] = lexpr;
+      exc->msg = "Attempted assign to a " + ctype_to_string(&lexpr) + " from a " + ctype_to_string(&rexpr);
+
+      context->exceptions.push_back(exc);
+    }
+
+    //context->typestore[assmt_node->sym->sym] = lexpr;
 
     return rexpr;
   } break;
 
   case AstNodeType::EntityDef: {
     auto ent_node = (EntityDef *)node;
+    for (auto &[k, v] : ent_node->data) {
+      //context->typestore[k] = v;
+    }
+
     for (auto &[k, v] : ent_node->functions) {
       typesolve_sub(context, v);
       // all_valid = all_valid && typesolve_sub(v);
@@ -161,8 +184,16 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   assert(false);
 }
 
+void print_typesolver_exceptions(std::vector<TypesolverException*> exceptions) {
+  for (auto e : exceptions) {
+    printf("%s\n", e->msg.c_str());
+  }
+}
+
 void typesolve(std::map<std::string, AstNode *> program) {
   TypeContext context;
+  context.scope = new Scope;
+  context.scope->table = program;
 
   bool all_valid = true;
   for (auto &[k, v] : program) {
@@ -170,5 +201,7 @@ void typesolve(std::map<std::string, AstNode *> program) {
     //typesolve_sub(&context, v);
   }
 
-  assert(all_valid);
+  print_typesolver_exceptions(context.exceptions);
+
+  assert(context.exceptions.empty());
 }

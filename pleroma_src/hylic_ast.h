@@ -1,6 +1,7 @@
 #pragma once
 
 #include "common.h"
+#include "hylic_tokenizer.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -78,6 +79,9 @@ struct CType {
 
   CType* subtype;
   std::string entity_name;
+
+  std::list<Token *>::iterator start;
+  std::list<Token *>::iterator end;
 };
 
 struct AstNode {
@@ -85,6 +89,9 @@ struct AstNode {
   AstNode *parent;
 
   CType ctype;
+
+  std::list<Token *>::iterator start;
+  std::list<Token *>::iterator end;
 };
 
 struct Nop : AstNode {};
@@ -266,6 +273,9 @@ AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> bo
 AstNode *make_foreign_func_call(AstNode* (*foreign_func)(EvalContext*, std::vector<AstNode*>), std::vector<AstNode*> args);
 
 std::string ast_type_to_string(AstNodeType t);
+std::string ctype_to_string(CType *ctype);
 
 void print_ast(AstNode *node, int indent_level = 0);
 void print_ast_block(std::vector<AstNode *> block);
+
+CType *clone_ctype(CType* ctype);

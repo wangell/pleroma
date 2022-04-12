@@ -319,3 +319,44 @@ void print_ast_block(std::vector<AstNode *> block) {
     print_ast(node);
   }
 }
+
+CType *clone_ctype(CType *ctype) {
+  CType *cloned = new CType;
+  cloned->basetype = ctype->basetype;
+  cloned->subtype = clone_ctype(ctype);
+  return cloned;
+}
+
+std::string ctype_to_string(CType *ctype) {
+  switch (ctype->basetype) {
+  case PType::u8:
+    return "u8";
+    break;
+  case PType::u16:
+    return "u16";
+    break;
+  case PType::u32:
+    return "u32";
+    break;
+  case PType::str:
+    return "str";
+    break;
+  case PType::NotAssigned:
+    return "n/a";
+    break;
+  case PType::Entity:
+    assert(!ctype->entity_name.empty());
+    return ctype->entity_name;
+    break;
+  case PType::List:
+    if (ctype->subtype) {
+      return "[" + ctype_to_string(ctype->subtype) + "]";
+    } else {
+      return "[]";
+    }
+    break;
+  }
+
+  printf("Failed to catch type %d\n", ctype->basetype);
+  assert(false);
+}

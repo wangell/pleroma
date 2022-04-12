@@ -67,8 +67,6 @@ struct Scope {
   bool readonly = false;
 };
 
-extern Scope global_scope;
-
 struct PleromaNode {
   u32 node_id = 0;
 };

@@ -99,7 +99,9 @@ Token *accept(TokenType t) {
 }
 
 CType *parse_type() {
+
   CType *var_type = new CType;
+  var_type->start = tokenstream.current;
 
   MessageDistance dist = MessageDistance::Local;
 
@@ -115,6 +117,7 @@ CType *parse_type() {
     CType *sub_type = parse_type();
     var_type->basetype = PType::Promise;
     var_type->subtype = sub_type;
+    var_type->end = tokenstream.current;
     return var_type;
   }
 
@@ -140,6 +143,7 @@ CType *parse_type() {
     }
   }
 
+  var_type->end = tokenstream.current;
   return var_type;
 }
 
@@ -147,15 +151,38 @@ AstNode *parse_expr(ParseContext *context) {
   std::stack<InfixOp> op_stack;
   std::stack<AstNode *> val_stack;
 
-  while (!check(TokenType::Newline) && !check(TokenType::RightParen)) {
+  while (!check(TokenType::Newline) && !check(TokenType::RightParen) && !check(TokenType::Comma) && !check(TokenType::RightBracket)) {
     if (accept(TokenType::LeftParen)) {
       auto body = parse_expr(context);
       expect(TokenType::RightParen);
       return body;
     } else if (check(TokenType::Number)) {
-      auto expr1 = make_number(
-          strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+      auto expr1 = make_number(strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
       val_stack.push(expr1);
+    } else if (check(TokenType::LeftBracket)) {
+      expect(TokenType::LeftBracket);
+
+      std::vector<AstNode*> list;
+      while (!check(TokenType::RightBracket)) {
+        auto expr = parse_expr(context);
+        printf("ya\n");
+        list.push_back(expr);
+
+        if (!check(TokenType::RightBracket)) {
+          expect(TokenType::Comma);
+        }
+      }
+
+      expect(TokenType::RightBracket);
+
+      CType *list_type = new CType;
+      if (list.empty()) {
+        list_type->basetype = PType::NotAssigned;
+      } else {
+        list_type->basetype = list[0]->ctype.basetype;
+      }
+
+      val_stack.push(make_list(list, list_type));
     } else if (check(TokenType::String)) {
       auto expr = accept(TokenType::String);
       val_stack.push(make_string(expr->lexeme));
@@ -238,6 +265,7 @@ AstNode *parse_expr(ParseContext *context) {
       op_stack.push(op);
       val_stack.push(parse_expr(context));
     } else {
+      printf("%d\n", tokenstream.get()->type);
       assert(false);
     }
   }

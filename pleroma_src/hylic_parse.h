@@ -3,8 +3,8 @@
 #include <map>
 #include <string>
 #include "hylic_ast.h"
+#include "hylic_compex.h"
 #include "hylic_tokenizer.h"
-#include "hylic.h"
 #include <cassert>
 #include <stack>
 
@@ -33,7 +33,9 @@ struct InfixOp {
 
 struct ParseContext {
   std::map<std::string, TLUserType> tl_symbol_table;
+};
 
+struct ParseException : CompileException {
 };
 
 std::map<std::string, AstNode *> parse(TokenStream stream);
