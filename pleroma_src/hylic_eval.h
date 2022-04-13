@@ -1,11 +1,11 @@
 #pragma once
 
-#include <vector>
-#include "hylic_ast.h"
 #include "common.h"
+#include "hylic_ast.h"
 #include <mutex>
 #include <queue>
 #include <string>
+#include <vector>
 
 struct EntityAddress {
   int node_id = 0;
@@ -18,7 +18,7 @@ struct Entity {
   EntityAddress address;
 
   std::map<std::string, AstNode *> data;
-  std::map<std::string, AstNode*> file_scope;
+  std::map<std::string, AstNode *> file_scope;
 };
 
 struct Msg {
@@ -31,18 +31,18 @@ struct Msg {
   bool response = false;
 
   int src_entity_id = 0;
-  int src_vat_id = 0 ;
+  int src_vat_id = 0;
   int src_node_id = 0;
 
   std::string function_name;
 
-  std::vector<ValueNode*> values;
+  std::vector<ValueNode *> values;
 };
 
 struct PromiseResult {
   bool resolved = false;
-  std::vector<ValueNode*> results;
-  PromiseResNode* callback;
+  std::vector<ValueNode *> results;
+  PromiseResNode *callback;
 };
 
 struct Vat {
@@ -69,32 +69,28 @@ struct Scope {
 
 struct PleromaNode {
   u32 node_id = 0;
+
+  int vat_id_base = 0;
 };
 
 struct EvalContext {
-  PleromaNode* node;
-  Vat* vat;
-  Entity* entity;
+  PleromaNode *node;
+  Vat *vat;
+  Entity *entity;
   Scope *scope;
 };
 
-AstNode *eval(EvalContext* context, AstNode *obj);
-std::map<std::string, AstNode *> * find_symbol_table(EvalContext *context, Scope *scope, std::string sym);
-  AstNode *find_symbol(EvalContext * context, std::string sym);
-  Entity *create_entity(EvalContext * context, EntityDef * entity_def);
-  AstNode *eval_func_local(EvalContext * context, Entity * entity,
-                           std::string function_name,
-                           std::vector<AstNode *> args);
-  AstNode *eval_promise_local(EvalContext * context, Entity * entity,
-                              PromiseResult * resolve_node);
-  void print_value_node(ValueNode * value_node);
-  void print_msg(Msg * m);
+AstNode *eval(EvalContext *context, AstNode *obj);
+std::map<std::string, AstNode *> *
+find_symbol_table(EvalContext *context, Scope *scope, std::string sym);
+AstNode *find_symbol(EvalContext *context, std::string sym);
+Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat);
+AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
+void print_value_node(ValueNode *value_node);
+void print_msg(Msg *m);
 
-  void start_stack(EvalContext * context, Scope * scope, Vat * vat,
-                   Entity * entity);
-  EvalContext push_stack_frame();
+void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity);
+EvalContext push_stack_frame();
 
-  AstNode *eval_message_node(EvalContext * context, EntityRefNode * entity_ref,
-                             MessageDistance distance, CommMode comm_mode,
-                             std::string function_name,
-                             std::vector<AstNode *> args);
+AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref, MessageDistance distance, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args);

@@ -1,31 +1,31 @@
 #include "netcode.h"
-#include <arpa/inet.h>
+#include "../shared_src/protoloma.pb.h"
+#include "concurrentqueue.h"
 #include "hylic_ast.h"
 #include "pleroma.h"
+#include <arpa/inet.h>
 #include <cstdio>
-#include "../shared_src/protoloma.pb.h"
 #include <cstdlib>
 #include <enet/enet.h>
 #include <enet/types.h>
+#include <map>
 #include <string>
 #include <vector>
-#include <map>
 
-std::mutex net_mtx;
-std::queue<Msg> net_queue;
+moodycamel::ConcurrentQueue<Msg> net_out_queue;
+std::queue<Msg> net_in_queue;
+
+moodycamel::ConcurrentQueue<Vat*> net_vats;
 
 struct PleromaNetwork {
   ENetHost *server;
-  std::map<enet_uint32, ENetPeer*> peers;
+  std::map<enet_uint32, ENetPeer *> peers;
   std::map<int, enet_uint32> node_host_map;
 } pnet;
 
 void net_loop() {
   ENetEvent event;
   romabuf::PleromaMessage message;
-  message.set_vat_id(0);
-  message.set_entity_id(0);
-  message.set_function_id("");
 
   /* Wait up to 1000 milliseconds for an event. */
   while (enet_host_service(pnet.server, &event, 1000) > 0) {
@@ -54,46 +54,62 @@ void net_loop() {
     }
   }
 
-  while (!net_queue.empty()) {
-    Msg m = net_queue.front();
-    net_queue.pop();
-    send_node_msg(m);
+  // Send all outgoing messages
+  Msg out_mess;
+  int n_received = 0;
+  while (net_out_queue.try_dequeue(out_mess)) {
+    send_node_msg(out_mess);
+    n_received++;
+
+    if (n_received > 100)
+      break;
   }
+
+  // Put incoming messages into the correct mailboxes
+  std::map<int, std::vector<Msg>> sort_queue;
+  while (!net_in_queue.empty()) {
+    auto msg_front = net_in_queue.front();
+    sort_queue[msg_front.vat_id].push_back(msg_front);
+    net_in_queue.pop();
+  }
+  Vat *vat_node;
+  while (net_vats.try_dequeue(vat_node)) {
+    if (sort_queue.find(vat_node->id) != sort_queue.end()) {
+      for (auto zz: sort_queue[vat_node->id]) {
+        vat_node->messages.push(zz);
+      }
+    }
+
+    queue.enqueue(vat_node);
+  }
+
 }
 
 void on_receive_packet(ENetEvent *event) {
-  std::string buf = std::string((char*)event->packet->data, event->packet->dataLength);
+  std::string buf =
+      std::string((char *)event->packet->data, event->packet->dataLength);
   romabuf::PleromaMessage message;
   message.ParseFromString(buf);
 
-  printf("parsed bpack %d\n", message.vat_id());
-  if (vats.find(message.vat_id()) != vats.end()) {
-    printf("putting a message on!\n");
-    vats[message.vat_id()]->message_mtx.lock();
+  // MSMC
+  Msg local_m;
+  local_m.entity_id = message.entity_id();
+  local_m.vat_id = message.vat_id();
+  local_m.node_id = message.node_id();
 
-    Msg local_m;
-    local_m.entity_id = message.entity_id();
-    local_m.vat_id = message.vat_id();
-    local_m.node_id = message.node_id();
+  local_m.src_entity_id = message.src_entity_id();
+  local_m.src_vat_id = message.src_vat_id();
+  local_m.src_node_id = message.src_node_id();
 
-    local_m.src_entity_id = message.src_entity_id();
-    local_m.src_vat_id = message.src_vat_id();
-    local_m.src_node_id = message.src_node_id();
+  local_m.promise_id = message.promise_id();
+  local_m.response = message.response();
 
-    local_m.promise_id = message.promise_id();
-    local_m.response = message.response();
+  local_m.values.push_back((ValueNode *)make_number(100));
 
-    local_m.values.push_back((ValueNode*)make_number(100));
-    printf("bunk0\n");
-
-    vats[message.vat_id()]->messages.push(local_m);
-    vats[message.vat_id()]->message_mtx.unlock();
-    printf("message put on!\n");
-  }
+  net_in_queue.push(local_m);
 }
 
-void on_client_connect() {
-}
+void on_client_connect() {}
 
 void init_network() {
   if (enet_initialize() != 0) {
@@ -132,7 +148,8 @@ void send_node_msg(Msg m) {
 
   message.set_promise_id(m.promise_id);
   std::string buf = message.SerializeAsString();
-  send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(), buf.length() + 1);
+  send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(),
+              buf.length() + 1);
 }
 
 void setup_server() {
@@ -181,5 +198,4 @@ void connect_client(ENetAddress address) {
   }
 
   pnet.peers[peer->address.host] = peer;
-
 }

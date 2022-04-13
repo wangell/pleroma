@@ -1,7 +1,10 @@
 #include "hylic_eval.h"
+#include "blockingconcurrentqueue.h"
 #include "hylic_ast.h"
 #include "pleroma.h"
 #include <cassert>
+
+extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
 AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
                     std::vector<std::tuple<std::string, AstNode *>> sub_syms) {
@@ -365,8 +368,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity *ent = create_entity(
-        context, (EntityDef *)find_symbol(context, node->entity_def_name));
+    Entity *ent = create_entity(context, (EntityDef *)find_symbol(context, node->entity_def_name), node->new_vat);
 
     return make_entity_ref(ent->address.node_id, ent->address.vat_id,
                            ent->address.entity_id);
@@ -485,17 +487,28 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   assert(false);
 }
 
-Entity *create_entity(EvalContext *context, EntityDef *entity_def) {
+Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
   Entity *e = new Entity;
+  Vat *vat;
+
+  if (new_vat) {
+    vat = new Vat;
+    vat->id = context->node->vat_id_base;
+    context->node->vat_id_base++;
+  } else {
+    vat = context->vat;
+  }
+
   e->entity_def = entity_def;
 
-  e->address.entity_id = context->vat->entity_id_base;
-  e->address.vat_id = context->vat->id;
+  e->address.entity_id = vat->entity_id_base;
+  e->address.vat_id = vat->id;
   e->address.node_id = context->node->node_id;
 
-  context->vat->entity_id_base++;
 
-  context->vat->entities[e->address.entity_id] = e;
+  vat->entity_id_base++;
+
+  vat->entities[e->address.entity_id] = e;
 
   for (auto &[k, v]: entity_def->data) {
     e->data[k] = v;
@@ -504,13 +517,16 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def) {
   EvalContext new_cont;
   new_cont.entity = e;
   new_cont.node = context->node;
-  new_cont.vat = context->vat;
+  new_cont.vat = vat;
   Scope *scope = context->scope;
   while (scope->parent) scope = scope->parent;
   new_cont.scope = scope;
 
   eval_func_local(&new_cont, e, "create", {});
 
+  if (new_vat) {
+    queue.enqueue(vat);
+  }
 
   return e;
 }

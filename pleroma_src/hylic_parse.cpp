@@ -151,21 +151,53 @@ AstNode *parse_expr(ParseContext *context) {
   std::stack<InfixOp> op_stack;
   std::stack<AstNode *> val_stack;
 
-  while (!check(TokenType::Newline) && !check(TokenType::RightParen) && !check(TokenType::Comma) && !check(TokenType::RightBracket)) {
+  while (!check(TokenType::Newline) && !check(TokenType::RightParen) &&
+         !check(TokenType::Comma) && !check(TokenType::RightBracket)) {
     if (accept(TokenType::LeftParen)) {
       auto body = parse_expr(context);
       expect(TokenType::RightParen);
       return body;
     } else if (check(TokenType::Number)) {
-      auto expr1 = make_number(strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+      auto expr1 = make_number(
+          strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
       val_stack.push(expr1);
+    } else if (accept(TokenType::Dollar)) {
+      // List in future
+      auto tt = accept(TokenType::Symbol);
+      auto expr1 = make_symbol(tt->lexeme);
+
+      if (accept(TokenType::LeftParen)) {
+
+        int n_args = 0;
+        // While next token does not equal right paren
+        while (!check(TokenType::RightParen)) {
+          auto expr = parse_expr(context);
+          val_stack.push(expr);
+          n_args++;
+
+          if (!check(TokenType::RightParen)) {
+            expect(TokenType::Comma);
+          }
+        }
+
+        expect(TokenType::RightParen);
+        printf("ya\n");
+
+        InfixOp op;
+        op.type = InfixOpType::NewVat;
+        op.n_args = n_args;
+        op.name = tt->lexeme;
+        op_stack.push(op);
+      } else {
+        assert(false);
+      }
+
     } else if (check(TokenType::LeftBracket)) {
       expect(TokenType::LeftBracket);
 
-      std::vector<AstNode*> list;
+      std::vector<AstNode *> list;
       while (!check(TokenType::RightBracket)) {
         auto expr = parse_expr(context);
-        printf("ya\n");
         list.push_back(expr);
 
         if (!check(TokenType::RightBracket)) {
@@ -297,7 +329,9 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.push(make_namespace_access(expr1, expr2));
     }
 
-    if (op.type == InfixOpType::MessageSync || op.type == InfixOpType::MessageAsync) {
+    if (op.type == InfixOpType::MessageSync ||
+        op.type == InfixOpType::MessageAsync ||
+        op.type == InfixOpType::NewVat) {
       std::vector<AstNode *> args;
       for (int k = 0; k < op.n_args; ++k) {
         args.push_back(val_stack.top());
@@ -312,16 +346,21 @@ AstNode *parse_expr(ParseContext *context) {
       }
 
       if (val_stack.empty()) {
+        bool new_vat = false;
+        if (op.type == InfixOpType::NewVat) {
+          new_vat = true;
+        }
         // FIXME
         if (op.name == "Net") {
-          val_stack.push(make_create_entity("Net", false));
+          val_stack.push(make_create_entity("Net", new_vat));
         } else if (op.name == "Io") {
-          val_stack.push(make_create_entity("Io", false));
-        } else if (context->tl_symbol_table.find(op.name) != context->tl_symbol_table.end()) {
-          val_stack.push(make_create_entity(op.name, false));
+          val_stack.push(make_create_entity("Io", new_vat));
+        } else if (context->tl_symbol_table.find(op.name) !=
+                   context->tl_symbol_table.end()) {
+          val_stack.push(make_create_entity(op.name, new_vat));
         } else {
-          val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name,
-                                           mode, args));
+          val_stack.push(
+              make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }
       } else {
         auto topstack = val_stack.top();

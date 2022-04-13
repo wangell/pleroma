@@ -15,25 +15,15 @@
 #include "hylic_typesolver.h"
 #include "netcode.h"
 #include "core/kernel.h"
+#include "blockingconcurrentqueue.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
-std::mutex mtx;
-std::map<int, Vat *> vats;
-
 PleromaNode this_pleroma_node;
 
-struct VqNode {
-  VqNode *next;
-
-  Vat *vat;
-
-  bool claimed = false;
-};
-
-VqNode *queue;
+moodycamel::BlockingConcurrentQueue<Vat*> queue;
 
 Msg create_response(Msg msg_in, ValueNode *return_val) {
   Msg response_m;
@@ -55,32 +45,11 @@ Msg create_response(Msg msg_in, ValueNode *return_val) {
 
 void process_vq() {
   while (true) {
-    // Get the next available vat
-    mtx.lock();
-
-    if (!queue) {
-      mtx.unlock();
-      continue;
-    }
-
-    VqNode *start = queue;
-    while (queue->claimed) {
-      queue = queue->next;
-
-      if (start == queue) {
-        mtx.unlock();
-        break;
-      }
-    }
-    VqNode *our_node = queue;
-    our_node->claimed = true;
-    mtx.unlock();
-
-    Vat *our_vat = our_node->vat;
+    Vat* our_vat;
+    queue.wait_dequeue(our_vat);
 
     // Take a number of steps
     for (int k = 0; k < 1; ++k) {
-      our_vat->message_mtx.lock();
 
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
@@ -125,7 +94,6 @@ void process_vq() {
         }
       }
 
-      net_mtx.lock();
       while (!our_vat->out_messages.empty()) {
         Msg m = our_vat->out_messages.front();
         our_vat->out_messages.pop();
@@ -134,47 +102,53 @@ void process_vq() {
         if (m.node_id == this_pleroma_node.node_id && m.vat_id == our_vat->id) {
           our_vat->messages.push(m);
         } else {
-          net_queue.push(m);
+          net_out_queue.enqueue(m);
         }
       }
-      net_mtx.unlock();
 
       sleep(1);
-      our_vat->message_mtx.unlock();
 
       our_vat->run_n++;
     }
 
-    // Place VAT back in queue
-    // printf("processed messages for vat\n");
-    mtx.lock();
-    our_node->claimed = false;
-    // Insert vat here
-    mtx.unlock();
+    net_vats.enqueue(our_vat);
+
   }
 }
 
 void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *entity_def) {
-  VqNode *c = new VqNode;
-  c->claimed = false;
-  c->next = c;
-  c->vat = new Vat;
+  Vat* og_vat = new Vat;
+  og_vat->id = 0;
+  queue.enqueue(og_vat);
+  this_pleroma_node.vat_id_base++;
 
   EvalContext context;
   context.entity = nullptr;
-  context.vat = c->vat;
+  context.vat = og_vat;
   context.node = &this_pleroma_node;
+
   Scope scope;
   scope.table = program;
   context.scope = &scope;
 
-  Entity *ent = create_entity(&context, entity_def);
+  Entity *ent = create_entity(&context, entity_def, false);
   ent->file_scope = program;
 
-  c->vat->entities[0] = ent;
+  og_vat->entities[0] = ent;
 
-  vats[0] = c->vat;
-  queue = c;
+  Msg m;
+  m.entity_id = 0;
+  m.function_name = "main";
+  m.node_id = 0;
+
+  m.src_entity_id = -1;
+  m.src_node_id = -1;
+  m.src_vat_id = -1;
+  m.promise_id = -1;
+
+  m.values.push_back((ValueNode *)make_number(99));
+
+  og_vat->messages.push(m);
 }
 
 int main(int argc, char **argv) {
@@ -193,20 +167,6 @@ int main(int argc, char **argv) {
   typesolve(program);
 
   inoculate_pleroma(program, user_program);
-
-  Msg m;
-  m.entity_id = 0;
-  m.function_name = "main";
-  m.node_id = 0;
-
-  m.src_entity_id = -1;
-  m.src_node_id = -1;
-  m.src_vat_id = -1;
-  m.promise_id = -1;
-
-  m.values.push_back((ValueNode *)make_number(99));
-
-  queue->vat->messages.push(m);
 
   init_network();
   setup_server();

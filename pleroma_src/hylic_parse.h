@@ -21,6 +21,7 @@ enum class InfixOpType {
 
   MessageSync,
   MessageAsync,
+  NewVat,
   Namespace
 };
 

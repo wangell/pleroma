@@ -228,6 +228,7 @@ struct EntityDef : AstNode {
 
 struct CreateEntityNode : AstNode {
   std::string entity_def_name;
+  bool new_vat = false;
 };
 
 struct AssignmentStmt : AstNode {

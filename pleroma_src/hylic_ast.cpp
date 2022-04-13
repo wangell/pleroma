@@ -250,6 +250,7 @@ AstNode *make_create_entity(std::string entity_def_name, bool new_vat) {
   entity_node->entity_def_name = entity_def_name;
   entity_node->ctype.basetype = PType::Entity;
   entity_node->ctype.entity_name = entity_def_name;
+  entity_node->new_vat = new_vat;
 
   return entity_node;
 }
