@@ -93,4 +93,4 @@ void print_msg(Msg *m);
 void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity);
 EvalContext push_stack_frame();
 
-AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref, MessageDistance distance, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args);
+AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args);

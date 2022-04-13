@@ -8,3 +8,5 @@
 #include "common.h"
 
 extern std::map<int, Vat *> vats;
+
+extern PleromaNode this_pleroma_node;

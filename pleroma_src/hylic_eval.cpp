@@ -77,75 +77,51 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
 }
 
 AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
-                           MessageDistance distance, CommMode comm_mode,
-                           std::string function_name,
+                           CommMode comm_mode, std::string function_name,
                            std::vector<AstNode *> args) {
 
   // 1. Determine what type of Entity we have - local, far, alien
   // 2. Determine if the call will be sync/async and if we care about the result
   // 3. Insert a row into the Promise stack if we need to.  Yield if we are
   // doing async, otherwise wait for return
-  Entity *target_entity = context->entity;
-
-  target_entity = resolve_local_entity(context, entity_ref);
-  assert(target_entity != nullptr);
 
   // printf("Eval: message node %s %s\n",
   // target_entity->entity_def->name.c_str(), function_name.c_str());
 
-  if (distance == MessageDistance::Local) {
+  if (comm_mode == CommMode::Sync) {
+    Entity *target_entity = context->entity;
+    target_entity = resolve_local_entity(context, entity_ref);
+    assert(target_entity != nullptr);
+    return eval_func_local(context, target_entity, function_name, args);
+  } else {
 
-    if (comm_mode == CommMode::Sync) {
+    Msg m;
+    m.entity_id = entity_ref->entity_id;
+    m.vat_id = entity_ref->vat_id;
+    m.node_id = entity_ref->node_id;
+    m.src_node_id = context->entity->address.node_id;
+    m.src_vat_id = context->entity->address.vat_id;
+    m.src_entity_id = context->entity->address.entity_id;
+    m.function_name = function_name;
 
-      return eval_func_local(context, target_entity, function_name, args);
-    } else {
+    m.response = false;
 
-      Msg m;
-      m.entity_id = target_entity->address.entity_id;
-      m.vat_id = target_entity->address.vat_id;
-      m.node_id = target_entity->address.node_id;
-      m.src_node_id = 0;
-      m.src_entity_id = 0;
-      m.src_vat_id = 0;
-      m.function_name = function_name;
-
-      m.response = false;
-
-      for (auto varg : args) {
-        m.values.push_back((ValueNode *)varg);
-      }
-
-      int pid = context->vat->promise_id_base;
-      m.promise_id = pid;
-
-      context->vat->out_messages.push(m);
-
-      context->vat->promises[pid] = PromiseResult();
-      context->vat->promise_id_base++;
-
-      return make_promise_node(pid);
+    for (auto varg : args) {
+      m.values.push_back((ValueNode *)varg);
     }
 
-  } else if (distance == MessageDistance::Far) {
-    Msg m;
-    m.entity_id = target_entity->address.entity_id;
-    m.vat_id = target_entity->address.vat_id;
-    m.node_id = target_entity->address.node_id;
+    int pid = context->vat->promise_id_base;
+    m.promise_id = pid;
 
-    m.src_node_id = 0;
-    m.src_entity_id = 0;
-    m.src_vat_id = 0;
-
-    m.function_name = function_name;
-    m.response = false;
     context->vat->out_messages.push(m);
 
-    return make_nop();
+    context->vat->promises[pid] = PromiseResult();
+    context->vat->promise_id_base++;
 
-  } else {
-    // Alien
-    assert(false);
+    return make_promise_node(pid);
   }
+
+  // TODO handle alien
 
   assert(false);
 }
@@ -158,7 +134,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
-    std::map<std::string, AstNode*> *find_it = find_symbol_table(context, context->scope, sym->sym);
+    std::map<std::string, AstNode *> *find_it =
+        find_symbol_table(context, context->scope, sym->sym);
     if (find_it) {
       (*find_it)[sym->sym] = expr;
     } else {
@@ -269,9 +246,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
       // printf("Searching namespace %s\n", node->namespace_table.c_str());
 
-      return eval_message_node(context, ent_node, MessageDistance::Local,
-                               mess_node->comm_mode, mess_node->function_name,
-                               mess_node->args);
+      return eval_message_node(context, ent_node, mess_node->comm_mode,
+                               mess_node->function_name, mess_node->args);
 
     } else {
       assert(false);
@@ -357,9 +333,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     //  ref = (EntityRefNode *)eval(context, node->entity_ref);
     //}
 
-    return eval_message_node(
-        context, (EntityRefNode *)eval(context, node->entity_ref),
-        MessageDistance::Local, node->comm_mode, node->function_name, args);
+    return eval_message_node(context,
+                             (EntityRefNode *)eval(context, node->entity_ref),
+                             node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
@@ -368,7 +344,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity *ent = create_entity(context, (EntityDef *)find_symbol(context, node->entity_def_name), node->new_vat);
+    Entity *ent = create_entity(
+        context, (EntityDef *)find_symbol(context, node->entity_def_name),
+        node->new_vat);
 
     return make_entity_ref(ent->address.node_id, ent->address.vat_id,
                            ent->address.entity_id);
@@ -419,7 +397,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   assert(false);
 }
 
-std::map<std::string, AstNode*> *find_symbol_table(EvalContext *context, Scope *scope, std::string sym) {
+std::map<std::string, AstNode *> *
+find_symbol_table(EvalContext *context, Scope *scope, std::string sym) {
   Scope *s = scope;
 
   auto first_find = scope->table.find(sym);
@@ -479,7 +458,8 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   }
 
   // Search file scope
-  if (context->entity->file_scope.find(sym) != context->entity->file_scope.end()) {
+  if (context->entity->file_scope.find(sym) !=
+      context->entity->file_scope.end()) {
     return context->entity->file_scope.find(sym)->second;
   }
 
@@ -487,7 +467,8 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   assert(false);
 }
 
-Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
+Entity *create_entity(EvalContext *context, EntityDef *entity_def,
+                      bool new_vat) {
   Entity *e = new Entity;
   Vat *vat;
 
@@ -505,12 +486,11 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   e->address.vat_id = vat->id;
   e->address.node_id = context->node->node_id;
 
-
   vat->entity_id_base++;
 
   vat->entities[e->address.entity_id] = e;
 
-  for (auto &[k, v]: entity_def->data) {
+  for (auto &[k, v] : entity_def->data) {
     e->data[k] = v;
   }
 
@@ -519,7 +499,8 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   new_cont.node = context->node;
   new_cont.vat = vat;
   Scope *scope = context->scope;
-  while (scope->parent) scope = scope->parent;
+  while (scope->parent)
+    scope = scope->parent;
   new_cont.scope = scope;
 
   eval_func_local(&new_cont, e, "create", {});
@@ -527,6 +508,9 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   if (new_vat) {
     queue.enqueue(vat);
   }
+
+  printf("%s (%d, %d, %d)\n", entity_def->name.c_str(), e->address.entity_id,
+         e->address.vat_id, e->address.node_id);
 
   return e;
 }

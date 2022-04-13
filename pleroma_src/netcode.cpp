@@ -17,6 +17,8 @@ std::queue<Msg> net_in_queue;
 
 moodycamel::ConcurrentQueue<Vat*> net_vats;
 
+std::map<int, std::vector<Msg>> sort_queue;
+
 struct PleromaNetwork {
   ENetHost *server;
   std::map<enet_uint32, ENetPeer *> peers;
@@ -28,7 +30,7 @@ void net_loop() {
   romabuf::PleromaMessage message;
 
   /* Wait up to 1000 milliseconds for an event. */
-  while (enet_host_service(pnet.server, &event, 1000) > 0) {
+  while (enet_host_service(pnet.server, &event, 100) > 0) {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:
       printf("Got connection.\n");
@@ -58,7 +60,11 @@ void net_loop() {
   Msg out_mess;
   int n_received = 0;
   while (net_out_queue.try_dequeue(out_mess)) {
-    send_node_msg(out_mess);
+    if (out_mess.node_id == this_pleroma_node.node_id) {
+      net_in_queue.push(out_mess);
+    } else {
+      send_node_msg(out_mess);
+    }
     n_received++;
 
     if (n_received > 100)
@@ -66,10 +72,10 @@ void net_loop() {
   }
 
   // Put incoming messages into the correct mailboxes
-  std::map<int, std::vector<Msg>> sort_queue;
   while (!net_in_queue.empty()) {
     auto msg_front = net_in_queue.front();
     sort_queue[msg_front.vat_id].push_back(msg_front);
+    printf("%d %d %d\n", msg_front.entity_id, msg_front.vat_id, msg_front.node_id);
     net_in_queue.pop();
   }
   Vat *vat_node;
@@ -78,6 +84,7 @@ void net_loop() {
       for (auto zz: sort_queue[vat_node->id]) {
         vat_node->messages.push(zz);
       }
+      sort_queue[vat_node->id].clear();
     }
 
     queue.enqueue(vat_node);
@@ -134,12 +141,12 @@ void send_msg(enet_uint32 host, romabuf::PleromaMessage msg) {
 void send_node_msg(Msg m) {
   romabuf::PleromaMessage message;
   message.set_node_id(m.node_id);
-  message.set_entity_id(m.entity_id);
   message.set_vat_id(m.vat_id);
+  message.set_entity_id(m.entity_id);
 
   message.set_src_node_id(m.src_node_id);
-  message.set_src_entity_id(m.src_entity_id);
   message.set_src_vat_id(m.src_vat_id);
+  message.set_src_entity_id(m.src_entity_id);
 
   message.set_response(m.response);
 
@@ -147,6 +154,9 @@ void send_node_msg(Msg m) {
   message.set_src_function_id(m.function_name);
 
   message.set_promise_id(m.promise_id);
+
+  printf("%d %d %d\n", m.node_id, m.vat_id, m.entity_id);
+
   std::string buf = message.SerializeAsString();
   send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(),
               buf.length() + 1);

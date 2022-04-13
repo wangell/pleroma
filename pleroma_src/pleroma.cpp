@@ -4,7 +4,6 @@
 #include "hylic_eval.h"
 #include <locale>
 #include <map>
-#include <mutex>
 #include <queue>
 #include <stdio.h>
 #include <unistd.h>

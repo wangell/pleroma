@@ -69,7 +69,7 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
 
   // Call our function here
   //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
-  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
+  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(buffer)});
 
   auto res_str = (StringNode*) eval(context, res);
 
