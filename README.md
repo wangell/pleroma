@@ -6,7 +6,7 @@
 [![sands](https://github.com/wangell/pleroma-docs/raw/main/desert.png)](#pleroma)
 [![comet](https://github.com/wangell/pleroma-docs/raw/main/comet.png)](#pleroma)
 
-Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Plan9.
+Pleroma is a distributed operating system/VM inspired by the original vision of Alan Kay's Smalltalk, the E programming language, and Inferno/Plan9.
 
 Pleroma is the system, Hylic is the language:
 
@@ -106,7 +106,7 @@ See [Charisma](#Charisma).
 - Kernel-managed ingresses, job queues, scheduling, etc.
 - Strong supervisor + process-management support.  Handling exceptions + errors in native entities as well as external processes is made extremely easy.
 - Designed as a better Kubernetes
-- Focus on faul tolerance/supporting temporary nodes - cell phones, computers that turn on/off (laptops), etc.  Data/entities seamlessly move and continue to operate.
+- Focus on fault tolerance/supporting temporary nodes - cell phones, computers that turn on/off (laptops), etc.  Data/entities seamlessly move and continue to operate.
 - Intelligent kernel.  Can handle auto-grouping and scheduling of objects.
 
 ## Charisma
