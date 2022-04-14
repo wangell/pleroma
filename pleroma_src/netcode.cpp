@@ -30,7 +30,7 @@ void net_loop() {
   romabuf::PleromaMessage message;
 
   /* Wait up to 1000 milliseconds for an event. */
-  while (enet_host_service(pnet.server, &event, 100) > 0) {
+  while (enet_host_service(pnet.server, &event, 0) > 0) {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:
       printf("Got connection.\n");
@@ -111,7 +111,9 @@ void on_receive_packet(ENetEvent *event) {
   local_m.promise_id = message.promise_id();
   local_m.response = message.response();
 
-  local_m.values.push_back((ValueNode *)make_number(100));
+  //for (auto val : message.pvalue_case()) {
+  //}
+  //local_m.values.push_back((ValueNode *)make_number(100));
 
   net_in_queue.push(local_m);
 }

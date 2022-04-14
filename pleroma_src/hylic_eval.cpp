@@ -30,7 +30,8 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
       return eval(&new_context, v->expr);
     }
   }
-  return last_val;
+
+  return make_nop();
 }
 
 Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
@@ -52,10 +53,10 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
   for (int i = 0; i < resolve_node->results.size(); ++i) {
-    subs.push_back(
-        std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
+    subs.push_back(std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
   }
 
+  printf("eval prom\n");
   return eval_block(context, resolve_node->callback->body, subs);
 }
 
@@ -344,12 +345,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity *ent = create_entity(
-        context, (EntityDef *)find_symbol(context, node->entity_def_name),
-        node->new_vat);
+    Entity *ent = create_entity(context, (EntityDef *)find_symbol(context, node->entity_def_name), node->new_vat);
 
-    return make_entity_ref(ent->address.node_id, ent->address.vat_id,
-                           ent->address.entity_id);
+    return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
   }
 
   if (obj->type == AstNodeType::EntityRefNode) {
@@ -555,7 +553,8 @@ void print_msg(Msg *m) {
   printf("\tOther: Promise: %d\n", m->promise_id);
   printf("\tPayload (%zu): ", m->values.size());
   for (auto k : m->values) {
-    print_value_node(k);
+    printf("val %d\n", k->value_type);
+    //print_value_node(k);
   }
   printf("\n\n");
 }

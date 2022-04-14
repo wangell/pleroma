@@ -6,6 +6,7 @@
 #include <map>
 #include <queue>
 #include <stdio.h>
+#include <string>
 #include <unistd.h>
 #include <vector>
 
@@ -15,6 +16,7 @@
 #include "netcode.h"
 #include "core/kernel.h"
 #include "blockingconcurrentqueue.h"
+#include "node_config.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
@@ -24,7 +26,7 @@ PleromaNode this_pleroma_node;
 
 moodycamel::BlockingConcurrentQueue<Vat*> queue;
 
-Msg create_response(Msg msg_in, ValueNode *return_val) {
+Msg create_response(Msg msg_in, AstNode *return_val) {
   Msg response_m;
   response_m.response = true;
 
@@ -37,7 +39,9 @@ Msg create_response(Msg msg_in, ValueNode *return_val) {
   response_m.src_node_id = msg_in.node_id;
   response_m.promise_id = msg_in.promise_id;
 
-  response_m.values.push_back(return_val);
+  if (return_val->type == AstNodeType::NumberNode || return_val->type == AstNodeType::StringNode) {
+    response_m.values.push_back((ValueNode*)return_val);
+  }
 
   return response_m;
 }
@@ -84,7 +88,7 @@ void process_vq() {
           // All return values are singular - we use tuples to represent
           // multiple return values
           // FIXME might not work if we handle tuples differently
-          Msg response_m = create_response(m, (ValueNode *)result);
+          Msg response_m = create_response(m, result);
 
           // Main cannot be called by any function except ours, move this logic into typechecker
           if (m.function_name != "main") {
@@ -105,7 +109,7 @@ void process_vq() {
         }
       }
 
-      sleep(1);
+      //sleep(1);
 
       our_vat->run_n++;
     }
@@ -153,6 +157,9 @@ void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *enti
 int main(int argc, char **argv) {
 
   setlocale(LC_ALL, "");
+
+  read_node_config();
+
   auto program = load_file("examples/kernel.po");
 
   load_kernel();
