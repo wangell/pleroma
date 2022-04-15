@@ -14,11 +14,10 @@ extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
 void init_network();
 void net_loop();
-void setup_server();
-void connect_client(ENetAddress);
-ENetAddress get_address(std::string);
+void setup_server(std::string ip, u16 port);
+void connect_client(std::string ip, u16 port);
 
-void send_msg(enet_uint32 host, romabuf::PleromaMessage msg);
+void send_msg(ENetAddress host, romabuf::PleromaMessage msg);
 
 void on_receive_packet(ENetEvent *event);
 void send_node_msg(Msg m);

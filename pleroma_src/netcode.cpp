@@ -10,20 +10,53 @@
 #include <enet/types.h>
 #include <map>
 #include <string>
+#include <tuple>
 #include <vector>
 
 moodycamel::ConcurrentQueue<Msg> net_out_queue;
 std::queue<Msg> net_in_queue;
 
-moodycamel::ConcurrentQueue<Vat*> net_vats;
+moodycamel::ConcurrentQueue<Vat *> net_vats;
 
 std::map<int, std::vector<Msg>> sort_queue;
 
 struct PleromaNetwork {
   ENetHost *server;
-  std::map<enet_uint32, ENetPeer *> peers;
-  std::map<int, enet_uint32> node_host_map;
+  std::map<std::tuple<enet_uint32, enet_uint16>, ENetPeer *> peers;
+  std::map<int, std::tuple<enet_uint32, enet_uint16>> node_host_map;
+  u16 src_port;
 } pnet;
+
+std::string host32_to_string(u32 ip) {
+  std::string ip_str;
+
+  ip_str += std::to_string(((ip >> 0) & 0xFF));
+  ip_str += ".";
+  ip_str += std::to_string((ip >> 8) & 0xFF);
+  ip_str += ".";
+  ip_str += std::to_string((ip >> 16) & 0xFF);
+  ip_str += ".";
+  ip_str += std::to_string((ip >> 24) & 0xFF);
+
+  return ip_str;
+}
+
+void announce_new_peer(enet_uint32 host, enet_uint16 port) {
+  ENetAddress address;
+  address.host = host;
+  address.port = port;
+
+  romabuf::PleromaMessage message;
+  auto peer_msg = message.mutable_announce_peer();
+
+  char ip_address[32];
+  enet_address_get_host_ip(&address, ip_address, 32);
+
+  peer_msg->set_address(std::string(ip_address));
+  peer_msg->set_port(port);
+
+  send_msg(address, message);
+}
 
 void net_loop() {
   ENetEvent event;
@@ -34,12 +67,21 @@ void net_loop() {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:
       printf("Got connection.\n");
-      if (pnet.peers.find(event.peer->address.host) == pnet.peers.end()) {
+      if (pnet.peers.find(std::make_tuple(event.peer->address.host,
+                                          event.peer->address.port)) ==
+          pnet.peers.end()) {
         printf("Connecting to...\n");
-        connect_client(event.peer->address);
+        u32 connect_back_port = event.data;
+
+        connect_client(host32_to_string(event.peer->address.host), connect_back_port);
+
+        for (auto k : pnet.peers) {
+          printf("announcing\n");
+          announce_new_peer(event.peer->address.host, event.peer->address.port);
+        }
       }
 
-      send_msg(event.peer->address.host, message);
+      // send_msg(event.peer->address.host, message);
       /* Store any relevant client information here. */
       break;
     case ENET_EVENT_TYPE_RECEIVE:
@@ -75,13 +117,14 @@ void net_loop() {
   while (!net_in_queue.empty()) {
     auto msg_front = net_in_queue.front();
     sort_queue[msg_front.vat_id].push_back(msg_front);
-    printf("%d %d %d\n", msg_front.entity_id, msg_front.vat_id, msg_front.node_id);
+    printf("%d %d %d\n", msg_front.entity_id, msg_front.vat_id,
+           msg_front.node_id);
     net_in_queue.pop();
   }
   Vat *vat_node;
   while (net_vats.try_dequeue(vat_node)) {
     if (sort_queue.find(vat_node->id) != sort_queue.end()) {
-      for (auto zz: sort_queue[vat_node->id]) {
+      for (auto zz : sort_queue[vat_node->id]) {
         vat_node->messages.push(zz);
       }
       sort_queue[vat_node->id].clear();
@@ -89,33 +132,50 @@ void net_loop() {
 
     queue.enqueue(vat_node);
   }
-
 }
 
 void on_receive_packet(ENetEvent *event) {
   std::string buf =
       std::string((char *)event->packet->data, event->packet->dataLength);
+
   romabuf::PleromaMessage message;
   message.ParseFromString(buf);
 
-  // MSMC
-  Msg local_m;
-  local_m.entity_id = message.entity_id();
-  local_m.vat_id = message.vat_id();
-  local_m.node_id = message.node_id();
+  if (message.has_call()) {
+    auto call = message.call();
+    // MSMC
+    Msg local_m;
+    local_m.entity_id = call.entity_id();
+    local_m.vat_id = call.vat_id();
+    local_m.node_id = call.node_id();
 
-  local_m.src_entity_id = message.src_entity_id();
-  local_m.src_vat_id = message.src_vat_id();
-  local_m.src_node_id = message.src_node_id();
+    local_m.src_entity_id = call.src_entity_id();
+    local_m.src_vat_id = call.src_vat_id();
+    local_m.src_node_id = call.src_node_id();
 
-  local_m.promise_id = message.promise_id();
-  local_m.response = message.response();
+    local_m.promise_id = call.promise_id();
+    local_m.response = call.response();
 
-  //for (auto val : message.pvalue_case()) {
-  //}
-  //local_m.values.push_back((ValueNode *)make_number(100));
+    // for (auto val : message.pvalue_case()) {
+    //}
+    // local_m.values.push_back((ValueNode *)make_number(100));
 
-  net_in_queue.push(local_m);
+    net_in_queue.push(local_m);
+  } else {
+    // announce peer
+    printf("Got peer announcement!\n");
+    auto apeer = message.announce_peer();
+    ENetAddress address;
+    enet_address_set_host(&address, apeer.address().c_str());
+    address.port = apeer.port();
+    if (pnet.peers.find(std::make_tuple(address.host, address.port)) == pnet.peers.end()) {
+
+      // If it's not our own address
+      if (address.host != pnet.server->address.host && address.port != pnet.server->address.port) {
+        connect_client(apeer.address(), apeer.port());
+      }
+    }
+  }
 }
 
 void on_client_connect() {}
@@ -134,67 +194,56 @@ void send_packet(ENetPeer *peer, const char *buf, int buf_len) {
   enet_host_flush(pnet.server);
 }
 
-void send_msg(enet_uint32 host, romabuf::PleromaMessage msg) {
+void send_msg(ENetAddress host, romabuf::PleromaMessage msg) {
   std::string buf = msg.SerializeAsString();
 
-  send_packet(pnet.peers[host], buf.c_str(), buf.length() + 1);
+  send_packet(pnet.peers[std::make_tuple(host.host, host.port)], buf.c_str(),
+              buf.length() + 1);
 }
 
 void send_node_msg(Msg m) {
   romabuf::PleromaMessage message;
-  message.set_node_id(m.node_id);
-  message.set_vat_id(m.vat_id);
-  message.set_entity_id(m.entity_id);
+  auto call = message.mutable_call();
+  call->set_node_id(m.node_id);
+  call->set_vat_id(m.vat_id);
+  call->set_entity_id(m.entity_id);
 
-  message.set_src_node_id(m.src_node_id);
-  message.set_src_vat_id(m.src_vat_id);
-  message.set_src_entity_id(m.src_entity_id);
+  call->set_src_node_id(m.src_node_id);
+  call->set_src_vat_id(m.src_vat_id);
+  call->set_src_entity_id(m.src_entity_id);
 
-  message.set_response(m.response);
+  call->set_response(m.response);
 
-  message.set_function_id(m.function_name);
-  message.set_src_function_id(m.function_name);
+  call->set_function_id(m.function_name);
+  call->set_src_function_id(m.function_name);
 
-  message.set_promise_id(m.promise_id);
-
-  printf("%d %d %d\n", m.node_id, m.vat_id, m.entity_id);
+  call->set_promise_id(m.promise_id);
 
   std::string buf = message.SerializeAsString();
   send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(),
               buf.length() + 1);
 }
 
-void setup_server() {
+void setup_server(std::string ip, u16 port) {
   ENetAddress address;
-  /* Bind the server to the default localhost.     */
-  /* A specific host address can be specified by   */
-  /* enet_address_set_host (& address, "x.x.x.x"); */
-  enet_address_set_host(&address, "0.0.0.0");
-  /* Bind the server to port 1234. */
-  address.port = 1234;
-  pnet.server = enet_host_create(
-      &address /* the address to bind the server host to */,
-      32 /* allow up to 32 clients and/or outgoing connections */,
-      2 /* allow up to 2 channels to be used, 0 and 1 */,
-      0 /* assume any amount of incoming bandwidth */,
-      0 /* assume any amount of outgoing bandwidth */);
+  enet_address_set_host(&address, ip.c_str());
+  address.port = port;
+  pnet.server = enet_host_create(&address, 32, 2, 0, 0);
   if (pnet.server == NULL) {
     fprintf(stderr,
             "An error occurred while trying to create an ENet server host.\n");
     exit(EXIT_FAILURE);
   }
+  pnet.src_port = port;
 }
 
-ENetAddress get_address(std::string ip) {
+void connect_client(std::string ip, u16 port) {
   ENetAddress address;
   enet_address_set_host(&address, ip.c_str());
-  address.port = 1234;
-  return address;
-}
+  address.port = port;
 
-void connect_client(ENetAddress address) {
-
-  ENetPeer *peer = enet_host_connect(pnet.server, &address, 2, 0);
+  printf("Connecting to %s : %d\n", ip.c_str(), port);
+  ENetPeer *peer = enet_host_connect(pnet.server, &address, 2, pnet.src_port);
   if (peer == NULL) {
     fprintf(stderr, "No available peers for initiating an ENet connection.\n");
     exit(EXIT_FAILURE);
@@ -209,5 +258,5 @@ void connect_client(ENetAddress address) {
     exit(EXIT_FAILURE);
   }
 
-  pnet.peers[peer->address.host] = peer;
+  pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
 }

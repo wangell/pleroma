@@ -175,10 +175,11 @@ int main(int argc, char **argv) {
   inoculate_pleroma(program, user_program);
 
   init_network();
-  setup_server();
 
-  if (argc > 1) {
-    connect_client(get_address(std::string(argv[1])));
+  setup_server(argv[1], std::stoi(argv[2]));
+
+  if (argc > 3) {
+    connect_client(std::string(argv[3]), std::stoi(argv[4]));
   }
 
   std::thread burners[processor_count];

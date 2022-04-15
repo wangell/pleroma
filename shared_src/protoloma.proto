@@ -2,14 +2,18 @@ syntax = "proto2";
 
 package romabuf;
 
-message Peer {
-}
-
 message NumVal {
   required int32 value = 1;
 }
 
 message PleromaMessage {
+   oneof msg {
+     Call call = 1;
+     AnnouncePeer announce_peer = 2;
+   }
+}
+
+message Call {
   required int32 node_id = 1;
   required int32 vat_id = 2;
   required int32 entity_id = 3;
@@ -32,7 +36,8 @@ message PleromaMessage {
 }
 
 message AnnouncePeer {
-  required int32 address = 1;
+  required string address = 1;
+  required uint32 port = 2;
 }
 
 message Greeting {
