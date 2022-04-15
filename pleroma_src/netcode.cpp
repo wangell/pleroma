@@ -55,7 +55,12 @@ void announce_new_peer(enet_uint32 host, enet_uint16 port) {
   peer_msg->set_address(std::string(ip_address));
   peer_msg->set_port(port);
 
-  send_msg(address, message);
+  for (auto &[k, v] : pnet.peers) {
+    ENetAddress peer_add;
+    peer_add.host = std::get<0>(k);
+    peer_add.port = std::get<1>(k);
+    send_msg(peer_add, message);
+  }
 }
 
 void net_loop() {
@@ -75,10 +80,7 @@ void net_loop() {
 
         connect_client(host32_to_string(event.peer->address.host), connect_back_port);
 
-        for (auto k : pnet.peers) {
-          printf("announcing\n");
-          announce_new_peer(event.peer->address.host, event.peer->address.port);
-        }
+        announce_new_peer(event.peer->address.host, event.peer->address.port);
       }
 
       // send_msg(event.peer->address.host, message);
@@ -171,9 +173,12 @@ void on_receive_packet(ENetEvent *event) {
     if (pnet.peers.find(std::make_tuple(address.host, address.port)) == pnet.peers.end()) {
 
       // If it's not our own address
-      if (address.host != pnet.server->address.host && address.port != pnet.server->address.port) {
-        connect_client(apeer.address(), apeer.port());
+      if (address.host == pnet.server->address.host && address.port == pnet.server->address.port) {
+        return;
       }
+
+      printf("Connecting to new peer\n");
+      connect_client(apeer.address(), apeer.port());
     }
   }
 }
