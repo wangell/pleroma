@@ -21,8 +21,6 @@
 #include "hylic_tokenizer.h"
 #include "hylic_typesolver.h"
 
-TokenStream tokenstream;
-
 Scope global_scope;
 
 const char *node_type_to_string(AstNodeType t) {
@@ -76,10 +74,10 @@ void parse_match_blocks() {}
 std::map<std::string, AstNode*> load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
   FILE *f = fopen(path.c_str(), "r");
-  tokenize_file(f);
+  TokenStream *stream = tokenize_file(f);
 
   //auto program = resolve_thunks(parse(tokenstream));
-  auto program = parse(tokenstream);
+  auto program = parse(stream);
 
   typesolve(program);
 

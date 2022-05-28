@@ -21,114 +21,37 @@ bool check_type(std::string type) {
   return false;
 }
 
-void expect(TokenType t) {
-  if (tokenstream.current == tokenstream.tokens.end()) {
-    printf("Reached end of tokenstream\n");
-    exit(1);
-  }
-
-  auto curr = tokenstream.get();
-  if (curr->type != t) {
-    printf("Expected token type: %s but got %s(%d), at line %d\n",
-           token_type_to_string(t), token_type_to_string(curr->type),
-           curr->type, tokenstream.line_number);
-    exit(1);
-  }
-
-  if (curr->type == TokenType::Newline)
-    tokenstream.line_number++;
-}
-
-Token *check(TokenType t) {
-  if (tokenstream.current == tokenstream.tokens.end()) {
-    return nullptr;
-  }
-  auto g = tokenstream.get();
-  tokenstream.current--;
-  if (g->type == t) {
-    return g;
-  } else {
-    return nullptr;
-  }
-}
-
-std::vector<Token *> accept_all(std::vector<TokenType> toks) {
-  assert(toks.size() > 0);
-
-  // FIXME need to check for toks.length until end
-  if (tokenstream.current == tokenstream.tokens.end()) {
-    return {};
-  }
-
-  std::vector<Token *> return_toks;
-
-  for (int k = 0; k < toks.size(); ++k) {
-    auto g = tokenstream.get();
-    if (toks[k] == g->type) {
-      return_toks.push_back(g);
-    } else {
-      break;
-    }
-  }
-
-  if (toks.size() != return_toks.size()) {
-    for (int k = 0; k < return_toks.size(); ++k) {
-      tokenstream.current--;
-    }
-    return {};
-  }
-
-  return return_toks;
-}
-
-Token *accept(TokenType t) {
-  if (tokenstream.current == tokenstream.tokens.end()) {
-    return nullptr;
-  }
-  auto g = tokenstream.get();
-  if (g->type == t) {
-
-    if (g->type == TokenType::Newline)
-      tokenstream.line_number++;
-
-    return g;
-  } else {
-    tokenstream.current--;
-    return nullptr;
-  }
-}
-
-CType *parse_type() {
+CType *parse_type(ParseContext *ctx) {
 
   CType *var_type = new CType;
-  var_type->start = tokenstream.current;
+  var_type->start = ctx->ts->current;
 
   MessageDistance dist = MessageDistance::Local;
 
-  if (accept(TokenType::LocVar)) {
+  if (ctx->ts->accept(TokenType::LocVar)) {
     dist = MessageDistance::Local;
-  } else if (accept(TokenType::FarVar)) {
+  } else if (ctx->ts->accept(TokenType::FarVar)) {
     dist = MessageDistance::Far;
-  } else if (accept(TokenType::AlnVar)) {
+  } else if (ctx->ts->accept(TokenType::AlnVar)) {
     dist = MessageDistance::Alien;
-  } else if (accept(TokenType::PromiseType)) {
+  } else if (ctx->ts->accept(TokenType::PromiseType)) {
     // All promises are local
     dist = MessageDistance::Local;
-    CType *sub_type = parse_type();
+    CType *sub_type = parse_type(ctx);
     var_type->basetype = PType::Promise;
     var_type->subtype = sub_type;
-    var_type->end = tokenstream.current;
+    var_type->end = ctx->ts->current;
     return var_type;
   }
 
-  if (accept(TokenType::LeftBracket)) {
-    CType *sub_type = parse_type();
+  if (ctx->ts->accept(TokenType::LeftBracket)) {
+    CType *sub_type = parse_type(ctx);
     var_type->basetype = PType::List;
     var_type->subtype = sub_type;
-    expect(TokenType::RightBracket);
+    ctx->ts->expect(TokenType::RightBracket);
   } else {
-    assert(check(TokenType::Symbol));
-    Token *basic_type = accept(TokenType::Symbol);
+    assert(ctx->ts->check(TokenType::Symbol));
+    Token *basic_type = ctx->ts->accept(TokenType::Symbol);
 
     // Move this to tokenizer
     if (basic_type->lexeme == "u8") {
@@ -143,7 +66,7 @@ CType *parse_type() {
     }
   }
 
-  var_type->end = tokenstream.current;
+  var_type->end = ctx->ts->current;
   return var_type;
 }
 
@@ -151,36 +74,36 @@ AstNode *parse_expr(ParseContext *context) {
   std::stack<InfixOp> op_stack;
   std::stack<AstNode *> val_stack;
 
-  while (!check(TokenType::Newline) && !check(TokenType::RightParen) &&
-         !check(TokenType::Comma) && !check(TokenType::RightBracket)) {
-    if (accept(TokenType::LeftParen)) {
+  while (!context->ts->check(TokenType::Newline) && !context->ts->check(TokenType::RightParen) &&
+         !context->ts->check(TokenType::Comma) && !context->ts->check(TokenType::RightBracket)) {
+    if (context->ts->accept(TokenType::LeftParen)) {
       auto body = parse_expr(context);
-      expect(TokenType::RightParen);
+      context->ts->expect(TokenType::RightParen);
       return body;
-    } else if (check(TokenType::Number)) {
+    } else if (context->ts->check(TokenType::Number)) {
       auto expr1 = make_number(
-          strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+          strtol(context->ts->accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
       val_stack.push(expr1);
-    } else if (accept(TokenType::Dollar)) {
+    } else if (context->ts->accept(TokenType::Dollar)) {
       // List in future
-      auto tt = accept(TokenType::Symbol);
+      auto tt = context->ts->accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
 
-      if (accept(TokenType::LeftParen)) {
+      if (context->ts->accept(TokenType::LeftParen)) {
 
         int n_args = 0;
         // While next token does not equal right paren
-        while (!check(TokenType::RightParen)) {
+        while (!context->ts->check(TokenType::RightParen)) {
           auto expr = parse_expr(context);
           val_stack.push(expr);
           n_args++;
 
-          if (!check(TokenType::RightParen)) {
-            expect(TokenType::Comma);
+          if (!context->ts->check(TokenType::RightParen)) {
+            context->ts->expect(TokenType::Comma);
           }
         }
 
-        expect(TokenType::RightParen);
+        context->ts->expect(TokenType::RightParen);
         printf("ya\n");
 
         InfixOp op;
@@ -192,20 +115,20 @@ AstNode *parse_expr(ParseContext *context) {
         assert(false);
       }
 
-    } else if (check(TokenType::LeftBracket)) {
-      expect(TokenType::LeftBracket);
+    } else if (context->ts->check(TokenType::LeftBracket)) {
+      context->ts->expect(TokenType::LeftBracket);
 
       std::vector<AstNode *> list;
-      while (!check(TokenType::RightBracket)) {
+      while (!context->ts->check(TokenType::RightBracket)) {
         auto expr = parse_expr(context);
         list.push_back(expr);
 
-        if (!check(TokenType::RightBracket)) {
-          expect(TokenType::Comma);
+        if (!context->ts->check(TokenType::RightBracket)) {
+          context->ts->expect(TokenType::Comma);
         }
       }
 
-      expect(TokenType::RightBracket);
+      context->ts->expect(TokenType::RightBracket);
 
       CType *list_type = new CType;
       if (list.empty()) {
@@ -215,28 +138,28 @@ AstNode *parse_expr(ParseContext *context) {
       }
 
       val_stack.push(make_list(list, list_type));
-    } else if (check(TokenType::String)) {
-      auto expr = accept(TokenType::String);
+    } else if (context->ts->check(TokenType::String)) {
+      auto expr = context->ts->accept(TokenType::String);
       val_stack.push(make_string(expr->lexeme));
-    } else if (check(TokenType::Symbol)) {
-      auto tt = accept(TokenType::Symbol);
+    } else if (context->ts->check(TokenType::Symbol)) {
+      auto tt = context->ts->accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
 
-      if (accept(TokenType::LeftParen)) {
+      if (context->ts->accept(TokenType::LeftParen)) {
 
         int n_args = 0;
         // While next token does not equal right paren
-        while (!check(TokenType::RightParen)) {
+        while (!context->ts->check(TokenType::RightParen)) {
           auto expr = parse_expr(context);
           val_stack.push(expr);
           n_args++;
 
-          if (!check(TokenType::RightParen)) {
-            expect(TokenType::Comma);
+          if (!context->ts->check(TokenType::RightParen)) {
+            context->ts->expect(TokenType::Comma);
           }
         }
 
-        expect(TokenType::RightParen);
+        context->ts->expect(TokenType::RightParen);
 
         InfixOp op;
         op.type = InfixOpType::MessageSync;
@@ -254,26 +177,26 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(expr1);
         }
       }
-    } else if (check(TokenType::Message)) {
-      accept(TokenType::Message);
-      auto tt = accept(TokenType::Symbol);
+    } else if (context->ts->check(TokenType::Message)) {
+      context->ts->accept(TokenType::Message);
+      auto tt = context->ts->accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
 
-      accept(TokenType::LeftParen);
+      context->ts->accept(TokenType::LeftParen);
 
       int n_args = 0;
       // While next token does not equal right paren
-      while (!check(TokenType::RightParen)) {
+      while (!context->ts->check(TokenType::RightParen)) {
         auto expr = parse_expr(context);
         val_stack.push(expr);
         n_args++;
 
-        if (!check(TokenType::RightParen)) {
-          expect(TokenType::Comma);
+        if (!context->ts->check(TokenType::RightParen)) {
+          context->ts->expect(TokenType::Comma);
         }
       }
 
-      expect(TokenType::RightParen);
+      context->ts->expect(TokenType::RightParen);
 
       InfixOp op;
       op.type = InfixOpType::MessageAsync;
@@ -281,15 +204,15 @@ AstNode *parse_expr(ParseContext *context) {
       op.name = tt->lexeme;
       op_stack.push(op);
 
-    } else if (check(TokenType::Plus)) {
-      accept(TokenType::Plus);
+    } else if (context->ts->check(TokenType::Plus)) {
+      context->ts->accept(TokenType::Plus);
       InfixOp op;
       op.type = InfixOpType::Plus;
       op.n_args = 2;
       op.name = "Plus";
       op_stack.push(op);
-    } else if (check(TokenType::Dot)) {
-      accept(TokenType::Dot);
+    } else if (context->ts->check(TokenType::Dot)) {
+      context->ts->accept(TokenType::Dot);
       InfixOp op;
       op.type = InfixOpType::Namespace;
       op.n_args = 1;
@@ -297,7 +220,7 @@ AstNode *parse_expr(ParseContext *context) {
       op_stack.push(op);
       val_stack.push(parse_expr(context));
     } else {
-      printf("%d\n", tokenstream.get()->type);
+      printf("%d\n", context->ts->get()->type);
       assert(false);
     }
   }
@@ -375,268 +298,50 @@ AstNode *parse_expr(ParseContext *context) {
   return val_stack.top();
 }
 
-AstNode *parse_expr_old(ParseContext *context) {
-  if (accept(TokenType::LeftParen)) {
-    auto body = parse_expr(context);
-    expect(TokenType::RightParen);
-    return body;
-  } else if (accept(TokenType::Return)) {
-    return make_return(parse_expr(context));
-  } else if (check(TokenType::String)) {
-    // FIXME - handle operator expressions
-    auto s = accept(TokenType::String);
-    return make_string(s->lexeme);
-  } else if (check(TokenType::Symbol)) {
-    auto tt = accept(TokenType::Symbol);
-    auto expr1 = make_symbol(tt->lexeme);
-
-    // Namespace access
-    if (accept(TokenType::Dot)) {
-      // return make_namespace_access(tt->lexeme, parse_expr(context));
-    }
-
-    if (accept(TokenType::LeftParen)) {
-
-      std::vector<AstNode *> args;
-      // While next token does not equal right paren
-      while (!check(TokenType::RightParen)) {
-        auto expr = parse_expr(context);
-        args.push_back(expr);
-
-        if (!check(TokenType::RightParen)) {
-          expect(TokenType::Comma);
-        }
-      }
-
-      expect(TokenType::RightParen);
-
-      // return make_message_node(tt->lexeme, CommMode::Sync, args);
-    }
-
-    if (accept(TokenType::Message)) {
-
-      auto target_function = accept(TokenType::Symbol);
-
-      expect(TokenType::LeftParen);
-
-      std::vector<AstNode *> args;
-      // While next token does not equal right paren
-      while (!check(TokenType::RightParen)) {
-        auto expr = parse_expr(context);
-        args.push_back(expr);
-
-        if (!check(TokenType::RightParen)) {
-          expect(TokenType::Comma);
-        }
-      }
-
-      expect(TokenType::RightParen);
-
-      printf("Parse: send message %s to %s\n", target_function->lexeme.c_str(),
-             tt->lexeme.c_str());
-      // return make_message_node(target_function->lexeme, CommMode::Async,
-      // args);
-    }
-
-    if (accept(TokenType::Plus)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Plus, expr1, expr2);
-    } else if (accept(TokenType::Minus)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Minus, expr1, expr2);
-    } else if (accept(TokenType::Star)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Times, expr1, expr2);
-    } else if (accept(TokenType::Slash)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Divide, expr1, expr2);
-    } else if (accept(TokenType::LessThan)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::LessThan, expr1, expr2);
-    } else if (accept(TokenType::LessThanEqual)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::LessThanEqual, expr1, expr2);
-    } else if (accept(TokenType::GreaterThanEqual)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::GreaterThanEqual, expr1, expr2);
-    } else if (accept(TokenType::GreaterThan)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::GreaterThan, expr1, expr2);
-    }
-
-    return expr1;
-  } else if (check(TokenType::Number)) {
-    auto expr1 = make_number(
-        strtol(accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
-    if (accept(TokenType::Plus)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Plus, expr1, expr2);
-    }
-    if (accept(TokenType::Minus)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Minus, expr1, expr2);
-    }
-    if (accept(TokenType::Star)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Times, expr1, expr2);
-    }
-
-    if (accept(TokenType::Slash)) {
-      auto expr2 = parse_expr(context);
-      return make_operator_expr(OperatorExpr::Divide, expr1, expr2);
-    }
-
-    if (accept(TokenType::LessThan)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::LessThan, expr1, expr2);
-    } else if (accept(TokenType::LessThanEqual)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::LessThanEqual, expr1, expr2);
-    } else if (accept(TokenType::GreaterThanEqual)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::GreaterThanEqual, expr1, expr2);
-    } else if (accept(TokenType::GreaterThan)) {
-      auto expr2 = parse_expr(context);
-      return make_boolean_expr(BooleanExpr::GreaterThan, expr1, expr2);
-    }
-
-    return expr1;
-  } else if (accept(TokenType::Message)) {
-    auto tt = accept(TokenType::Symbol);
-    expect(TokenType::LeftParen);
-
-    std::vector<AstNode *> args;
-    // While next token does not equal right paren
-    while (!check(TokenType::RightParen)) {
-      auto expr = parse_expr(context);
-      args.push_back(expr);
-
-      if (!check(TokenType::RightParen)) {
-        expect(TokenType::Comma);
-      }
-    }
-
-    expect(TokenType::RightParen);
-
-    assert(false);
-    // return make_message_node(tt->lexeme, CommMode::Async, args);
-
-  } else if (check(TokenType::True) || check(TokenType::False)) {
-    if (accept(TokenType::True)) {
-      return make_boolean(true);
-    } else if (accept(TokenType::False)) {
-      return make_boolean(false);
-    }
-  } else if (accept(TokenType::LeftBracket)) {
-
-    CType *ctype = new CType;
-    ctype->basetype = PType::NotAssigned;
-
-    if (accept(TokenType::RightBracket)) {
-      // Empty list
-      return make_list({}, ctype);
-    }
-
-    std::vector<AstNode *> list;
-    while (true) {
-      auto lexpr = parse_expr(context);
-      list.push_back(lexpr);
-
-      if (check(TokenType::RightBracket)) {
-        break;
-      }
-
-      expect(TokenType::Comma);
-    }
-
-    expect(TokenType::RightBracket);
-
-    // FIXME
-    ctype->basetype = list[0]->ctype.basetype;
-    ctype->subtype = list[0]->ctype.subtype;
-
-    return make_list(list, ctype);
-
-  } else if (accept(TokenType::LeftBrace)) {
-    // While next token does not equal right paren
-    std::map<std::string, AstNode *> table_vals;
-    while (!check(TokenType::RightBrace)) {
-
-      std::string label;
-
-      Token *t;
-      if ((t = accept(TokenType::Symbol))) {
-        label = t->lexeme;
-      }
-
-      if ((t = accept(TokenType::Number))) {
-        label = t->lexeme;
-      }
-
-      expect(TokenType::Colon);
-
-      auto expr = parse_expr(context);
-
-      table_vals[label] = expr;
-
-      if (!check(TokenType::RightBrace)) {
-        expect(TokenType::Comma);
-      }
-    }
-
-    expect(TokenType::RightBrace);
-
-    return make_table(table_vals);
-  } else {
-    printf("Couldn't parse expression at line %d\n", tokenstream.line_number);
-    exit(1);
-  }
-}
-
 AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
-  // NOTE create function to accept row of symbols
+  // NOTE create function to context->ts->accept row of symbols
   Token *t;
-  if ((t = accept(TokenType::Symbol))) {
+  if ((t = context->ts->accept(TokenType::Symbol))) {
 
     // Creating a variable
     if (t->lexeme == "let") {
-      Token *new_variable = accept(TokenType::Symbol);
+      Token *new_variable = context->ts->accept(TokenType::Symbol);
       SymbolNode *sym_node = (SymbolNode *)make_symbol(new_variable->lexeme);
 
-      expect(TokenType::Colon);
+      context->ts->expect(TokenType::Colon);
 
       // We can either take a nothing, a loc, or a far
-      sym_node->ctype = *parse_type();
+      sym_node->ctype = *parse_type(context);
 
-      expect(TokenType::Equals);
+      context->ts->expect(TokenType::Equals);
 
       AstNode *expr = parse_expr(context);
 
-      expect(TokenType::Newline);
+      context->ts->expect(TokenType::Newline);
 
       return make_assignment(sym_node, expr);
     }
 
-    if (accept(TokenType::Equals)) {
+    if (context->ts->accept(TokenType::Equals)) {
       SymbolNode *sym_node = (SymbolNode *)make_symbol(t->lexeme);
       auto expr = parse_expr(context);
-      expect(TokenType::Newline);
+      context->ts->expect(TokenType::Newline);
       return make_assignment(sym_node, expr);
-    } else if (accept(TokenType::For)) {
+    } else if (context->ts->accept(TokenType::For)) {
       auto for_generator = parse_expr(context);
-      expect(TokenType::Newline);
+      context->ts->expect(TokenType::Newline);
 
       std::vector<AstNode *> body;
       while (true) {
         int current_indent = 0;
 
-        while (accept(TokenType::Tab))
+        while (context->ts->accept(TokenType::Tab))
           current_indent++;
 
         if (current_indent == expected_indent + 1) {
           body.push_back(parse_stmt(context));
-          expect(TokenType::Newline);
+          context->ts->expect(TokenType::Newline);
         } else {
           break;
         }
@@ -644,47 +349,47 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
       return make_for(t->lexeme, for_generator, body);
     } else {
-      tokenstream.go_back(1);
+      context->ts->go_back(1);
       auto expr = parse_expr(context);
-      expect(TokenType::Newline);
+      context->ts->expect(TokenType::Newline);
       return expr;
     }
-  } else if (accept(TokenType::PromiseType)) {
+  } else if (context->ts->accept(TokenType::PromiseType)) {
 
-    auto prom_sym = accept(TokenType::Symbol);
-    expect(TokenType::Newline);
+    auto prom_sym = context->ts->accept(TokenType::Symbol);
+    context->ts->expect(TokenType::Newline);
     auto body = parse_block(context, expected_indent + 1);
     return make_promise_resolution_node(prom_sym->lexeme, body);
-  } else if (accept(TokenType::While)) {
+  } else if (context->ts->accept(TokenType::While)) {
     printf("Parsing while...\n");
     auto while_expr = parse_expr(context);
-    expect(TokenType::Newline);
+    context->ts->expect(TokenType::Newline);
     std::vector<AstNode *> body;
     while (true) {
       int current_indent = 0;
 
-      while (accept(TokenType::Tab))
+      while (context->ts->accept(TokenType::Tab))
         current_indent++;
 
       if (current_indent == expected_indent + 1) {
         body.push_back(parse_stmt(context, expected_indent + 1));
-        expect(TokenType::Newline);
+        context->ts->expect(TokenType::Newline);
       } else {
         break;
       }
     }
     return make_while(while_expr, body);
-  } else if (accept(TokenType::Return)) {
+  } else if (context->ts->accept(TokenType::Return)) {
     auto expr = parse_expr(context);
     // FIXME
     // expect(TokenType::Newline);
     return make_return(expr);
-  } else if (accept(TokenType::Newline)) {
+  } else if (context->ts->accept(TokenType::Newline)) {
     // return nop node?
     return nullptr;
-  } else if (accept(TokenType::Match)) {
+  } else if (context->ts->accept(TokenType::Match)) {
     auto match_expr = parse_expr(context);
-    expect(TokenType::Newline);
+    context->ts->expect(TokenType::Newline);
 
     std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> match_cases;
     AstNode *match_case = nullptr;
@@ -692,28 +397,28 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     while (true) {
       int current_indent = 0;
 
-      while (accept(TokenType::Tab))
+      while (context->ts->accept(TokenType::Tab))
         current_indent++;
 
       if (current_indent == expected_indent + 1) {
         if (match_case) {
           match_cases.push_back(std::make_tuple(match_case, case_body));
         }
-        if (accept(TokenType::Fallthrough)) {
+        if (context->ts->accept(TokenType::Fallthrough)) {
           match_case = make_fallthrough();
         } else {
           match_case = parse_expr(context);
         }
         case_body.clear();
-        expect(TokenType::Newline);
+        context->ts->expect(TokenType::Newline);
       } else if (current_indent > expected_indent + 1) {
         // FIXME is this the right indnet level?
         case_body.push_back(parse_stmt(context, expected_indent + 2));
-        expect(TokenType::Newline);
+        context->ts->expect(TokenType::Newline);
       } else if (current_indent < expected_indent + 1) {
         // We're done
         match_cases.push_back(std::make_tuple(match_case, case_body));
-        tokenstream.go_back(current_indent);
+        context->ts->go_back(current_indent);
         break;
       }
     }
@@ -722,7 +427,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
   } else {
     // try parse expr
     auto expr = parse_expr(context);
-    expect(TokenType::Newline);
+    context->ts->expect(TokenType::Newline);
     return expr;
   }
 
@@ -737,11 +442,11 @@ std::vector<AstNode *> parse_block(ParseContext *context,
   while (true) {
     int current_indent = 0;
 
-    while (accept(TokenType::Tab))
+    while (context->ts->accept(TokenType::Tab))
       current_indent++;
 
     if (current_indent != expected_indent) {
-      tokenstream.go_back(current_indent);
+      context->ts->go_back(current_indent);
       break;
     }
 
@@ -753,35 +458,35 @@ std::vector<AstNode *> parse_block(ParseContext *context,
 
 AstNode *parse_function(ParseContext *context) {
   bool pure;
-  if (accept(TokenType::Function)) {
+  if (context->ts->accept(TokenType::Function)) {
     pure = false;
-  } else if (accept(TokenType::Pure)) {
+  } else if (context->ts->accept(TokenType::Pure)) {
     pure = true;
   }
-  auto func_name = accept(TokenType::Symbol);
+  auto func_name = context->ts->accept(TokenType::Symbol);
 
   std::vector<std::string> args;
   std::vector<CType *> param_types;
 
   Token *arg;
-  expect(TokenType::LeftParen);
-  while ((arg = accept(TokenType::Symbol))) {
+  context->ts->expect(TokenType::LeftParen);
+  while ((arg = context->ts->accept(TokenType::Symbol))) {
 
-    expect(TokenType::Colon);
-    CType *type_spec = parse_type();
+    context->ts->expect(TokenType::Colon);
+    CType *type_spec = parse_type(context);
 
     args.push_back(arg->lexeme);
     param_types.push_back(type_spec);
   }
-  expect(TokenType::RightParen);
+  context->ts->expect(TokenType::RightParen);
 
   // Return type
-  expect(TokenType::Minus);
-  expect(TokenType::GreaterThan);
+  context->ts->expect(TokenType::Minus);
+  context->ts->expect(TokenType::GreaterThan);
 
-  CType *return_type = parse_type();
+  CType *return_type = parse_type(context);
 
-  expect(TokenType::Newline);
+  context->ts->expect(TokenType::Newline);
 
   auto body = parse_block(context, 2);
 
@@ -795,69 +500,69 @@ AstNode *parse_actor(ParseContext *context) {
   std::map<std::string, AstNode *> data;
 
   Token *actor_name;
-  assert(actor_name = accept(TokenType::Symbol));
+  assert(actor_name = context->ts->accept(TokenType::Symbol));
 
   // Parse inoculation list
-  if (accept(TokenType::LeftBrace)) {
+  if (context->ts->accept(TokenType::LeftBrace)) {
     while (true) {
-      accept(TokenType::Symbol);
-      expect(TokenType::Colon);
-      parse_type();
+      context->ts->accept(TokenType::Symbol);
+      context->ts->expect(TokenType::Colon);
+      parse_type(context);
 
-      if (check(TokenType::RightBrace)) {
+      if (context->ts->check(TokenType::RightBrace)) {
         break;
-      } else if (check(TokenType::Comma)) {
-        accept(TokenType::Comma);
+      } else if (context->ts->check(TokenType::Comma)) {
+        context->ts->accept(TokenType::Comma);
       } else {
-        printf("%d\n", tokenstream.peek()->type);
+        printf("%d\n", context->ts->peek()->type);
         assert(false);
       }
     }
 
-    expect(TokenType::RightBrace);
+    context->ts->expect(TokenType::RightBrace);
   }
 
-  expect(TokenType::Newline);
+  context->ts->expect(TokenType::Newline);
 
   while (true) {
     int current_indent = 0;
 
-    while (accept(TokenType::Tab)) {
+    while (context->ts->accept(TokenType::Tab)) {
       current_indent++;
     }
 
     if (current_indent == 0) {
       // If we're at the end of the file, end it
-      if (tokenstream.current == tokenstream.tokens.end()) {
+      if (context->ts->current == context->ts->tokens.end()) {
         break;
       }
 
-      if (check(TokenType::Actor)) {
+      if (context->ts->check(TokenType::Actor)) {
         // Spit it back out, return
-        tokenstream.go_back(1);
+        context->ts->go_back(1);
         break;
       }
 
-      expect(TokenType::Newline);
+      context->ts->expect(TokenType::Newline);
       continue;
     }
 
     if (current_indent != 1) {
-      tokenstream.go_back(current_indent);
+      context->ts->go_back(current_indent);
       break;
     }
 
     // Parse data section
-    if (check(TokenType::Symbol)) {
-      Token *data_sym = accept(TokenType::Symbol);
+    if (context->ts->check(TokenType::Symbol)) {
+      Token *data_sym = context->ts->accept(TokenType::Symbol);
 
-      expect(TokenType::Colon);
+      context->ts->expect(TokenType::Colon);
 
-      CType *data_type = parse_type();
+      CType *data_type = parse_type(context);
 
       data[data_sym->lexeme] = new AstNode;
 
-    } else if (check(TokenType::Function)) {
+    } else if (context->ts->check(TokenType::Function)) {
       // Parse functions
       FuncStmt *func = (FuncStmt *)parse_function(context);
       functions[func->name] = func;
@@ -865,60 +570,61 @@ AstNode *parse_actor(ParseContext *context) {
       assert(false);
     }
 
-    expect(TokenType::Newline);
+    context->ts->expect(TokenType::Newline);
   }
 
   return make_actor(actor_name->lexeme, functions, data);
 }
 
-std::map<std::string, TLUserType> get_tl_types(TokenStream stream) {
+std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
 
   std::map<std::string, TLUserType> tl_types;
 
-  while (tokenstream.current != tokenstream.tokens.end()) {
+  while (ts->current != ts->tokens.end()) {
 
-    if (accept(TokenType::Actor)) {
-      Token *sym = accept(TokenType::Symbol);
+    if (ts->accept(TokenType::Actor)) {
+      Token *sym = ts->accept(TokenType::Symbol);
       tl_types[sym->lexeme] = TLUserType::Entity;
     } else {
-      tokenstream.get();
+      ts->get();
     }
   }
 
-  tokenstream.reset();
+  ts->reset();
 
   return tl_types;
 }
 
-std::map<std::string, AstNode *> parse(TokenStream stream) {
+std::map<std::string, AstNode *> parse(TokenStream *stream) {
 
   ParseContext context;
   context.tl_symbol_table = get_tl_types(stream);
+  context.ts = stream;
 
   std::map<std::string, AstNode *> symbol_map;
 
-  while (tokenstream.current != tokenstream.tokens.end()) {
-    if (accept(TokenType::Import)) {
+  while (stream->current != stream->tokens.end()) {
+    if (context.ts->accept(TokenType::Import)) {
       // ModuleStmt
       std::string mod_name;
 
       bool namespaced = true;
-      if (accept(TokenType::Star)) {
+      if (context.ts->accept(TokenType::Star)) {
         namespaced = false;
       }
 
-      Token *sym = tokenstream.get();
-      expect(TokenType::Newline);
+      Token *sym = context.ts->get();
+      context.ts->expect(TokenType::Newline);
       make_module_stmt(sym->lexeme, namespaced);
-    } else if (accept(TokenType::Actor)) {
+    } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;
       print_ast(actor);
-    } else if (accept(TokenType::Newline)) {
+    } else if (context.ts->accept(TokenType::Newline)) {
       // Skip
       make_nop();
     } else {
-      printf("Failed on token %d\n", (*tokenstream.current)->type);
+      printf("Failed on token %d\n", (*context.ts->current)->type);
       assert(false);
     }
   }

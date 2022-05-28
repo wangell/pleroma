@@ -3,6 +3,7 @@
 #include "hylic_compex.h"
 #include <list>
 #include <string>
+#include <vector>
 
 enum class TokenType {
   Newline,
@@ -79,21 +80,20 @@ struct TokenStream {
   int char_number = 0;
 
   Token *peek();
-
   Token *peek_forward();
-
   void go_back(int n);
-
   Token *get();
-
   void reset();
+
+  void expect(TokenType t);
+  Token *check(TokenType t);
+  Token *accept(TokenType t);
+  void add_token(TokenType t, std::string lexeme);
+  std::vector<Token *> accept_all(std::vector<TokenType> toks);
 };
 
-struct TokenizerException : CompileException {
-};
+struct TokenizerException : CompileException {};
 
-void add_token(TokenType t, std::string lexeme);
-
-void tokenize_file(FILE *f);
+TokenStream* tokenize_file(FILE *f);
 
 const char *token_type_to_string(TokenType t);

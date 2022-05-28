@@ -32,38 +32,117 @@ void TokenStream::reset() {
   char_number = 0;
 }
 
-void add_token(TokenType t, std::string lexeme) {
-  Token *tok = new Token({t, lexeme});
-  tokenstream.tokens.push_back(tok);
+void TokenStream::expect(TokenType t) {
+  if (current == tokens.end()) {
+    printf("Reached end of tokenstream\n");
+    exit(1);
+  }
+
+  auto curr = get();
+  if (curr->type != t) {
+    printf("Expected token type: %s but got %s(%d), at line %d\n",
+           token_type_to_string(t), token_type_to_string(curr->type),
+           curr->type, line_number);
+    exit(1);
+  }
+
+  if (curr->type == TokenType::Newline)
+    line_number++;
 }
 
-void tokenize_file(FILE *f) {
+Token *TokenStream::check(TokenType t) {
+  if (current == tokens.end()) {
+    return nullptr;
+  }
+  auto g = get();
+  current--;
+  if (g->type == t) {
+    return g;
+  } else {
+    return nullptr;
+  }
+}
+
+std::vector<Token *> TokenStream::accept_all(std::vector<TokenType> toks) {
+  assert(toks.size() > 0);
+
+  // FIXME need to check for toks.length until end
+  if (current == tokens.end()) {
+    return {};
+  }
+
+  std::vector<Token *> return_toks;
+
+  for (int k = 0; k < toks.size(); ++k) {
+    auto g = get();
+    if (toks[k] == g->type) {
+      return_toks.push_back(g);
+    } else {
+      break;
+    }
+  }
+
+  if (toks.size() != return_toks.size()) {
+    for (int k = 0; k < return_toks.size(); ++k) {
+      current--;
+    }
+    return {};
+  }
+
+  return return_toks;
+}
+
+Token *TokenStream::accept(TokenType t) {
+  if (current == tokens.end()) {
+    return nullptr;
+  }
+  auto g = get();
+  if (g->type == t) {
+
+    if (g->type == TokenType::Newline)
+      line_number++;
+
+    return g;
+  } else {
+    current--;
+    return nullptr;
+  }
+}
+
+void TokenStream::add_token(TokenType t, std::string lexeme) {
+  Token *tok = new Token({t, lexeme});
+  tokens.push_back(tok);
+}
+
+TokenStream* tokenize_file(FILE *f) {
+  TokenStream *tokenstream = new TokenStream;
+
   wchar_t c;
 
   while ((c = fgetwc(f)) != EOF) {
     if (c == '~') {
-      add_token(TokenType::Import, "~");
+      tokenstream->add_token(TokenType::Import, "~");
     } else if (c == '?') {
-      add_token(TokenType::Match, "?");
+      tokenstream->add_token(TokenType::Match, "?");
     } else if (c == '|') {
-      add_token(TokenType::For, "|");
+      tokenstream->add_token(TokenType::For, "|");
     } else if (c == '=') {
-      add_token(TokenType::Equals, "=");
+      tokenstream->add_token(TokenType::Equals, "=");
     } else if (c == '^') {
-      add_token(TokenType::Not, "^");
+      tokenstream->add_token(TokenType::Not, "^");
     } else if (c == '>') {
       if ((c = fgetwc(f)) == '=') {
-        add_token(TokenType::GreaterThanEqual, ">=");
+        tokenstream->add_token(TokenType::GreaterThanEqual, ">=");
       } else {
         ungetwc(c, f);
-        add_token(TokenType::GreaterThan, ">");
+        tokenstream->add_token(TokenType::GreaterThan, ">");
       }
     } else if (c == '<') {
       if ((c = fgetwc(f)) == '=') {
-        add_token(TokenType::LessThanEqual, "<=");
+        tokenstream->add_token(TokenType::LessThanEqual, "<=");
       } else {
         ungetwc(c, f);
-        add_token(TokenType::LessThan, "<");
+        tokenstream->add_token(TokenType::LessThan, "<");
       }
     } else if (isalpha(c)) {
       std::string sym;
@@ -78,81 +157,81 @@ void tokenize_file(FILE *f) {
       }
 
       if (sym == "whl") {
-        add_token(TokenType::While, sym);
+        tokenstream->add_token(TokenType::While, sym);
       } else if (sym == "loc") {
-        add_token(TokenType::LocVar, sym);
+        tokenstream->add_token(TokenType::LocVar, sym);
       } else if (sym == "far") {
-        add_token(TokenType::FarVar, sym);
+        tokenstream->add_token(TokenType::FarVar, sym);
       } else if (sym == "aln") {
-        add_token(TokenType::AlnVar, sym);
+        tokenstream->add_token(TokenType::AlnVar, sym);
       } else {
-        add_token(TokenType::Symbol, sym);
+        tokenstream->add_token(TokenType::Symbol, sym);
       }
     } else if (c == U'δ') {
-      add_token(TokenType::Function, "δ");
+      tokenstream->add_token(TokenType::Function, "δ");
     } else if (c == U'λ') {
-      add_token(TokenType::Pure, "λ");
+      tokenstream->add_token(TokenType::Pure, "λ");
     } else if (c == U'↵') {
-      add_token(TokenType::Return, "↵");
+      tokenstream->add_token(TokenType::Return, "↵");
     } else if (c == '+') {
-      add_token(TokenType::Plus, "+");
+      tokenstream->add_token(TokenType::Plus, "+");
     } else if (c == '-') {
-      add_token(TokenType::Minus, "-");
+      tokenstream->add_token(TokenType::Minus, "-");
     } else if (c == '"') {
       std::string sym;
       while ((c = fgetwc(f)) != '"') {
         sym.push_back(c);
       }
-      add_token(TokenType::String, sym);
+      tokenstream->add_token(TokenType::String, sym);
     } else if (c == '*') {
-      add_token(TokenType::Star, "*");
+      tokenstream->add_token(TokenType::Star, "*");
     } else if (c == U'ε') {
-      add_token(TokenType::Actor, "ε");
+      tokenstream->add_token(TokenType::Actor, "ε");
     } else if (c == U'$') {
-      add_token(TokenType::Dollar, "$");
+      tokenstream->add_token(TokenType::Dollar, "$");
     } else if (c == '/') {
-      add_token(TokenType::Slash, "/");
+      tokenstream->add_token(TokenType::Slash, "/");
     } else if (c == '(') {
-      add_token(TokenType::LeftParen, "(");
+      tokenstream->add_token(TokenType::LeftParen, "(");
     } else if (c == ')') {
-      add_token(TokenType::RightParen, ")");
+      tokenstream->add_token(TokenType::RightParen, ")");
     } else if (c == '[') {
-      add_token(TokenType::LeftBracket, "[");
+      tokenstream->add_token(TokenType::LeftBracket, "[");
     } else if (c == ']') {
-      add_token(TokenType::RightBracket, "]");
+      tokenstream->add_token(TokenType::RightBracket, "]");
     } else if (c == '{') {
-      add_token(TokenType::LeftBrace, "{");
+      tokenstream->add_token(TokenType::LeftBrace, "{");
     } else if (c == '}') {
-      add_token(TokenType::RightBrace, "}");
+      tokenstream->add_token(TokenType::RightBrace, "}");
     } else if (c == '@') {
-      add_token(TokenType::PromiseType, "@");
+      tokenstream->add_token(TokenType::PromiseType, "@");
     } else if (c == ':') {
-      add_token(TokenType::Colon, "(");
+      tokenstream->add_token(TokenType::Colon, "(");
     } else if (c == '!') {
-      add_token(TokenType::Message, "!");
+      tokenstream->add_token(TokenType::Message, "!");
     } else if (c == '\n') {
-      add_token(TokenType::Newline, "\n");
+      tokenstream->add_token(TokenType::Newline, "\n");
     } else if (c == ',') {
-      add_token(TokenType::Comma, ",");
+      tokenstream->add_token(TokenType::Comma, ",");
     } else if (c == '&') {
       // FIXME combine with dot and make it a separate operator in future
-      add_token(TokenType::Breakthrough, "&");
+      tokenstream->add_token(TokenType::Breakthrough, "&");
     } else if (c == '.') {
-      add_token(TokenType::Dot, ".");
+      tokenstream->add_token(TokenType::Dot, ".");
     } else if (c == '_') {
-      add_token(TokenType::Fallthrough, "_");
+      tokenstream->add_token(TokenType::Fallthrough, "_");
     } else if (c == '#') {
       c = fgetwc(f);
       if (c == 't') {
-        add_token(TokenType::True, "#t");
+        tokenstream->add_token(TokenType::True, "#t");
       } else if (c == 'f') {
-        add_token(TokenType::False, "#f");
+        tokenstream->add_token(TokenType::False, "#f");
       } else {
         printf("Invalid boolean literal.\n");
         assert(false);
       }
     } else if (c == '\t') {
-      add_token(TokenType::Tab, "\t");
+      tokenstream->add_token(TokenType::Tab, "\t");
     } else if (isdigit(c)) {
       std::string n;
       n.push_back(c);
@@ -160,7 +239,7 @@ void tokenize_file(FILE *f) {
         n.push_back(c);
       }
       ungetwc(c, f);
-      add_token(TokenType::Number, n);
+      tokenstream->add_token(TokenType::Number, n);
     } else if (c == ' ') {
       // ignore
     } else {
@@ -169,7 +248,9 @@ void tokenize_file(FILE *f) {
     }
   }
 
-  tokenstream.current = tokenstream.tokens.begin();
+  tokenstream->current = tokenstream->tokens.begin();
+
+  return tokenstream;
 }
 
 const char *token_type_to_string(TokenType t) {

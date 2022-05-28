@@ -9,8 +9,6 @@
 #include "hylic_ast.h"
 #include "hylic_eval.h"
 
-extern TokenStream tokenstream;
-
 std::map<std::string, AstNode *> load_file(std::string path);
 std::map<std::string, AstNode *> parse(TokenStream stream);
 bool typecheck(std::map<std::string, AstNode *>);

@@ -149,7 +149,7 @@ void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *enti
   m.src_vat_id = -1;
   m.promise_id = -1;
 
-  m.values.push_back((ValueNode *)make_number(99));
+  m.values.push_back((ValueNode *)make_number(0));
 
   og_vat->messages.push(m);
 }

@@ -33,12 +33,13 @@ struct InfixOp {
 };
 
 struct ParseContext {
+  TokenStream *ts;
   std::map<std::string, TLUserType> tl_symbol_table;
 };
 
 struct ParseException : CompileException {
 };
 
-std::map<std::string, AstNode *> parse(TokenStream stream);
+std::map<std::string, AstNode *> parse(TokenStream *stream);
 
 std::vector<AstNode *> parse_block(ParseContext *context, int expected_indent);
