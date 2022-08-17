@@ -46,6 +46,8 @@ enum class AstNodeType {
 
   ForeignFunc,
 
+  ModUseNode,
+
   UndefinedNode
 };
 
@@ -100,13 +102,19 @@ struct ReturnNode : AstNode {
   AstNode *expr;
 };
 
+struct ModUseNode: AstNode {
+  std::string mod_name;
+  std::string accessor;
+};
+
 struct TableNode : AstNode {
   std::map<std::string, AstNode *> table;
 };
 
 struct ModuleStmt : AstNode {
-  std::string module;
+  std::string module_name;
   bool namespaced;
+  std::map<std::string, AstNode *> module;
 };
 
 struct FuncStmt : AstNode {
@@ -236,6 +244,7 @@ struct AssignmentStmt : AstNode {
   AstNode *value;
 };
 
+
 struct EvalContext;
 
 struct ForeignFuncCall : AstNode {
@@ -253,7 +262,7 @@ AstNode *make_assignment(SymbolNode *sym, AstNode *expr);
 AstNode *make_match(AstNode *match_expr, std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> cases);
 AstNode *make_namespace_access(AstNode* ref, AstNode* field);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
-AstNode *make_module_stmt(std::string s, bool namespaced);
+AstNode *make_module_stmt(std::string s, bool namespaced, std::map<std::string, AstNode*> symbol_table);
 AstNode *make_table(std::map<std::string, AstNode *> vals);
 AstNode *make_number(int64_t v);
 AstNode *make_string(std::string s);
@@ -268,6 +277,7 @@ AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
 AstNode *make_list(std::vector<AstNode *> list, CType* ctype);
 AstNode *make_promise_node(int promise_id);
+AstNode *make_mod_use(std::string mod_name, std::string accessor);
 // HACK Make this an AstNode and then eval + check in symbol table
 AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);
 

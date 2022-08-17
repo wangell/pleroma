@@ -216,6 +216,8 @@ TokenStream* tokenize_file(FILE *f) {
     } else if (c == '&') {
       // FIXME combine with dot and make it a separate operator in future
       tokenstream->add_token(TokenType::Breakthrough, "&");
+    } else if (c == U'►') {
+      tokenstream->add_token(TokenType::ModUse, "►");
     } else if (c == '.') {
       tokenstream->add_token(TokenType::Dot, ".");
     } else if (c == '_') {

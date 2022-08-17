@@ -53,6 +53,9 @@ std::string ast_type_to_string(AstNodeType t) {
   case AstNodeType::CreateEntity:
     return "CreateEntity";
     break;
+  case AstNodeType::ModUseNode:
+    return "ModUseNode";
+    break;
   }
 
   printf("Failed to convert AstNode type to string: %d\n", t);
@@ -127,6 +130,14 @@ AstNode *make_namespace_access(AstNode* ref, AstNode* field) {
   return node;
 }
 
+AstNode *make_mod_use(std::string mod_name, std::string accessor_name) {
+  ModUseNode *node = new ModUseNode;
+  node->type = AstNodeType::ModUseNode;
+  node->mod_name = mod_name;
+  node->accessor = accessor_name;
+  return node;
+}
+
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body) {
   WhileStmt *while_stmt = new WhileStmt;
 
@@ -137,10 +148,11 @@ AstNode *make_while(AstNode *generator, std::vector<AstNode *> body) {
   return while_stmt;
 }
 
-AstNode *make_module_stmt(std::string s, bool namespaced) {
+AstNode *make_module_stmt(std::string module_name, bool namespaced, std::map<std::string, AstNode*> symbol_table) {
   ModuleStmt *mod_stmt = new ModuleStmt;
   mod_stmt->type = AstNodeType::ModuleStmt;
-  mod_stmt->module = s;
+  mod_stmt->module = symbol_table;
+  mod_stmt->module_name = module_name;
   mod_stmt->namespaced = namespaced;
   return mod_stmt;
 }

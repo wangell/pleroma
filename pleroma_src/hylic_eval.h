@@ -2,6 +2,7 @@
 
 #include "common.h"
 #include "hylic_ast.h"
+#include "hylic_parse.h"
 #include <mutex>
 #include <queue>
 #include <string>
@@ -18,7 +19,7 @@ struct Entity {
   EntityAddress address;
 
   std::map<std::string, AstNode *> data;
-  std::map<std::string, AstNode *> file_scope;
+  HylicModule* module_scope;
 };
 
 struct Msg {

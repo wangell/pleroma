@@ -250,6 +250,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       return eval_message_node(context, ent_node, mess_node->comm_mode,
                                mess_node->function_name, mess_node->args);
 
+    } else if (ref_node->type == AstNodeType::ModuleStmt) {
+      printf("%s\n", ast_type_to_string(node->field->type).c_str());
+      if (node->field->type == AstNodeType::EntityDef) {
+      } else {
+        printf("here2\n");
+        assert(false);
+      }
     } else {
       assert(false);
     }
@@ -390,8 +397,11 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     return ffc->foreign_func(context, args);
   }
 
-  printf("Failing to evaluate node type %s\n",
-         ast_type_to_string(obj->type).c_str());
+  if (obj->type == AstNodeType::ModUseNode) {
+    //return eval(context->, node->term2);
+  }
+
+  printf("Failing to evaluate node type %s\n", ast_type_to_string(obj->type).c_str());
   assert(false);
 }
 
@@ -456,10 +466,15 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   }
 
   // Search file scope
-  if (context->entity->file_scope.find(sym) !=
-      context->entity->file_scope.end()) {
-    return context->entity->file_scope.find(sym)->second;
+  if (context->entity->module_scope->entity_defs.find(sym) !=
+      context->entity->module_scope->entity_defs.end()) {
+    return context->entity->module_scope->entity_defs.find(sym)->second;
   }
+
+  //if (context->entity->import_scope.find(sym) !=
+  //    context->entity->import_scope.end()) {
+  //  return context->entity->import_scope.find(sym)->second->entity_defs;
+  //}
 
   printf("Failed to find symbol %s\n", sym.c_str());
   assert(false);
@@ -560,7 +575,7 @@ void print_msg(Msg *m) {
 }
 
 void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity) {
-  scope->table = entity->file_scope;
+  scope->table = entity->module_scope->entity_defs;
   scope->table["self"] = make_entity_ref(0, 0, 0);
   scope->readonly = true;
 

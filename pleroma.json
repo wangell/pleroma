@@ -1,0 +1,13 @@
+{
+	"name" : "prancer",
+	"netdev" : "tun0",
+
+	"resources": [
+		"monitor"
+	],
+
+	"tags" : {
+		"safe" : true
+	}
+	
+}

@@ -22,7 +22,8 @@ enum class InfixOpType {
   MessageSync,
   MessageAsync,
   NewVat,
-  Namespace
+  Namespace,
+  ModUse
 };
 
 struct InfixOp {
@@ -40,6 +41,11 @@ struct ParseContext {
 struct ParseException : CompileException {
 };
 
-std::map<std::string, AstNode *> parse(TokenStream *stream);
+struct HylicModule {
+  std::map<std::string, HylicModule*> imports;
+  std::map<std::string, AstNode*> entity_defs;
+};
+
+HylicModule parse(TokenStream *stream);
 
 std::vector<AstNode *> parse_block(ParseContext *context, int expected_indent);

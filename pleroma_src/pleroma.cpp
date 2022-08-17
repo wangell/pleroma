@@ -119,7 +119,7 @@ void process_vq() {
   }
 }
 
-void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *entity_def) {
+void inoculate_pleroma(HylicModule program, EntityDef *entity_def) {
   Vat* og_vat = new Vat;
   og_vat->id = 0;
   queue.enqueue(og_vat);
@@ -131,11 +131,11 @@ void inoculate_pleroma(std::map<std::string, AstNode *> program, EntityDef *enti
   context.node = &this_pleroma_node;
 
   Scope scope;
-  scope.table = program;
+  scope.table = program.entity_defs;
   context.scope = &scope;
 
   Entity *ent = create_entity(&context, entity_def, false);
-  ent->file_scope = program;
+  ent->module_scope = &program;
 
   og_vat->entities[0] = ent;
 
@@ -164,13 +164,13 @@ int main(int argc, char **argv) {
 
   load_kernel();
 
-  auto user_program = (EntityDef *)program["Test"];
+  auto user_program = (EntityDef *)program.entity_defs["Test"];
 
-  program["Io"] = (EntityDef *)kernel_map["Io"];
-  program["Net"] = (EntityDef *)kernel_map["Net"];
+  program.entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
+  program.entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
   //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
 
-  typesolve(program);
+  //typesolve(program);
 
   inoculate_pleroma(program, user_program);
 

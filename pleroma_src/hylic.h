@@ -8,8 +8,9 @@
 #include "hylic_tokenizer.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
+#include "hylic_parse.h"
 
-std::map<std::string, AstNode *> load_file(std::string path);
+HylicModule load_file(std::string path);
 std::map<std::string, AstNode *> parse(TokenStream stream);
 bool typecheck(std::map<std::string, AstNode *>);
 AstNode *eval(AstNode *obj, Scope *scope);

@@ -145,7 +145,11 @@ AstNode *parse_expr(ParseContext *context) {
       auto tt = context->ts->accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
 
-      if (context->ts->accept(TokenType::LeftParen)) {
+      if (context->ts->accept(TokenType::ModUse)) {
+        auto expr2 = context->ts->accept(TokenType::String);
+        val_stack.push(make_mod_use("unga", "bunga"));
+        printf("here\n");
+      } else if (context->ts->accept(TokenType::LeftParen)) {
 
         int n_args = 0;
         // While next token does not equal right paren
@@ -282,6 +286,7 @@ AstNode *parse_expr(ParseContext *context) {
                    context->tl_symbol_table.end()) {
           val_stack.push(make_create_entity(op.name, new_vat));
         } else {
+          printf("op %s\n", op.name.c_str());
           val_stack.push(
               make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }
@@ -595,27 +600,31 @@ std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
   return tl_types;
 }
 
-std::map<std::string, AstNode *> parse(TokenStream *stream) {
+HylicModule parse(TokenStream *stream) {
 
   ParseContext context;
   context.tl_symbol_table = get_tl_types(stream);
   context.ts = stream;
 
+  std::map<std::string, HylicModule> imports;
   std::map<std::string, AstNode *> symbol_map;
+
+  HylicModule hm;
 
   while (stream->current != stream->tokens.end()) {
     if (context.ts->accept(TokenType::Import)) {
       // ModuleStmt
-      std::string mod_name;
+      std::string mod_name = "test";
 
       bool namespaced = true;
-      if (context.ts->accept(TokenType::Star)) {
-        namespaced = false;
-      }
+      FILE *f = fopen(mod_name.c_str(), "r");
+      TokenStream *new_stream = tokenize_file(f);
+      auto mod_file = parse(new_stream);
 
       Token *sym = context.ts->get();
       context.ts->expect(TokenType::Newline);
-      make_module_stmt(sym->lexeme, namespaced);
+      //imports[mod_name] = mod_file;
+      hm.imports[mod_name] = &mod_file;
     } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;
@@ -629,5 +638,8 @@ std::map<std::string, AstNode *> parse(TokenStream *stream) {
     }
   }
 
-  return symbol_map;
+  //hm.imports = imports;
+  hm.entity_defs = symbol_map;
+
+  return hm;
 }
