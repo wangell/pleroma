@@ -1,12 +1,9 @@
-~test
-
 ε Test {pmainst : Pleroma, ioinst : Io}
 
 	ioinst : Io
 
 	δ create() -> Test
 		ioinst = Io()
-		test.Plot()
 
 	δ main(env: u8) -> int
 		let a : [u8] = [4, 2]

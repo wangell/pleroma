@@ -3,6 +3,8 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_tokenizer.h"
+#include <cassert>
+#include <filesystem>
 #include <functional>
 #include <new>
 #include <tuple>
@@ -458,6 +460,7 @@ std::vector<AstNode *> parse_block(ParseContext *context,
     auto stmt = parse_stmt(context, expected_indent);
     block.push_back(stmt);
   }
+
   return block;
 }
 
@@ -538,7 +541,8 @@ AstNode *parse_actor(ParseContext *context) {
 
     if (current_indent == 0) {
       // If we're at the end of the file, end it
-      if (context->ts->current == context->ts->tokens.end()) {
+      if (context->ts->accept(TokenType::EndOfFile)) {
+        printf("ya\n");
         break;
       }
 
@@ -548,7 +552,7 @@ AstNode *parse_actor(ParseContext *context) {
         break;
       }
 
-      context->ts->expect(TokenType::Newline);
+      context->ts->expect_eos();
       continue;
     }
 
@@ -573,6 +577,10 @@ AstNode *parse_actor(ParseContext *context) {
       functions[func->name] = func;
     } else {
       assert(false);
+    }
+
+    if (context->ts->accept(TokenType::EndOfFile)) {
+      break;
     }
 
     context->ts->expect(TokenType::Newline);
@@ -614,10 +622,21 @@ HylicModule parse(TokenStream *stream) {
   while (stream->current != stream->tokens.end()) {
     if (context.ts->accept(TokenType::Import)) {
       // ModuleStmt
-      std::string mod_name = "test";
+      auto mod_name_tok = context.ts->accept(TokenType::Symbol);
+      std::string mod_name = mod_name_tok->lexeme + ".po";
 
       bool namespaced = true;
+
+      if (!std::filesystem::exists(mod_name)) {
+        printf("Module %s does not exist.\n", mod_name.c_str());
+        exit(1);
+      }
+
       FILE *f = fopen(mod_name.c_str(), "r");
+      if (!f) {
+        printf("Error opening module: %s\n", mod_name.c_str());
+        exit(1);
+      }
       TokenStream *new_stream = tokenize_file(f);
       auto mod_file = parse(new_stream);
 

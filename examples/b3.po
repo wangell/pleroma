@@ -1,0 +1,37 @@
+ε Test
+
+	io : Io
+	net : Net
+	n : u8
+	bookmarks : [str]
+
+	δ create() -> void
+		let zz : u8 = 4
+		io = Io()
+		net = Net()
+		n = 0
+		bookmarks = ["test"]
+
+	δ test(buf: str) -> str
+		↵ "HTTP/1.1 200 OK
+Date: Mon, 27 Jul 2009 12:28:53 GMT
+Server: Apache/2.2.14 (Win32)
+Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT
+Content-Type: text/html
+Connection: Closed
+
+<html>
+<body>
+<h1>Welcome to Pleroma!</h1>
+</body>
+</html>"
+
+	δ run() -> void
+		net.next()
+		! run()
+
+	δ main(sys: u8) -> u8
+		net.start(self)
+		run()
+		↵ 5
+

@@ -119,7 +119,7 @@ void process_vq() {
   }
 }
 
-void inoculate_pleroma(HylicModule program, EntityDef *entity_def) {
+void inoculate_pleroma(HylicModule *program, EntityDef *entity_def) {
   Vat* og_vat = new Vat;
   og_vat->id = 0;
   queue.enqueue(og_vat);
@@ -131,11 +131,11 @@ void inoculate_pleroma(HylicModule program, EntityDef *entity_def) {
   context.node = &this_pleroma_node;
 
   Scope scope;
-  scope.table = program.entity_defs;
+  scope.table = program->entity_defs;
   context.scope = &scope;
 
   Entity *ent = create_entity(&context, entity_def, false);
-  ent->module_scope = &program;
+  ent->module_scope = program;
 
   og_vat->entities[0] = ent;
 
@@ -172,7 +172,7 @@ int main(int argc, char **argv) {
 
   //typesolve(program);
 
-  inoculate_pleroma(program, user_program);
+  inoculate_pleroma(&program, user_program);
 
   init_network();
 

@@ -1,0 +1,51 @@
+ε Test2
+	δ test(buf : str) -> void
+		let c : Io = Io()
+		c.print(buf)
+		↵ "HTTP/1.1 200 OK
+Date: Mon, 27 Jul 2009 12:28:53 GMT
+Server: Apache/2.2.14 (Win32)
+Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT
+Content-Length: 52
+Content-Type: text/html
+Connection: Closed
+
+<html>
+<body>
+<h1>Yello, World!</h1>
+</body>
+</html>"
+
+ε Test
+
+	δ main(sys: u8) -> u8
+		let z : Net = Net()
+		let q : u8 = 4 + 2
+		let io : Io = Io()
+		let blah : Test2 = Test2()
+		io.print(blah)
+		z.start(blah)
+		loop(z)
+		↵ 5
+
+	δ loop(ournet : Net, io : Io) -> void
+		ournet.next()
+		loop(ournet)
+
+	δ test(buf : str) -> void
+		let c : Io = Io()
+		c.print(buf)
+		↵ "HTTP/1.1 200 OK
+Date: Mon, 27 Jul 2009 12:28:53 GMT
+Server: Apache/2.2.14 (Win32)
+Last-Modified: Wed, 22 Jul 2009 19:15:56 GMT
+Content-Length: 52
+Content-Type: text/html
+Connection: Closed
+
+<html>
+<body>
+<h1>Hello, World!</h1>
+</body>
+</html>"
+

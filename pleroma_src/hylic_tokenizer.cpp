@@ -1,6 +1,8 @@
 #include "hylic.h"
 #include "hylic_tokenizer.h"
 #include <cassert>
+#include <exception>
+#include <vector>
 
 Token* TokenStream::peek() { return *(current); }
 
@@ -32,9 +34,48 @@ void TokenStream::reset() {
   char_number = 0;
 }
 
+void TokenStream::expect_or(std::vector<TokenType> toks) {
+  if (current == tokens.end()) {
+    std::string tokens_allowed = "";
+    for (auto j : toks) {
+      tokens_allowed += "|" + std::string(token_type_to_string(j));
+    }
+    printf("Reached end of tokenstream while looking for %s\n", tokens_allowed.c_str());
+    assert(false);
+    exit(1);
+  }
+
+  auto curr = get();
+
+  bool matched_tok = false;
+
+  for (auto k : toks) {
+    if (k != curr->type) {
+      matched_tok = true;
+    }
+  }
+
+  if (!matched_tok) {
+    std::string tokens_allowed = "";
+    for (auto j : toks) {
+      tokens_allowed += "|" + std::string(token_type_to_string(j));
+    }
+    printf("Expected token type: %s but got %s(%d), at line %d\n", tokens_allowed.c_str(), token_type_to_string(curr->type), curr->type, line_number);
+    exit(1);
+  }
+
+  if (curr->type == TokenType::Newline)
+    line_number++;
+}
+
+void TokenStream::expect_eos() {
+  expect_or({ TokenType::Newline, TokenType::EndOfFile });
+}
+
 void TokenStream::expect(TokenType t) {
   if (current == tokens.end()) {
-    printf("Reached end of tokenstream\n");
+    printf("Reached end of tokenstream while looking for %s\n", token_type_to_string(t));
+    assert(false);
     exit(1);
   }
 
@@ -43,6 +84,7 @@ void TokenStream::expect(TokenType t) {
     printf("Expected token type: %s but got %s(%d), at line %d\n",
            token_type_to_string(t), token_type_to_string(curr->type),
            curr->type, line_number);
+    assert(false);
     exit(1);
   }
 
@@ -94,6 +136,7 @@ std::vector<Token *> TokenStream::accept_all(std::vector<TokenType> toks) {
 
 Token *TokenStream::accept(TokenType t) {
   if (current == tokens.end()) {
+    assert(false);
     return nullptr;
   }
   auto g = get();
@@ -250,6 +293,8 @@ TokenStream* tokenize_file(FILE *f) {
     }
   }
 
+  tokenstream->add_token(TokenType::EndOfFile, "EOF");
+
   tokenstream->current = tokenstream->tokens.begin();
 
   return tokenstream;
@@ -319,6 +364,9 @@ const char *token_type_to_string(TokenType t) {
     break;
   case TokenType::Plus:
     return "Plus";
+    break;
+  case TokenType::EndOfFile:
+    return "EOF";
     break;
   }
 

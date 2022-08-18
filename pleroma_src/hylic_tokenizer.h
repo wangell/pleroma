@@ -87,6 +87,9 @@ struct TokenStream {
   void reset();
 
   void expect(TokenType t);
+  void expect_or(std::vector<TokenType>);
+  void expect_eos();
+
   Token *check(TokenType t);
   Token *accept(TokenType t);
   void add_token(TokenType t, std::string lexeme);
