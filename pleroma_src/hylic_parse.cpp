@@ -8,6 +8,7 @@
 #include <functional>
 #include <new>
 #include <tuple>
+#include <cctype>
 
 struct ParseRes {
   bool success;
@@ -149,8 +150,7 @@ AstNode *parse_expr(ParseContext *context) {
 
       if (context->ts->accept(TokenType::ModUse)) {
         auto expr2 = context->ts->accept(TokenType::String);
-        val_stack.push(make_mod_use("unga", "bunga"));
-        printf("here\n");
+        val_stack.push(make_mod_use(tt->lexeme, parse_expr(context)));
       } else if (context->ts->accept(TokenType::LeftParen)) {
 
         int n_args = 0;
@@ -280,12 +280,7 @@ AstNode *parse_expr(ParseContext *context) {
           new_vat = true;
         }
         // FIXME
-        if (op.name == "Net") {
-          val_stack.push(make_create_entity("Net", new_vat));
-        } else if (op.name == "Io") {
-          val_stack.push(make_create_entity("Io", new_vat));
-        } else if (context->tl_symbol_table.find(op.name) !=
-                   context->tl_symbol_table.end()) {
+        if (isupper(op.name[0])) {
           val_stack.push(make_create_entity(op.name, new_vat));
         } else {
           printf("op %s\n", op.name.c_str());
@@ -586,7 +581,7 @@ AstNode *parse_actor(ParseContext *context) {
     context->ts->expect(TokenType::Newline);
   }
 
-  return make_actor(actor_name->lexeme, functions, data);
+  return make_actor(context->module, actor_name->lexeme, functions, data);
 }
 
 std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
@@ -608,42 +603,39 @@ std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
   return tl_types;
 }
 
-HylicModule parse(TokenStream *stream) {
+HylicModule *parse(TokenStream *stream) {
 
   ParseContext context;
   context.tl_symbol_table = get_tl_types(stream);
   context.ts = stream;
 
-  std::map<std::string, HylicModule> imports;
+  std::map<std::string, HylicModule*> imports;
   std::map<std::string, AstNode *> symbol_map;
 
-  HylicModule hm;
+  HylicModule *hm = new HylicModule;
+  context.module = hm;
 
   while (stream->current != stream->tokens.end()) {
     if (context.ts->accept(TokenType::Import)) {
       // ModuleStmt
       auto mod_name_tok = context.ts->accept(TokenType::Symbol);
-      std::string mod_name = mod_name_tok->lexeme + ".po";
+      std::string mod_name = mod_name_tok->lexeme;
+      std::string mod_path = mod_name + ".po";
 
       bool namespaced = true;
 
-      if (!std::filesystem::exists(mod_name)) {
+      if (!std::filesystem::exists(mod_path)) {
         printf("Module %s does not exist.\n", mod_name.c_str());
         exit(1);
       }
 
-      FILE *f = fopen(mod_name.c_str(), "r");
-      if (!f) {
-        printf("Error opening module: %s\n", mod_name.c_str());
-        exit(1);
-      }
-      TokenStream *new_stream = tokenize_file(f);
+      TokenStream *new_stream = tokenize_file(mod_path);
       auto mod_file = parse(new_stream);
 
       Token *sym = context.ts->get();
       context.ts->expect(TokenType::Newline);
       //imports[mod_name] = mod_file;
-      hm.imports[mod_name] = &mod_file;
+      hm->imports[mod_name] = mod_file;
     } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;
@@ -657,8 +649,7 @@ HylicModule parse(TokenStream *stream) {
     }
   }
 
-  //hm.imports = imports;
-  hm.entity_defs = symbol_map;
+  hm->entity_defs = symbol_map;
 
   return hm;
 }

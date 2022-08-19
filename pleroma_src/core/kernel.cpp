@@ -106,7 +106,7 @@ void load_amoeba() {
   functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, test_type);
   functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, test_type);
 
-  kernel_map["Amoeba"] = make_actor("Amoeba", functions, {});
+  //kernel_map["Amoeba"] = make_actor("Amoeba", functions, {});
 }
 
 void load_kernel() {
@@ -117,7 +117,7 @@ void load_kernel() {
   // functions["main"] = setup_test();
   functions["main"] = setup_direct_call(test_ffi, "main", {"sys"}, {}, test_type);
 
-  kernel_map["Kernel"] = make_actor("Kernel", functions, {});
+  //kernel_map["Kernel"] = make_actor("Kernel", functions, {});
 
   std::map<std::string, FuncStmt *> io_functions;
 
@@ -130,7 +130,7 @@ void load_kernel() {
 
   //io_functions["readline"]->ctype.basetype = PType::str;
 
-  kernel_map["Io"] = make_actor("Io", io_functions, {});
+  kernel_map["Io"] = make_actor(nullptr, "Io", io_functions, {});
 
   load_net();
 

@@ -1,5 +1,6 @@
 #pragma once
 
+#include "common.h"
 #include "hylic_compex.h"
 #include <list>
 #include <string>
@@ -77,6 +78,7 @@ struct TokenStream {
   std::list<Token *> tokens;
   std::list<Token *>::iterator current;
 
+  std::string filename;
   int line_number = 0;
   int char_number = 0;
 
@@ -96,8 +98,12 @@ struct TokenStream {
   std::vector<Token *> accept_all(std::vector<TokenType> toks);
 };
 
-struct TokenizerException : CompileException {};
-
-TokenStream* tokenize_file(FILE *f);
+class TokenizerException : public CompileException {
+public:
+  TokenizerException(std::string file, u32 line_n, u32 char_n,
+                   std::string msg)
+    : CompileException(file, line_n, char_n, msg) {}
+};
+TokenStream* tokenize_file(std::string filepath);
 
 const char *token_type_to_string(TokenType t);

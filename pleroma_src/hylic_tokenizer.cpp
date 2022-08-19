@@ -2,6 +2,7 @@
 #include "hylic_tokenizer.h"
 #include <cassert>
 #include <exception>
+#include <string>
 #include <vector>
 
 Token* TokenStream::peek() { return *(current); }
@@ -40,7 +41,9 @@ void TokenStream::expect_or(std::vector<TokenType> toks) {
     for (auto j : toks) {
       tokens_allowed += "|" + std::string(token_type_to_string(j));
     }
-    printf("Reached end of tokenstream while looking for %s\n", tokens_allowed.c_str());
+
+    throw TokenizerException(filename, line_number, char_number, "Reached end of tokenstream while looking for " + tokens_allowed);
+    //throw TokenizerException("Reached end of tokenstream while looking for %s\n", tokens_allowed.c_str());
     assert(false);
     exit(1);
   }
@@ -81,11 +84,8 @@ void TokenStream::expect(TokenType t) {
 
   auto curr = get();
   if (curr->type != t) {
-    printf("Expected token type: %s but got %s(%d), at line %d\n",
-           token_type_to_string(t), token_type_to_string(curr->type),
-           curr->type, line_number);
-    assert(false);
-    exit(1);
+    printf("Expected token type: %s but got %s(%d), at line %d\n", token_type_to_string(t), token_type_to_string(curr->type), curr->type, line_number);
+    throw TokenizerException(filename, line_number, char_number, "Expected token type: " + std::string(token_type_to_string(t)) + " but got " + std::string(token_type_to_string(curr->type)) + "(" + std::to_string((int)curr->type) + ")");
   }
 
   if (curr->type == TokenType::Newline)
@@ -157,12 +157,23 @@ void TokenStream::add_token(TokenType t, std::string lexeme) {
   tokens.push_back(tok);
 }
 
-TokenStream* tokenize_file(FILE *f) {
+TokenStream* tokenize_file(std::string filepath) {
   TokenStream *tokenstream = new TokenStream;
+  tokenstream->filename = filepath;
+
+  FILE *f = fopen(filepath.c_str(), "r");
+  if (!f) {
+    printf("Error opening module: %s\n", filepath.c_str());
+    exit(1);
+  }
+
+  int line_n = 1;
+  int char_n = 1;
 
   wchar_t c;
 
   while ((c = fgetwc(f)) != EOF) {
+    char_n += 1;
     if (c == '~') {
       tokenstream->add_token(TokenType::Import, "~");
     } else if (c == '?') {
@@ -254,6 +265,8 @@ TokenStream* tokenize_file(FILE *f) {
       tokenstream->add_token(TokenType::Message, "!");
     } else if (c == '\n') {
       tokenstream->add_token(TokenType::Newline, "\n");
+      line_n++;
+      char_n = 0;
     } else if (c == ',') {
       tokenstream->add_token(TokenType::Comma, ",");
     } else if (c == '&') {
@@ -288,8 +301,7 @@ TokenStream* tokenize_file(FILE *f) {
     } else if (c == ' ') {
       // ignore
     } else {
-      printf("Invalid character: %c\n", c);
-      assert(false);
+      throw TokenizerException(tokenstream->filename, line_n, char_n, "Invalid character: " + std::to_string(c));
     }
   }
 

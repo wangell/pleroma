@@ -130,11 +130,11 @@ AstNode *make_namespace_access(AstNode* ref, AstNode* field) {
   return node;
 }
 
-AstNode *make_mod_use(std::string mod_name, std::string accessor_name) {
+AstNode *make_mod_use(std::string mod_name, AstNode* accessor) {
   ModUseNode *node = new ModUseNode;
   node->type = AstNodeType::ModUseNode;
   node->mod_name = mod_name;
-  node->accessor = accessor_name;
+  node->accessor = accessor;
   return node;
 }
 
@@ -211,11 +211,12 @@ AstNode *make_symbol(std::string s) {
   return symbol_node;
 }
 
-AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions,
+AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, FuncStmt *> functions,
                     std::map<std::string, AstNode *> data) {
   EntityDef *actor_def = new EntityDef;
   actor_def->type = AstNodeType::EntityDef;
   actor_def->name = s;
+  actor_def->module = module;
   actor_def->functions = functions;
   actor_def->data = data;
   return actor_def;

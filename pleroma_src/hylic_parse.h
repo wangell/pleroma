@@ -23,7 +23,8 @@ enum class InfixOpType {
   MessageAsync,
   NewVat,
   Namespace,
-  ModUse
+  ModUse,
+  CreateEntity
 };
 
 struct InfixOp {
@@ -36,16 +37,12 @@ struct InfixOp {
 struct ParseContext {
   TokenStream *ts;
   std::map<std::string, TLUserType> tl_symbol_table;
+  HylicModule* module;
 };
 
-struct ParseException : CompileException {
+class ParseException : CompileException {
 };
 
-struct HylicModule {
-  std::map<std::string, HylicModule*> imports;
-  std::map<std::string, AstNode*> entity_defs;
-};
-
-HylicModule parse(TokenStream *stream);
+HylicModule *parse(TokenStream *stream);
 
 std::vector<AstNode *> parse_block(ParseContext *context, int expected_indent);

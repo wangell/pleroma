@@ -100,9 +100,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       if (blocknode->type == AstNodeType::ReturnNode) {
         has_return = true;
         if (!exact_match(typesolve_sub(context, blocknode), func_node->ctype)) {
-          TypesolverException *exc = new TypesolverException;
-          exc->msg = "Function return type differs from a body return value";
-          context->exceptions.push_back(exc);
+          //TypesolverException *exc = new TypesolverException;
+          //exc->msg = "Function return type differs from a body return value";
+          //context->exceptions.push_back(exc);
         }
       } else {
         typesolve_sub(context, blocknode);
@@ -111,9 +111,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     if (!has_return) {
       if (func_node->ctype.basetype != PType::None) {
-        TypesolverException *exc = new TypesolverException;
-        exc->msg = "Function is marked void, but returns a value in the body";
-        context->exceptions.push_back(exc);
+        //TypesolverException *exc = new TypesolverException;
+        //exc->msg = "Function is marked void, but returns a value in the body";
+        //context->exceptions.push_back(exc);
       }
     }
 
@@ -153,11 +153,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     CType rexpr = typesolve_sub(context, assmt_node->value);
 
     if (!exact_match(lexpr, rexpr)) {
-      auto *exc = new TypesolverException;
+      //auto *exc = new TypesolverException;
 
-      exc->msg = "Attempted assign to a " + ctype_to_string(&lexpr) + " from a " + ctype_to_string(&rexpr);
+      //exc->msg = "Attempted assign to a " + ctype_to_string(&lexpr) + " from a " + ctype_to_string(&rexpr);
 
-      context->exceptions.push_back(exc);
+      //context->exceptions.push_back(exc);
     }
 
     //context->typestore[assmt_node->sym->sym] = lexpr;
@@ -186,7 +186,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
 void print_typesolver_exceptions(std::vector<TypesolverException*> exceptions) {
   for (auto e : exceptions) {
-    printf("%s\n", e->msg.c_str());
+    //printf("%s\n", e->msg.c_str());
   }
 }
 

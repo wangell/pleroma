@@ -1,6 +1,7 @@
 #include "hylic_eval.h"
 #include "blockingconcurrentqueue.h"
 #include "hylic_ast.h"
+#include "other.h"
 #include "pleroma.h"
 #include <cassert>
 
@@ -8,28 +9,24 @@ extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
 AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
                     std::vector<std::tuple<std::string, AstNode *>> sub_syms) {
-  Scope block_scope;
-  block_scope.parent = context->scope;
 
-  EvalContext new_context;
-  new_context.entity = context->entity;
-  new_context.vat = context->vat;
-  new_context.scope = &block_scope;
-  new_context.node = context->node;
+  push_scope(context);
 
   // load symbols into scope
   for (auto &[sym, node] : sub_syms) {
-    block_scope.table[sym] = node;
+    css(context).table[sym] = node;
   }
 
   AstNode *last_val;
   for (auto node : block) {
-    last_val = eval(&new_context, node);
+    last_val = eval(context, node);
     if (last_val->type == AstNodeType::ReturnNode) {
       auto v = (ReturnNode *)last_val;
-      return eval(&new_context, v->expr);
+      return eval(context, v->expr);
     }
   }
+
+  pop_scope(context);
 
   return make_nop();
 }
@@ -39,7 +36,7 @@ Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
   // entity_ref->vat_id, entity_ref->node_id);
   if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 &&
       entity_ref->node_id == 0) {
-    return context->entity;
+    return context->stack.back().entity;
   } else {
     auto found_ent = context->vat->entities.find(entity_ref->entity_id);
     assert(found_ent != context->vat->entities.end());
@@ -64,6 +61,11 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::string function_name,
                          std::vector<AstNode *> args) {
 
+  push_stack_frame(context, entity, entity->entity_def->module);
+
+  //for (auto k : entity->entity_def->functions) {
+  //  printf("Func %s\n", k.first.c_str());
+  //}
   auto func = entity->entity_def->functions.find(function_name);
   assert(func != entity->entity_def->functions.end());
 
@@ -74,7 +76,11 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
   for (int i = 0; i < func_def_node->args.size(); ++i) {
     subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
   }
-  return eval_block(context, func_def_node->body, subs);
+  auto res = eval_block(context, func_def_node->body, subs);
+
+  pop_stack_frame(context);
+
+  return res;
 }
 
 AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
@@ -90,7 +96,7 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   // target_entity->entity_def->name.c_str(), function_name.c_str());
 
   if (comm_mode == CommMode::Sync) {
-    Entity *target_entity = context->entity;
+    Entity *target_entity = context->stack.back().entity;
     target_entity = resolve_local_entity(context, entity_ref);
     assert(target_entity != nullptr);
     return eval_func_local(context, target_entity, function_name, args);
@@ -100,9 +106,9 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
     m.entity_id = entity_ref->entity_id;
     m.vat_id = entity_ref->vat_id;
     m.node_id = entity_ref->node_id;
-    m.src_node_id = context->entity->address.node_id;
-    m.src_vat_id = context->entity->address.vat_id;
-    m.src_entity_id = context->entity->address.entity_id;
+    m.src_node_id = cfs(context).entity->address.node_id;
+    m.src_vat_id = cfs(context).entity->address.vat_id;
+    m.src_entity_id = cfs(context).entity->address.entity_id;
     m.function_name = function_name;
 
     m.response = false;
@@ -135,12 +141,11 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     sym = ass_stmt->sym;
     auto expr = eval(context, ass_stmt->value);
 
-    std::map<std::string, AstNode *> *find_it =
-        find_symbol_table(context, context->scope, sym->sym);
+    std::map<std::string, AstNode *> *find_it = find_symbol_table(context, sym->sym);
     if (find_it) {
       (*find_it)[sym->sym] = expr;
     } else {
-      context->scope->table[sym->sym] = expr;
+      css(context).table[sym->sym] = expr;
     }
 
     return expr;
@@ -237,15 +242,11 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       auto ent_node = (EntityRefNode *)ref_node;
       auto mess_node = (MessageNode *)node->field;
 
-      EvalContext new_context;
-      new_context.vat = context->vat;
-      new_context.entity =
-          resolve_local_entity(context, (EntityRefNode *)ref_node);
-      Scope new_scope;
-      new_scope.table["self"] = new_context.entity->entity_def;
-      new_context.scope = &new_scope;
-
-      // printf("Searching namespace %s\n", node->namespace_table.c_str());
+      //EvalContext new_context;
+      //new_context.vat = context->vat;
+      //new_context.entity = resolve_local_entity(context, (EntityRefNode *)ref_node);
+      //push_stack_frame(context);
+      //context->stack.back().scope.table["self"] = new_context.stack.back().entity->entity_def;
 
       return eval_message_node(context, ent_node, mess_node->comm_mode,
                                mess_node->function_name, mess_node->args);
@@ -352,7 +353,16 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::CreateEntity) {
     auto node = (CreateEntityNode *)obj;
-    Entity *ent = create_entity(context, (EntityDef *)find_symbol(context, node->entity_def_name), node->new_vat);
+
+    auto creation_ast = cfs(context).module->entity_defs.find(node->entity_def_name);
+
+    printf("looking for %s in \n", node->entity_def_name.c_str());
+
+    for (auto k : cfs(context).module->entity_defs) {
+      printf("\t%s\n", k.first.c_str());
+    }
+    assert(creation_ast != cfs(context).module->entity_defs.end());
+    Entity *ent = create_entity(context, (EntityDef *)creation_ast->second, node->new_vat);
 
     return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
   }
@@ -398,86 +408,62 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::ModUseNode) {
-    //return eval(context->, node->term2);
+    auto node = (ModUseNode *)obj;
+
+    // FIXME: more elegant way to do this
+
+    printf("%s\n", node->mod_name.c_str());
+    auto find_mod = cfs(context).module->imports.find(node->mod_name);
+
+    for (auto &[k, v]: cfs(context).module->imports) {
+      printf("listed: %s\n", k.c_str());
+    }
+    assert(find_mod != cfs(context).module->imports.end());
+
+    push_stack_frame(context, cfs(context).entity, find_mod->second);
+
+    auto res = eval(context, node->accessor);
+    pop_stack_frame(context);
+
+    return res;
   }
 
   printf("Failing to evaluate node type %s\n", ast_type_to_string(obj->type).c_str());
   assert(false);
 }
 
-std::map<std::string, AstNode *> *
-find_symbol_table(EvalContext *context, Scope *scope, std::string sym) {
-  Scope *s = scope;
-
-  auto first_find = scope->table.find(sym);
-  if (first_find != s->table.end()) {
-    return &scope->table;
+std::map<std::string, AstNode *> *find_symbol_table(EvalContext *context, std::string sym) {
+for (auto x = cfs(context).scope_stack.rbegin(); x != cfs(context).scope_stack.rend(); x++) {
+    auto found_it = x->table.find(sym);
+    if (found_it != x->table.end()) return &x->table;
   }
 
-  while (true) {
-    if (s->parent) {
-      s = s->parent;
-
-      auto sym_find = s->table.find(sym);
-      if (sym_find == s->table.end()) {
-        continue;
-      }
-
-      return &s->table;
-    } else {
-      // reached the end, search entity scope
-      break;
-    }
-  }
-
-  if (context->entity->data.find(sym) != context->entity->data.end()) {
-    return &context->entity->data;
+ if (cfs(context).entity->data.find(sym) != cfs(context).entity->data.end()) {
+   return &cfs(context).entity->data;
   }
 
   return nullptr;
 }
 
 AstNode *find_symbol(EvalContext *context, std::string sym) {
-  Scope *s = context->scope;
-
-  auto first_find = context->scope->table.find(sym);
-  if (first_find != s->table.end()) {
-    return first_find->second;
-  }
-
-  while (true) {
-    if (s->parent) {
-      s = s->parent;
-
-      auto sym_find = s->table.find(sym);
-      if (sym_find == s->table.end()) {
-        continue;
-      }
-
-      return sym_find->second;
-    } else {
-      break;
-    }
+  // Search through lexical scopes
+  for (auto x = cfs(context).scope_stack.rbegin(); x != cfs(context).scope_stack.rend(); x++) {
+    auto found_it = x->table.find(sym);
+    if (found_it != x->table.end()) return found_it->second;
   }
 
   // Search entity data
-  if (context->entity->data.find(sym) != context->entity->data.end()) {
-    return context->entity->data.find(sym)->second;
+  if (cfs(context).entity->data.find(sym) != cfs(context).entity->data.end()) {
+    return cfs(context).entity->data.find(sym)->second;
   }
 
   // Search file scope
-  if (context->entity->module_scope->entity_defs.find(sym) !=
-      context->entity->module_scope->entity_defs.end()) {
-    return context->entity->module_scope->entity_defs.find(sym)->second;
+  if (cfs(context).module->entity_defs.find(sym) !=
+      cfs(context).module->entity_defs.end()) {
+    return cfs(context).entity->module_scope->entity_defs.find(sym)->second;
   }
 
-  //if (context->entity->import_scope.find(sym) !=
-  //    context->entity->import_scope.end()) {
-  //  return context->entity->import_scope.find(sym)->second->entity_defs;
-  //}
-
-  printf("Failed to find symbol %s\n", sym.c_str());
-  assert(false);
+  throw PleromaException((std::string("Failed to find symbol: ") + sym).c_str());
 }
 
 Entity *create_entity(EvalContext *context, EntityDef *entity_def,
@@ -507,16 +493,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
     e->data[k] = v;
   }
 
-  EvalContext new_cont;
-  new_cont.entity = e;
-  new_cont.node = context->node;
-  new_cont.vat = vat;
-  Scope *scope = context->scope;
-  while (scope->parent)
-    scope = scope->parent;
-  new_cont.scope = scope;
-
-  eval_func_local(&new_cont, e, "create", {});
+  eval_func_local(context, e, "create", {});
 
   if (new_vat) {
     queue.enqueue(vat);
@@ -574,14 +551,47 @@ void print_msg(Msg *m) {
   printf("\n\n");
 }
 
-void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity) {
-  scope->table = entity->module_scope->entity_defs;
-  scope->table["self"] = make_entity_ref(0, 0, 0);
-  scope->readonly = true;
-
+void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModule *module, Entity *entity) {
+  context->node = node;
   context->vat = vat;
-  context->entity = entity;
-  context->scope = scope;
+
+  push_stack_frame(context, nullptr, module);
+
+  cfs(context).module = module;
+  cfs(context).entity = entity;
+
+  if (entity) {
+    css(context).table = entity->module_scope->entity_defs;
+    css(context).table["self"] = make_entity_ref(0, 0, 0);
+  }
 }
 
-EvalContext push_stack_frame() {}
+void push_scope(EvalContext *context) {
+  cfs(context).scope_stack.push_back(Scope());
+}
+
+void pop_scope(EvalContext *context) {
+  cfs(context).scope_stack.pop_back();
+}
+
+void push_stack_frame(EvalContext *context, Entity* e, HylicModule* module) {
+  context->stack.push_back(StackFrame());
+  context->stack.back().entity = e;
+  context->stack.back().module = module;
+
+  push_scope(context);
+}
+
+void pop_stack_frame(EvalContext *context) {
+  context->stack.pop_back();
+}
+
+// Current stack frame
+StackFrame& cfs(EvalContext *context) {
+  return context->stack.back();
+}
+
+// Current stack scope
+Scope &css(EvalContext *context) {
+  return context->stack.back().scope_stack.back();
+}

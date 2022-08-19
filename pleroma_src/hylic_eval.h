@@ -63,9 +63,7 @@ struct Vat {
 };
 
 struct Scope {
-  Scope *parent = nullptr;
   std::map<std::string, AstNode *> table;
-  bool readonly = false;
 };
 
 struct PleromaNode {
@@ -74,16 +72,20 @@ struct PleromaNode {
   int vat_id_base = 0;
 };
 
+struct StackFrame {
+  HylicModule *module;
+  Entity *entity;
+  std::vector<Scope> scope_stack;
+};
+
 struct EvalContext {
   PleromaNode *node;
   Vat *vat;
-  Entity *entity;
-  Scope *scope;
+  std::vector<StackFrame> stack;
 };
 
 AstNode *eval(EvalContext *context, AstNode *obj);
-std::map<std::string, AstNode *> *
-find_symbol_table(EvalContext *context, Scope *scope, std::string sym);
+std::map<std::string, AstNode *> *find_symbol_table(EvalContext *context, std::string sym);
 AstNode *find_symbol(EvalContext *context, std::string sym);
 Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
@@ -91,7 +93,16 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult 
 void print_value_node(ValueNode *value_node);
 void print_msg(Msg *m);
 
-void start_stack(EvalContext *context, Scope *scope, Vat *vat, Entity *entity);
-EvalContext push_stack_frame();
+void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModule* module, Entity *entity);
+void push_stack_frame(EvalContext* context, Entity *e, HylicModule* module);
+void pop_stack_frame(EvalContext* context);
 
-AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args);
+void pop_scope(EvalContext *context);
+void push_scope(EvalContext *context);
+
+AstNode *eval_message_node(EvalContext * context, EntityRefNode * entity_ref,
+                           CommMode comm_mode, std::string function_name,
+                           std::vector<AstNode *> args);
+
+StackFrame &cfs(EvalContext * context);
+Scope &css(EvalContext * context);

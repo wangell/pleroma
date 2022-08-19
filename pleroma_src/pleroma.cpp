@@ -5,6 +5,7 @@
 #include <locale>
 #include <map>
 #include <queue>
+#include <stdexcept>
 #include <stdio.h>
 #include <string>
 #include <unistd.h>
@@ -17,6 +18,8 @@
 #include "core/kernel.h"
 #include "blockingconcurrentqueue.h"
 #include "node_config.h"
+
+#include "other.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
@@ -65,9 +68,7 @@ void process_vq() {
         Entity* target_entity = find_entity->second;
 
         EvalContext context;
-        Scope scope;
-        start_stack(&context, &scope, our_vat, target_entity);
-        context.node = &this_pleroma_node;
+        start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
 
         // Return vs call
         if (m.response) {
@@ -126,13 +127,7 @@ void inoculate_pleroma(HylicModule *program, EntityDef *entity_def) {
   this_pleroma_node.vat_id_base++;
 
   EvalContext context;
-  context.entity = nullptr;
-  context.vat = og_vat;
-  context.node = &this_pleroma_node;
-
-  Scope scope;
-  scope.table = program->entity_defs;
-  context.scope = &scope;
+  start_context(&context, &this_pleroma_node, og_vat, program, nullptr);
 
   Entity *ent = create_entity(&context, entity_def, false);
   ent->module_scope = program;
@@ -156,6 +151,13 @@ void inoculate_pleroma(HylicModule *program, EntityDef *entity_def) {
 
 int main(int argc, char **argv) {
 
+  if (argc < 2) {
+    throw PleromaException("Need to provide IP/port [client IP / client port]");
+  }
+  if (argc > 3 && argc < 5) {
+    throw PleromaException("Need to provide client IP / client port");
+  }
+
   setlocale(LC_ALL, "");
 
   read_node_config();
@@ -164,15 +166,15 @@ int main(int argc, char **argv) {
 
   load_kernel();
 
-  auto user_program = (EntityDef *)program.entity_defs["Test"];
+  auto user_program = (EntityDef *)program->entity_defs["Test"];
 
-  program.entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
-  program.entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
+  program->entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
+  program->entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
   //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
 
   //typesolve(program);
 
-  inoculate_pleroma(&program, user_program);
+  inoculate_pleroma(program, user_program);
 
   init_network();
 

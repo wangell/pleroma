@@ -96,6 +96,11 @@ struct AstNode {
   std::list<Token *>::iterator end;
 };
 
+struct HylicModule {
+  std::map<std::string, HylicModule *> imports;
+  std::map<std::string, AstNode *> entity_defs;
+};
+
 struct Nop : AstNode {};
 
 struct ReturnNode : AstNode {
@@ -104,7 +109,7 @@ struct ReturnNode : AstNode {
 
 struct ModUseNode: AstNode {
   std::string mod_name;
-  std::string accessor;
+  AstNode* accessor;
 };
 
 struct TableNode : AstNode {
@@ -230,6 +235,7 @@ struct BooleanExpr : AstNode {
 
 struct EntityDef : AstNode {
   std::string name;
+  HylicModule* module;
   std::map<std::string, FuncStmt *> functions;
   std::map<std::string, AstNode *> data;
 };
@@ -252,6 +258,7 @@ struct ForeignFuncCall : AstNode {
   std::vector<AstNode *> args;
 };
 
+
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body);
 AstNode *make_return(AstNode *a);
 AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1,
@@ -268,7 +275,7 @@ AstNode *make_number(int64_t v);
 AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
 AstNode *make_symbol(std::string s);
-AstNode *make_actor(std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
+AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
 AstNode *make_nop();
 AstNode *make_undefined();
@@ -277,7 +284,7 @@ AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
 AstNode *make_list(std::vector<AstNode *> list, CType* ctype);
 AstNode *make_promise_node(int promise_id);
-AstNode *make_mod_use(std::string mod_name, std::string accessor);
+AstNode *make_mod_use(std::string mod_name, AstNode* accessor);
 // HACK Make this an AstNode and then eval + check in symbol table
 AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);
 

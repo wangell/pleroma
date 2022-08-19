@@ -98,5 +98,5 @@ void load_net() {
   functions["create"] = setup_direct_call(net_create, "create", {}, {}, test_type);
   functions["create"]->ctype.basetype = PType::u8;
 
-  kernel_map["Net"] = make_actor("Net", functions, {});
+  //kernel_map["Net"] = make_actor("Net", functions, {});
 }

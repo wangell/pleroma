@@ -16,6 +16,7 @@
 
 #include "hylic.h"
 #include "hylic_ast.h"
+#include "hylic_compex.h"
 #include "hylic_eval.h"
 #include "hylic_parse.h"
 #include "hylic_tokenizer.h"
@@ -41,15 +42,21 @@ void print(AstNode *s) {
 
 void parse_match_blocks() {}
 
-HylicModule load_file(std::string path) {
+HylicModule *load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
-  FILE *f = fopen(path.c_str(), "r");
-  TokenStream *stream = tokenize_file(f);
 
-  //auto program = resolve_thunks(parse(tokenstream));
-  auto program = parse(stream);
+  HylicModule *program;
+  try {
+    TokenStream *stream = tokenize_file(path);
 
-  //typesolve(program);
+    //auto program = resolve_thunks(parse(tokenstream));
+    program = parse(stream);
+
+    //typesolve(program);
+  } catch (CompileException &e) {
+    printf("%s\n", e.what());
+    exit(1);
+  }
 
   return program;
 }
