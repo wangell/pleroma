@@ -181,7 +181,12 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == '|') {
       tokenstream->add_token(TokenType::For, "|");
     } else if (c == '=') {
-      tokenstream->add_token(TokenType::Equals, "=");
+      if ((c = fgetwc(f)) == '=') {
+        tokenstream->add_token(TokenType::EqualsEquals, "==");
+      } else {
+        ungetwc(c, f);
+        tokenstream->add_token(TokenType::Equals, "=");
+      }
     } else if (c == '^') {
       tokenstream->add_token(TokenType::Not, "^");
     } else if (c == '>') {

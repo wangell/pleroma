@@ -278,7 +278,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     if (node->op == BooleanExpr::GreaterThan ||
         node->op == BooleanExpr::LessThan ||
         node->op == BooleanExpr::GreaterThanEqual ||
-        node->op == BooleanExpr::LessThanEqual) {
+        node->op == BooleanExpr::LessThanEqual ||
+        node->op == BooleanExpr::Equals) {
       auto term1 = eval(context, node->term1);
       auto term2 = eval(context, node->term2);
 
@@ -299,7 +300,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
         return make_boolean(n1->value <= n2->value);
         break;
       case BooleanExpr::Equals:
-        assert(false);
+        return make_boolean(n1->value == n2->value);
         break;
       }
     }

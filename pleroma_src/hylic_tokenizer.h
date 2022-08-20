@@ -24,6 +24,7 @@ enum class TokenType {
   Slash,
 
   Equals,
+  EqualsEquals,
   GreaterThan,
   GreaterThanEqual,
   LessThan,

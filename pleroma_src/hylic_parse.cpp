@@ -84,8 +84,15 @@ AstNode *parse_expr(ParseContext *context) {
       context->ts->expect(TokenType::RightParen);
       return body;
     } else if (context->ts->check(TokenType::Number)) {
-      auto expr1 = make_number(
-          strtol(context->ts->accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+      auto expr1 = make_number(strtol(context->ts->accept(TokenType::Number)->lexeme.c_str(), nullptr, 10));
+      val_stack.push(expr1);
+    } else if (context->ts->check(TokenType::True)) {
+      context->ts->accept(TokenType::True);
+      auto expr1 = make_boolean(true);
+      val_stack.push(expr1);
+    } else if (context->ts->check(TokenType::False)) {
+      context->ts->accept(TokenType::False);
+      auto expr1 = make_boolean(false);
       val_stack.push(expr1);
     } else if (context->ts->accept(TokenType::Dollar)) {
       // List in future
@@ -224,6 +231,41 @@ AstNode *parse_expr(ParseContext *context) {
       op.name = "Namespace";
       op_stack.push(op);
       val_stack.push(parse_expr(context));
+    } else if (context->ts->check(TokenType::LessThan)) {
+      context->ts->accept(TokenType::LessThan);
+      InfixOp op;
+      op.type = InfixOpType::LessThan;
+      op.n_args = 2;
+      op.name = "LessThan";
+      op_stack.push(op);
+    } else if (context->ts->check(TokenType::LessThanEqual)) {
+      context->ts->accept(TokenType::LessThanEqual);
+      InfixOp op;
+      op.type = InfixOpType::LessThanEqual;
+      op.n_args = 2;
+      op.name = "LessThanEqual";
+      op_stack.push(op);
+    } else if (context->ts->check(TokenType::GreaterThan)) {
+      context->ts->accept(TokenType::GreaterThan);
+      InfixOp op;
+      op.type = InfixOpType::GreaterThan;
+      op.n_args = 2;
+      op.name = "GreaterThan";
+      op_stack.push(op);
+    } else if (context->ts->check(TokenType::GreaterThanEqual)) {
+      context->ts->accept(TokenType::GreaterThanEqual);
+      InfixOp op;
+      op.type = InfixOpType::GreaterThanEqual;
+      op.n_args = 2;
+      op.name = "GreaterThanEqual";
+      op_stack.push(op);
+    } else if (context->ts->check(TokenType::EqualsEquals)) {
+      context->ts->accept(TokenType::EqualsEquals);
+      InfixOp op;
+      op.type = InfixOpType::Equals;
+      op.n_args = 2;
+      op.name = "Equals";
+      op_stack.push(op);
     } else {
       printf("%d\n", context->ts->get()->type);
       assert(false);
@@ -235,6 +277,27 @@ AstNode *parse_expr(ParseContext *context) {
   while (!op_stack.empty()) {
     InfixOp op = op_stack.top();
     op_stack.pop();
+
+    if (op.type == InfixOpType::LessThan || op.type == InfixOpType::LessThanEqual || op.type == InfixOpType::GreaterThan || op.type == InfixOpType::GreaterThanEqual || op.type == InfixOpType::Equals) {
+      auto expr1 = val_stack.top();
+      val_stack.pop();
+      auto expr2 = val_stack.top();
+      val_stack.pop();
+
+      if (op.type == InfixOpType::LessThan) {
+        val_stack.push(make_boolean_expr(BooleanExpr::LessThan, expr2, expr1));
+      } else if (op.type == InfixOpType::LessThanEqual) {
+        val_stack.push(make_boolean_expr(BooleanExpr::LessThan, expr2, expr1));
+      } else if (op.type == InfixOpType::GreaterThan) {
+        val_stack.push(make_boolean_expr(BooleanExpr::GreaterThan, expr2, expr1));
+      } else if (op.type == InfixOpType::GreaterThanEqual) {
+        val_stack.push(make_boolean_expr(BooleanExpr::GreaterThanEqual, expr2, expr1));
+      } else if (op.type == InfixOpType::Equals) {
+        val_stack.push(make_boolean_expr(BooleanExpr::Equals, expr2, expr1));
+      } else {
+        assert(false);
+      }
+    }
 
     if (op.type == InfixOpType::Plus) {
       auto expr1 = val_stack.top();

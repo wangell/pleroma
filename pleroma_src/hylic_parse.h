@@ -24,7 +24,14 @@ enum class InfixOpType {
   NewVat,
   Namespace,
   ModUse,
-  CreateEntity
+  CreateEntity,
+
+  // Boolean ops
+  LessThan,
+  LessThanEqual,
+  GreaterThan,
+  GreaterThanEqual,
+  Equals
 };
 
 struct InfixOp {
