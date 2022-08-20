@@ -46,17 +46,12 @@ HylicModule *load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
 
   HylicModule *program;
-  try {
     TokenStream *stream = tokenize_file(path);
 
     //auto program = resolve_thunks(parse(tokenstream));
     program = parse(stream);
 
     //typesolve(program);
-  } catch (CompileException &e) {
-    printf("%s\n", e.what());
-    exit(1);
-  }
 
   return program;
 }

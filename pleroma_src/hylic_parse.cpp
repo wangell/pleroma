@@ -477,7 +477,6 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
       } else if (current_indent > expected_indent + 1) {
         // FIXME is this the right indnet level?
         case_body.push_back(parse_stmt(context, expected_indent + 2));
-        context->ts->expect(TokenType::Newline);
       } else if (current_indent < expected_indent + 1) {
         // We're done
         match_cases.push_back(std::make_tuple(match_case, case_body));
@@ -644,7 +643,7 @@ AstNode *parse_actor(ParseContext *context) {
       break;
     }
 
-    context->ts->expect(TokenType::Newline);
+    //context->ts->expect(TokenType::Newline);
   }
 
   return make_actor(context->module, actor_name->lexeme, functions, data, inocaps);
