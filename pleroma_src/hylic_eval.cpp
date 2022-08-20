@@ -33,8 +33,7 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
 }
 
 Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
-  // printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id,
-  // entity_ref->vat_id, entity_ref->node_id);
+  printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
   if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 &&
       entity_ref->node_id == 0) {
     return context->stack.back().entity;
@@ -480,6 +479,9 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   e->address.node_id = context->node->node_id;
   e->module_scope = entity_def->module;
 
+  printf("Creating entity: %d %d %d\n", e->address.entity_id,
+         e->address.vat_id, e->address.node_id);
+
   vat->entity_id_base++;
 
   vat->entities[e->address.entity_id] = e;
@@ -493,11 +495,19 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
 
     // Hack for now
     if (k.ctype->entity_name == "Io") {
+      // FIXME: we need more temporary context swap functions
+      auto old_vat = context->vat;
+      context->vat = vat;
+
       auto io_ent = create_entity(context, (EntityDef *)kernel_map["Io"], false);
       e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+
+      // FIXME: see above
+      context->vat = old_vat;
     }
   }
 
+  // FIXME: see above
   eval_func_local(context, e, "create", {});
 
   if (new_vat) {
