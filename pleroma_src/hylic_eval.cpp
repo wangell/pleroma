@@ -4,6 +4,7 @@
 #include "other.h"
 #include "pleroma.h"
 #include <cassert>
+#include "core/kernel.h"
 
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
@@ -356,11 +357,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     auto creation_ast = cfs(context).module->entity_defs.find(node->entity_def_name);
 
-    printf("looking for %s in \n", node->entity_def_name.c_str());
-
-    for (auto k : cfs(context).module->entity_defs) {
-      printf("\t%s\n", k.first.c_str());
-    }
     assert(creation_ast != cfs(context).module->entity_defs.end());
     Entity *ent = create_entity(context, (EntityDef *)creation_ast->second, node->new_vat);
 
@@ -410,14 +406,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::ModUseNode) {
     auto node = (ModUseNode *)obj;
 
-    // FIXME: more elegant way to do this
-
-    printf("%s\n", node->mod_name.c_str());
     auto find_mod = cfs(context).module->imports.find(node->mod_name);
 
-    for (auto &[k, v]: cfs(context).module->imports) {
-      printf("listed: %s\n", k.c_str());
-    }
     assert(find_mod != cfs(context).module->imports.end());
 
     push_stack_frame(context, cfs(context).entity, find_mod->second);
@@ -484,6 +474,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   e->address.entity_id = vat->entity_id_base;
   e->address.vat_id = vat->id;
   e->address.node_id = context->node->node_id;
+  e->module_scope = entity_def->module;
 
   vat->entity_id_base++;
 
@@ -493,14 +484,23 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
     e->data[k] = v;
   }
 
+  for (auto &k : entity_def->inocaps) {
+    //printf("%s %s\n", k.var_name.c_str(), k.ctype->entity_name.c_str());
+
+    // Hack for now
+    if (k.ctype->entity_name == "Io") {
+      auto io_ent = create_entity(context, (EntityDef *)kernel_map["Io"], false);
+      e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+    }
+  }
+
   eval_func_local(context, e, "create", {});
 
   if (new_vat) {
     queue.enqueue(vat);
   }
 
-  printf("%s (%d, %d, %d)\n", entity_def->name.c_str(), e->address.entity_id,
-         e->address.vat_id, e->address.node_id);
+  //printf("%s (%d, %d, %d)\n", entity_def->name.c_str(), e->address.entity_id, e->address.vat_id, e->address.node_id);
 
   return e;
 }

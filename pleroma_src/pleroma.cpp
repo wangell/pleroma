@@ -61,40 +61,44 @@ void process_vq() {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
 
-        print_msg(&m);
+        try {
+          auto find_entity = our_vat->entities.find(m.entity_id);
+          assert(find_entity != our_vat->entities.end());
+          Entity* target_entity = find_entity->second;
 
-        auto find_entity = our_vat->entities.find(m.entity_id);
-        assert(find_entity != our_vat->entities.end());
-        Entity* target_entity = find_entity->second;
+          EvalContext context;
+          start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
 
-        EvalContext context;
-        start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
+          // Return vs call
+          if (m.response) {
+            // If we didn't setup a promise to resolve, then ignore the result
+            if (our_vat->promises.find(m.promise_id) != our_vat->promises.end() && our_vat->promises[m.promise_id].callback) {
+              our_vat->promises[m.promise_id].results = m.values;
+              eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+            }
+          } else {
+            std::vector<AstNode *> args;
 
-        // Return vs call
-        if (m.response) {
-          // If we didn't setup a promise to resolve, then ignore the result
-          if (our_vat->promises.find(m.promise_id) != our_vat->promises.end() && our_vat->promises[m.promise_id].callback) {
-            our_vat->promises[m.promise_id].results = m.values;
-            eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+            for (int zz = 0; zz < m.values.size(); ++zz) {
+              args.push_back(m.values[zz]);
+            }
+
+            auto result = eval_func_local(&context, target_entity, m.function_name, args);
+
+            // All return values are singular - we use tuples to represent
+            // multiple return values
+            // FIXME might not work if we handle tuples differently
+            Msg response_m = create_response(m, result);
+
+            // Main cannot be called by any function except ours, move this logic into typechecker
+            if (m.function_name != "main") {
+              our_vat->out_messages.push(response_m);
+            }
           }
-        } else {
-          std::vector<AstNode *> args;
-
-          for (int zz = 0; zz < m.values.size(); ++zz) {
-            args.push_back(m.values[zz]);
-          }
-
-          auto result = eval_func_local(&context, target_entity, m.function_name, args);
-
-          // All return values are singular - we use tuples to represent
-          // multiple return values
-          // FIXME might not work if we handle tuples differently
-          Msg response_m = create_response(m, result);
-
-          // Main cannot be called by any function except ours, move this logic into typechecker
-          if (m.function_name != "main") {
-            our_vat->out_messages.push(response_m);
-          }
+        } catch (PleromaException &e) {
+          printf("PleromaException: %s", e.what());
+          print_msg(&m);
+          exit(1);
         }
       }
 
@@ -168,8 +172,9 @@ int main(int argc, char **argv) {
 
   auto user_program = (EntityDef *)program->entity_defs["Test"];
 
-  program->entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
-  program->entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
+  // This hsould be done for every program that imports std
+  //program->entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
+  //program->entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
   //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
 
   //typesolve(program);

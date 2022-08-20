@@ -96,6 +96,11 @@ struct AstNode {
   std::list<Token *>::iterator end;
 };
 
+struct InoCap {
+  std::string var_name;
+  CType *ctype;
+};
+
 struct HylicModule {
   std::map<std::string, HylicModule *> imports;
   std::map<std::string, AstNode *> entity_defs;
@@ -238,6 +243,7 @@ struct EntityDef : AstNode {
   HylicModule* module;
   std::map<std::string, FuncStmt *> functions;
   std::map<std::string, AstNode *> data;
+  std::vector<InoCap> inocaps;
 };
 
 struct CreateEntityNode : AstNode {
@@ -258,7 +264,6 @@ struct ForeignFuncCall : AstNode {
   std::vector<AstNode *> args;
 };
 
-
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body);
 AstNode *make_return(AstNode *a);
 AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1,
@@ -275,7 +280,7 @@ AstNode *make_number(int64_t v);
 AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
 AstNode *make_symbol(std::string s);
-AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data);
+AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
 AstNode *make_nop();
 AstNode *make_undefined();

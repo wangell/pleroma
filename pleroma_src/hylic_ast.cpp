@@ -212,13 +212,14 @@ AstNode *make_symbol(std::string s) {
 }
 
 AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, FuncStmt *> functions,
-                    std::map<std::string, AstNode *> data) {
+                    std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps) {
   EntityDef *actor_def = new EntityDef;
   actor_def->type = AstNodeType::EntityDef;
   actor_def->name = s;
   actor_def->module = module;
   actor_def->functions = functions;
   actor_def->data = data;
+  actor_def->inocaps = inocaps;
   return actor_def;
 }
 

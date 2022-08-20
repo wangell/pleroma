@@ -283,7 +283,6 @@ AstNode *parse_expr(ParseContext *context) {
         if (isupper(op.name[0])) {
           val_stack.push(make_create_entity(op.name, new_vat));
         } else {
-          printf("op %s\n", op.name.c_str());
           val_stack.push(
               make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }
@@ -506,11 +505,17 @@ AstNode *parse_actor(ParseContext *context) {
   assert(actor_name = context->ts->accept(TokenType::Symbol));
 
   // Parse inoculation list
+  std::vector<InoCap> inocaps;
   if (context->ts->accept(TokenType::LeftBrace)) {
     while (true) {
-      context->ts->accept(TokenType::Symbol);
+      auto cap = context->ts->accept(TokenType::Symbol);
       context->ts->expect(TokenType::Colon);
-      parse_type(context);
+      auto cap_type = parse_type(context);
+
+      InoCap ic;
+      ic.var_name = cap->lexeme;
+      ic.ctype = cap_type;
+      inocaps.push_back(ic);
 
       if (context->ts->check(TokenType::RightBrace)) {
         break;
@@ -581,7 +586,7 @@ AstNode *parse_actor(ParseContext *context) {
     context->ts->expect(TokenType::Newline);
   }
 
-  return make_actor(context->module, actor_name->lexeme, functions, data);
+  return make_actor(context->module, actor_name->lexeme, functions, data, inocaps);
 }
 
 std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
@@ -639,7 +644,7 @@ HylicModule *parse(TokenStream *stream) {
     } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;
-      print_ast(actor);
+      //print_ast(actor);
     } else if (context.ts->accept(TokenType::Newline)) {
       // Skip
       make_nop();

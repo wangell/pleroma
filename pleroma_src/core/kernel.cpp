@@ -130,7 +130,7 @@ void load_kernel() {
 
   //io_functions["readline"]->ctype.basetype = PType::str;
 
-  kernel_map["Io"] = make_actor(nullptr, "Io", io_functions, {});
+  kernel_map["Io"] = make_actor(nullptr, "Io", io_functions, {}, {});
 
   load_net();
 
