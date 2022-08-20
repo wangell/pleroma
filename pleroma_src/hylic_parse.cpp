@@ -107,7 +107,6 @@ AstNode *parse_expr(ParseContext *context) {
         }
 
         context->ts->expect(TokenType::RightParen);
-        printf("ya\n");
 
         InfixOp op;
         op.type = InfixOpType::NewVat;
@@ -542,7 +541,6 @@ AstNode *parse_actor(ParseContext *context) {
     if (current_indent == 0) {
       // If we're at the end of the file, end it
       if (context->ts->accept(TokenType::EndOfFile)) {
-        printf("ya\n");
         break;
       }
 

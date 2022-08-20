@@ -124,17 +124,20 @@ void process_vq() {
   }
 }
 
-void inoculate_pleroma(HylicModule *program, EntityDef *entity_def) {
+void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
+
+  EntityDef *ent0_def = (EntityDef *)ukernel->entity_defs[ent0];
+
   Vat* og_vat = new Vat;
   og_vat->id = 0;
   queue.enqueue(og_vat);
   this_pleroma_node.vat_id_base++;
 
   EvalContext context;
-  start_context(&context, &this_pleroma_node, og_vat, program, nullptr);
+  start_context(&context, &this_pleroma_node, og_vat, ukernel, nullptr);
 
-  Entity *ent = create_entity(&context, entity_def, false);
-  ent->module_scope = program;
+  Entity *ent = create_entity(&context, ent0_def, false);
+  ent->module_scope = ukernel;
 
   og_vat->entities[0] = ent;
 
@@ -153,41 +156,24 @@ void inoculate_pleroma(HylicModule *program, EntityDef *entity_def) {
   og_vat->messages.push(m);
 }
 
-int main(int argc, char **argv) {
+void usage() {
+  printf("Usage: ...\n");
+}
 
-  if (argc < 2) {
-    throw PleromaException("Need to provide IP/port [client IP / client port]");
-  }
-  if (argc > 3 && argc < 5) {
-    throw PleromaException("Need to provide client IP / client port");
-  }
-
-  setlocale(LC_ALL, "");
-
+void start_pleroma() {
   read_node_config();
-
-  auto program = load_file("examples/kernel.po");
-
   load_kernel();
 
-  auto user_program = (EntityDef *)program->entity_defs["Kernel"];
-
-  // This hsould be done for every program that imports std
-  //program->entity_defs["Io"] = (EntityDef *)kernel_map["Io"];
-  //program->entity_defs["Net"] = (EntityDef *)kernel_map["Net"];
-  //program["Amoeba"] = (EntityDef *)kernel_map["Amoeba"];
-
-  //typesolve(program);
-
-  inoculate_pleroma(program, user_program);
+  auto ukernel = load_file("examples/kernel.po");
+  auto ent0 = "Kernel";
+  inoculate_pleroma(ukernel, ent0);
 
   init_network();
+  setup_server("127.0.0.1", 8080);
 
-  setup_server(argv[1], std::stoi(argv[2]));
-
-  if (argc > 3) {
-    connect_client(std::string(argv[3]), std::stoi(argv[4]));
-  }
+  //if (argc > 3) {
+  //  connect_client(std::string(argv[3]), std::stoi(argv[4]));
+  //}
 
   std::thread burners[processor_count];
 
@@ -199,10 +185,28 @@ int main(int argc, char **argv) {
     net_loop();
   }
 
-  // sleep(2);
-  // start->vat->messages.push(Msg());
-
   for (int k = 0; k < processor_count; ++k) {
     burners[k].join();
   }
+}
+
+int main(int argc, char **argv) {
+  setlocale(LC_ALL, "");
+
+  if (argc < 2) {
+    usage();
+    exit(1);
+  }
+
+  if (std::string(argv[1]) == "start") {
+    start_pleroma();
+  } else if (std::string(argv[1]) == "test") {
+    std::string target_file = argv[2];
+    load_file(target_file);
+    exit(0);
+  } else {
+    usage();
+    exit(1);
+  }
+
 }

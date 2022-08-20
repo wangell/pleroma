@@ -1,0 +1,20 @@
+ε Kernel {ioinst : Io}
+
+	pingpongcount : u8
+
+	δ create() -> void
+		pingpongcount = 0
+
+	δ ping() -> void
+		ioinst.print("ping")
+		! pong()
+
+	δ pong() -> void
+		ioinst.print("pong")
+		pingpongcount = pingpongcount + 1
+		ioinst.print(pingpongcount)
+		! ping()
+
+	δ main(env: u8) -> int
+		! ping()
+		↵ 0
