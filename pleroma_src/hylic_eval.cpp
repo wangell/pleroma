@@ -62,7 +62,7 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::string function_name,
                          std::vector<AstNode *> args) {
 
-  push_stack_frame(context, entity, entity->entity_def->module);
+
 
   //for (auto k : entity->entity_def->functions) {
   //  printf("Func %s\n", k.first.c_str());
@@ -75,8 +75,11 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
   for (int i = 0; i < func_def_node->args.size(); ++i) {
-    subs.push_back(std::make_tuple(func_def_node->args[i], args[i]));
+    subs.push_back(std::make_tuple(func_def_node->args[i], eval(context, args[i])));
   }
+
+  push_stack_frame(context, entity, entity->entity_def->module);
+
   auto res = eval_block(context, func_def_node->body, subs);
 
   pop_stack_frame(context);

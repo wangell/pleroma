@@ -170,7 +170,7 @@ int main(int argc, char **argv) {
 
   load_kernel();
 
-  auto user_program = (EntityDef *)program->entity_defs["Test"];
+  auto user_program = (EntityDef *)program->entity_defs["Kernel"];
 
   // This hsould be done for every program that imports std
   //program->entity_defs["Io"] = (EntityDef *)kernel_map["Io"];

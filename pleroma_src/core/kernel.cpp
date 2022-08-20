@@ -13,7 +13,7 @@ std::map<std::string, AstNode *> kernel_map;
 
 AstNode *io_print(EvalContext *context, std::vector<AstNode *> args) {
 
-  auto pval = eval(context, args[0]);
+  auto pval = args[0];
 
   if (pval->type == AstNodeType::StringNode) {
     printf("%s\n", ((StringNode *)pval)->value.c_str());
