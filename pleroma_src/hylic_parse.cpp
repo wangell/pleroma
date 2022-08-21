@@ -64,8 +64,13 @@ CType *parse_type(ParseContext *ctx) {
     } else if (basic_type->lexeme == "void") {
       var_type->basetype = PType::None;
     } else {
+      std::string final_type = basic_type->lexeme;
+
+      while (ctx->ts->accept(TokenType::ModUse)) {
+        final_type += "." + ctx->ts->accept(TokenType::Symbol)->lexeme;
+      }
       var_type->basetype = PType::Entity;
-      var_type->entity_name = basic_type->lexeme;
+      var_type->entity_name = final_type;
     }
   }
 

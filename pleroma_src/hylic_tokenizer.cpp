@@ -382,6 +382,9 @@ const char *token_type_to_string(TokenType t) {
   case TokenType::Plus:
     return "Plus";
     break;
+  case TokenType::ModUse:
+    return "ModUse";
+    break;
   case TokenType::EndOfFile:
     return "EOF";
     break;

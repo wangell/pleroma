@@ -104,6 +104,19 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::ModUseNode: {
+    auto mod_use = (ModUseNode*)node;
+
+    if (mod_use->accessor->type == AstNodeType::CreateEntity) {
+      return mod_use->accessor->ctype;
+    } else {
+
+      auto sub_type = typesolve_sub(context, mod_use->accessor);
+      sub_type.entity_name = mod_use->mod_name + "." + sub_type.entity_name;
+      return sub_type;
+    }
+  } break;
+
   case AstNodeType::MessageNode: {
     auto msg_node = (MessageNode*) node;
 
@@ -115,6 +128,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
       ent_name = context->entity_def->name;
     }
+    printf("%s\n", ent_name.c_str());
 
     auto ent_it = context->top_types->functions.find(ent_name);
     assert(ent_it != context->top_types->functions.end());
@@ -200,6 +214,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       push_scope(context);
       context->entity_def = ent_node;
 
+      for (auto &k : ent_node->inocaps) {
+        css(context).table[k.var_name] = k.ctype;
+      }
+
       for (auto &[k, v] : ent_node->data) {
         // danger?
         css(context).table[k] = &v->ctype;
@@ -229,8 +247,11 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
   TopTypes *tt = new TopTypes;
 
   for (auto &[k, v] : module->imports) {
-    //printf("Found import: %s\n", k.c_str());
     tt->imported[k] = record_top_types(context, v);
+
+    for (auto &[k2, v2] : tt->imported[k]->functions) {
+      tt->functions[k + "." + k2] = v2;
+    }
   }
 
   for (auto &[k, v] : module->entity_defs) {

@@ -55,6 +55,8 @@ enum class MessageDistance { Local, Far, Alien };
 
 enum class CommMode { Sync, Async };
 
+enum class DType { Local, Far, Alien };
+
 enum class PType {
   NotAssigned,
 

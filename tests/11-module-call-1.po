@@ -1,0 +1,9 @@
+~helpermod
+
+ε TestEnt1 {}
+
+	δ basic() -> u8
+		let q : helpermod►TestEnt2 = helpermod►TestEnt2()
+		q!test2(1)
+		q.test2(1)
+		↵ 0
