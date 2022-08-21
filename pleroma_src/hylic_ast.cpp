@@ -56,6 +56,12 @@ std::string ast_type_to_string(AstNodeType t) {
   case AstNodeType::ModUseNode:
     return "ModUseNode";
     break;
+  case AstNodeType::AssignmentStmt:
+    return "AssignmentStmt";
+    break;
+  case AstNodeType::ReturnNode:
+    return "ReturnNode";
+    break;
   }
 
   printf("Failed to convert AstNode type to string: %d\n", t);

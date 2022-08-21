@@ -2,9 +2,15 @@
 #include "hylic_ast.h"
 #include <cassert>
 #include <map>
+#include <vector>
+
+struct FuncSig {
+  CType return_type;
+  std::vector<CType*> param_types;
+};
 
 struct TopTypes {
-  std::map<std::string, CType> functions;
+  std::map<std::string, FuncSig> functions;
   std::map<std::string, TopTypes *> imported;
 };
 
@@ -43,6 +49,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::ReturnNode: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::NumberNode: {
     return node->ctype;
   } break;
@@ -56,26 +66,21 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     for (auto param : func_node->param_types) {
     }
 
-
     bool has_return = false;
     for (auto blocknode : func_node->body) {
       if (blocknode->type == AstNodeType::ReturnNode) {
         has_return = true;
         if (!exact_match(typesolve_sub(context, blocknode), func_node->ctype)) {
-          //TypesolverException *exc = new TypesolverException;
-          //exc->msg = "Function return type differs from a body return value";
-          //context->exceptions.push_back(exc);
+          throw TypesolverException("nil", 0, 0, "Function return type differes from a body return value.");
         }
       } else {
-        typesolve_sub(context, blocknode);
+        //typesolve_sub(context, blocknode);
       }
     }
 
     if (!has_return) {
       if (func_node->ctype.basetype != PType::None) {
-        //TypesolverException *exc = new TypesolverException;
-        //exc->msg = "Function is marked void, but returns a value in the body";
-        //context->exceptions.push_back(exc);
+        throw TypesolverException("nil", 0, 0, "Function is marked void, but returns a value in the body.");
       }
     }
 
@@ -95,20 +100,6 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return CType();
   } break;
 
-  case AstNodeType::AssignmentStmt: {
-    auto assmt_node = (AssignmentStmt *)node;
-    CType lexpr = assmt_node->sym->ctype;
-    CType rexpr = typesolve_sub(context, assmt_node->value);
-
-    //printf("Ctype: %s\n", ctype_to_string(&lexpr).c_str());
-    //printf("Ctype: %s\n", ctype_to_string(&rexpr).c_str());
-
-    assert(exact_match(lexpr, rexpr));
-    //context->typestore[assmt_node->sym->sym] = lexpr;
-
-    // They're the same type, so return either
-    return rexpr;
-  } break;
   }
     // We should never reach here
     printf("Didn't handle type %s\n", ast_type_to_string(node->type).c_str());
@@ -135,8 +126,12 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
     EntityDef* def = (EntityDef*)v;
     printf("Found entity: %s\n", k.c_str());
     for (auto &[fname, fbod] : def->functions) {
+      FuncStmt *b = (FuncStmt*) fbod;
       printf("Found function: %s with Ctype %s\n", fname.c_str(), ctype_to_string(&fbod->ctype).c_str());
-      tt->functions[k] = v->ctype;
+      FuncSig sig;
+      sig.return_type = v->ctype;
+      sig.param_types = b->param_types;
+      tt->functions[k] = sig;
     }
   }
 
