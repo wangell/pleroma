@@ -14,18 +14,29 @@ struct TopTypes {
   std::map<std::string, TopTypes *> imported;
 };
 
-struct TypeStackFrame {
-  HylicModule *module;
-  std::vector<Scope> scope_stack;
+struct TypeScope {
+  std::map<std::string, CType*> table;
 };
 
 struct TypeContext {
-  Scope* scope;
   std::map<std::string, AstNode*> program;
-  std::vector<TypeStackFrame> stack;
+  std::vector<TypeScope> scope_stack;
 
   TopTypes *top_types;
 };
+
+void push_scope(TypeContext *context) {
+  context->scope_stack.push_back(TypeScope());
+}
+
+void pop_scope(TypeContext *context) {
+  context->scope_stack.pop_back();
+}
+
+// Current stack scope
+TypeScope &css(TypeContext *context) {
+  return context->scope_stack.back();
+}
 
 bool is_complex(CType a) {
   return a.basetype == PType::List ||
@@ -45,6 +56,17 @@ bool exact_match(CType a, CType b) {
   return true;
 }
 
+CType *typescope_has(TypeContext *context, std::string sym) {
+  for (auto it = context->scope_stack.rbegin(); it != context->scope_stack.rend(); ++it) {
+    auto found_it = it->table.find(sym);
+    if (found_it != it->table.end()) {
+      return found_it->second;
+    }
+  }
+
+  return nullptr;
+}
+
 CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
@@ -58,14 +80,31 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::StringNode: {
+    return node->ctype;
+  } break;
+
+  case AstNodeType::AssignmentStmt: {
+    auto assmt_node = (AssignmentStmt *)node;
+
+    CType *lexpr = typescope_has(context, assmt_node->sym->sym);
+    if (!lexpr) {
+      lexpr = &assmt_node->sym->ctype;
+    }
+
+    CType rexpr = typesolve_sub(context, assmt_node->value);
+
+    if (!exact_match(*lexpr, rexpr)) {
+      throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable " + assmt_node->sym->sym + " which has type " + ctype_to_string(lexpr));
+    }
+
+    css(context).table[assmt_node->sym->sym] = lexpr;
+
+    return *lexpr;
+  } break;
+
   case AstNodeType::FuncStmt: {
     auto func_node = (FuncStmt *)node;
-    // Function node has multiple types: return type, and type for each param
-    // PType rexpr = typesolve_sub(assmt_node->value);
-
-    // Params
-    for (auto param : func_node->param_types) {
-    }
 
     bool has_return = false;
     for (auto blocknode : func_node->body) {
@@ -77,7 +116,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
           throw TypesolverException("nil", 0, 0, "Function return type differs from a body return value.");
         }
       } else {
-        //typesolve_sub(context, blocknode);
+        typesolve_sub(context, blocknode);
       }
     }
 
@@ -87,18 +126,18 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       }
     }
 
+    // No need to return a real type, we already have this in this info TopTypes struct
     return CType();
 
   } break;
 
   case AstNodeType::EntityDef: {
     auto ent_node = (EntityDef *)node;
-    for (auto &[k, v] : ent_node->data) {
-      // context->typestore[k] = v;
-    }
 
     for (auto &[k, v] : ent_node->functions) {
+      push_scope(context);
       typesolve_sub(context, v);
+      pop_scope(context);
     }
     return CType();
   } break;
