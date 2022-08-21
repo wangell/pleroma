@@ -119,8 +119,7 @@ void net_loop() {
   while (!net_in_queue.empty()) {
     auto msg_front = net_in_queue.front();
     sort_queue[msg_front.vat_id].push_back(msg_front);
-    printf("%d %d %d\n", msg_front.entity_id, msg_front.vat_id,
-           msg_front.node_id);
+    //printf("%d %d %d\n", msg_front.entity_id, msg_front.vat_id, msg_front.node_id);
     net_in_queue.pop();
   }
   Vat *vat_node;

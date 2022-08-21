@@ -96,6 +96,7 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.push(expr1);
     } else if (context->ts->accept(TokenType::Dollar)) {
       // List in future
+      // TODO: need to parse expr and then ensure the type is entity
       auto tt = context->ts->accept(TokenType::Symbol);
       auto expr1 = make_symbol(tt->lexeme);
 
@@ -345,8 +346,7 @@ AstNode *parse_expr(ParseContext *context) {
         if (isupper(op.name[0])) {
           val_stack.push(make_create_entity(op.name, new_vat));
         } else {
-          val_stack.push(
-              make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
+          val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }
       } else {
         auto topstack = val_stack.top();

@@ -33,7 +33,7 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
 }
 
 Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
-  printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
+  //printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
   if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 &&
       entity_ref->node_id == 0) {
     return context->stack.back().entity;
@@ -199,6 +199,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   }
 
   if (obj->type == AstNodeType::ListNode) {
+    auto table = (ListNode *)obj;
+
+    // FIXME: not sure where we should do this
+    //for (int k = 0; k < table->list.size(); ++k) {
+    //  table->list[k] = eval(context, table->list[k]);
+    //}
+
     return obj;
   }
 
@@ -228,7 +235,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     for (int k = 0; k < table->list.size(); ++k) {
       // NOTE push k into sub
       std::vector<std::tuple<std::string, AstNode *>> subs;
-      subs.push_back(std::make_tuple(node->sym, make_number(k)));
+      subs.push_back(std::make_tuple(node->sym, eval(context, table->list[k])));
       eval_block(context, node->body, subs);
     }
     return make_nop();
@@ -479,8 +486,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   e->address.node_id = context->node->node_id;
   e->module_scope = entity_def->module;
 
-  printf("Creating entity: %d %d %d\n", e->address.entity_id,
-         e->address.vat_id, e->address.node_id);
+  //printf("Creating entity: %d %d %d\n", e->address.entity_id, e->address.vat_id, e->address.node_id);
 
   vat->entity_id_base++;
 
