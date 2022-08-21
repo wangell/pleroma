@@ -16,8 +16,8 @@ for test_file in glob.glob("tests/*"):
         success = output_code == 0
 
     if success:
-        print("\033[1;32mSuccess:\033[0m {}\n".format(test_file))
+        print("\033[1;32mSuccess:\033[0m {}".format(test_file))
     else:
-        print("\033[1;31mFailed:\033[0m {}\n".format(test_file))
+        print("\033[1;31mFailed:\033[0m {}".format(test_file))
         print("\t" + str(output.stdout, 'utf-8'))
         print("\t" + str(output.stderr, 'utf-8'))
