@@ -10,6 +10,8 @@ Pleroma is a distributed operating system/VM inspired by the original vision of 
 
 
 ```
+All Watched Over By Machines Of Loving Grace
+
 I like to think (and
 the sooner the better!)
 of a cybernetic meadow
@@ -37,4 +39,6 @@ returned to our mammal
 brothers and sisters,
 and all watched over
 by machines of loving grace.
+
+- Richard Brautigan
 ```
