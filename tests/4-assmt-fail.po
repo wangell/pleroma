@@ -1,0 +1,6 @@
+ε Kernel {}
+
+	δ basic() -> void
+		let a : u8 = 1
+		a = "asdf"
+		↵ 0

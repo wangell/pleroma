@@ -1,0 +1,8 @@
+ε Kernel {}
+
+	δ basic() -> u8
+		let a : u8 = 1
+		↵ 0
+
+	δ basic2() -> void
+		let a : u8 = 1
