@@ -1,0 +1,8 @@
+ε TestEnt1 {}
+
+	δ test2(i : u8) -> u8
+		↵ 0
+
+	δ basic() -> u8
+		! test2(1)
+		↵ 0
