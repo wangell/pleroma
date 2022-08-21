@@ -2,6 +2,7 @@
 #include "hylic_ast.h"
 #include <cassert>
 #include <map>
+#include <sys/socket.h>
 #include <vector>
 
 struct FuncSig {
@@ -21,6 +22,9 @@ struct TypeScope {
 struct TypeContext {
   std::map<std::string, AstNode*> program;
   std::vector<TypeScope> scope_stack;
+
+  EntityDef* entity_def;
+  std::string module_name;
 
   TopTypes *top_types;
 };
@@ -89,6 +93,40 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::MessageNode: {
+    auto msg_node = (MessageNode*) node;
+
+    auto ent_ref = (EntityRefNode*)msg_node->entity_ref;
+    // If we're sending this message to ourself, check our own ent
+    if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
+      auto func_it = context->entity_def->functions.find(msg_node->function_name);
+      if (func_it == context->entity_def->functions.end()) {
+        throw TypesolverException("", 0, 0, "Cannot find called function in entity definition.");
+      } else {
+
+        auto func_stmt = (FuncStmt*) func_it->second;
+
+        // Check param number
+        if (func_stmt->param_types.size() != msg_node->args.size()) {
+          throw TypesolverException("", 0, 0, "Number of parameters doesn't match.");
+        }
+
+        // Check param type
+        int i = 0;
+        for (int i = 0; i < func_stmt->param_types.size(); ++i) {
+          auto t1 = *func_stmt->param_types[i];
+          auto t2 = typesolve_sub(context, msg_node->args[0]);
+          if (!exact_match(t1, t2)) {
+            throw TypesolverException("", 0, 0, "Function parameter types don't match.");
+          }
+          i++;
+        }
+      }
+    }
+
+    return msg_node->ctype;
+  } break;
+
   case AstNodeType::AssignmentStmt: {
     auto assmt_node = (AssignmentStmt *)node;
 
@@ -141,6 +179,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     for (auto &[k, v] : ent_node->functions) {
       push_scope(context);
+      context->entity_def = ent_node;
 
       for (auto &[k, v] : ent_node->data) {
         // danger?
