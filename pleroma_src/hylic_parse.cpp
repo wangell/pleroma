@@ -29,18 +29,19 @@ CType *parse_type(ParseContext *ctx) {
   CType *var_type = new CType;
   var_type->start = ctx->ts->current;
 
-  MessageDistance dist = MessageDistance::Local;
+  DType dist = DType::Local;
 
   if (ctx->ts->accept(TokenType::LocVar)) {
-    dist = MessageDistance::Local;
+    dist = DType::Local;
   } else if (ctx->ts->accept(TokenType::FarVar)) {
-    dist = MessageDistance::Far;
+    dist = DType::Far;
   } else if (ctx->ts->accept(TokenType::AlnVar)) {
-    dist = MessageDistance::Alien;
+    dist = DType::Alien;
   } else if (ctx->ts->accept(TokenType::PromiseType)) {
     // All promises are local
-    dist = MessageDistance::Local;
+    dist = DType::Local;
     CType *sub_type = parse_type(ctx);
+    var_type->dtype = DType::Local;
     var_type->basetype = PType::Promise;
     var_type->subtype = sub_type;
     var_type->end = ctx->ts->current;
@@ -51,6 +52,7 @@ CType *parse_type(ParseContext *ctx) {
     CType *sub_type = parse_type(ctx);
     var_type->basetype = PType::List;
     var_type->subtype = sub_type;
+    var_type->dtype = DType::Local;
     ctx->ts->expect(TokenType::RightBracket);
   } else {
     assert(ctx->ts->check(TokenType::Symbol));
@@ -59,8 +61,10 @@ CType *parse_type(ParseContext *ctx) {
     // Move this to tokenizer
     if (basic_type->lexeme == "u8") {
       var_type->basetype = PType::u8;
+      var_type->dtype = DType::Local;
     } else if (basic_type->lexeme == "str") {
       var_type->basetype = PType::str;
+      var_type->dtype = DType::Local;
     } else if (basic_type->lexeme == "void") {
       var_type->basetype = PType::None;
     } else {
@@ -70,6 +74,7 @@ CType *parse_type(ParseContext *ctx) {
         final_type += "." + ctx->ts->accept(TokenType::Symbol)->lexeme;
       }
       var_type->basetype = PType::Entity;
+      var_type->dtype = dist;
       var_type->entity_name = final_type;
     }
   }
@@ -368,7 +373,11 @@ AstNode *parse_expr(ParseContext *context) {
         }
         // FIXME: All entity names must be capitalized? keep it?
         if (isupper(op.name[0])) {
-          val_stack.push(make_create_entity(op.name, new_vat));
+          auto ent = make_create_entity(op.name, new_vat);
+          if (new_vat) {
+            ent->ctype.dtype = DType::Far;
+          }
+          val_stack.push(ent);
         } else {
           val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }

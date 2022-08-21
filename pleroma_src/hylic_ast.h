@@ -81,6 +81,7 @@ enum class PType {
 struct CType {
   PType basetype;
 
+  DType dtype;
   CType* subtype;
   std::string entity_name;
 

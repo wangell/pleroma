@@ -181,6 +181,7 @@ AstNode *make_number(int64_t v) {
   symbol_node->type = AstNodeType::NumberNode;
   symbol_node->value_type = ValueType::Number;
   symbol_node->ctype.basetype = PType::u8;
+  symbol_node->ctype.dtype = DType::Local;
   // symbol_node->value = strtol(s.c_str(), nullptr, 10);
   symbol_node->value = v;
   return symbol_node;
@@ -356,28 +357,37 @@ CType *clone_ctype(CType *ctype) {
 }
 
 std::string ctype_to_string(CType *ctype) {
+  std::string dstring;
+  if (ctype->dtype == DType::Local) {
+    dstring = "loc";
+  } else if (ctype->dtype == DType::Far) {
+    dstring = "far";
+  } else {
+    dstring = "aln";
+  }
+
   switch (ctype->basetype) {
   case PType::None:
-    return "None";
+    return dstring + " None";
     break;
   case PType::u8:
-    return "u8";
+    return dstring + " u8";
     break;
   case PType::u16:
-    return "u16";
+    return dstring + " u16";
     break;
   case PType::u32:
-    return "u32";
+    return dstring + " u32";
     break;
   case PType::str:
-    return "str";
+    return dstring + " str";
     break;
   case PType::NotAssigned:
     return "n/a";
     break;
   case PType::Entity:
     assert(!ctype->entity_name.empty());
-    return ctype->entity_name;
+    return dstring + " " + ctype->entity_name;
     break;
   case PType::List:
     if (ctype->subtype) {

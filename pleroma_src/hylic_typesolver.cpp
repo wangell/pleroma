@@ -51,7 +51,7 @@ bool is_complex(CType a) {
 }
 
 bool exact_match(CType a, CType b) {
-  if (a.basetype != b.basetype) {
+  if (a.basetype != b.basetype || a.dtype != b.dtype) {
     return false;
   }
 
