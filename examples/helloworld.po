@@ -1,0 +1,10 @@
+ε Kernel {ioinst : Io}
+
+	helloworld : u8
+
+	δ create() -> void
+		helloworld = 0
+
+	δ main(env: u8) -> int
+		ioinst.print("Hello, world!")
+		↵ 0
