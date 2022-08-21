@@ -4,6 +4,7 @@ import sys, os
 import glob
 import subprocess
 
+all_succeed = True
 for test_file in sorted(glob.glob("tests/*")):
     # We expect a failure
     success = False
@@ -18,6 +19,9 @@ for test_file in sorted(glob.glob("tests/*")):
     if success:
         print("\033[1;32mSuccess:\033[0m {}".format(test_file))
     else:
+        all_succeed = False
         print("\033[1;31mFailed:\033[0m {}".format(test_file))
         print("\t" + str(output.stdout, 'utf-8'))
         print("\t" + str(output.stderr, 'utf-8'))
+
+sys.exit(0 if all_succeed else 1)
