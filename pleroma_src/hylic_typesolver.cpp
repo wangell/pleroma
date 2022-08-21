@@ -1,14 +1,24 @@
 #include "hylic_typesolver.h"
 #include "hylic_ast.h"
-#include "hylic_eval.h"
 #include <cassert>
 #include <map>
+
+struct TopTypes {
+  std::map<std::string, CType> functions;
+  std::map<std::string, TopTypes *> imported;
+};
+
+struct TypeStackFrame {
+  HylicModule *module;
+  std::vector<Scope> scope_stack;
+};
 
 struct TypeContext {
   Scope* scope;
   std::map<std::string, AstNode*> program;
+  std::vector<TypeStackFrame> stack;
 
-  std::vector<TypesolverException*> exceptions;
+  TopTypes *top_types;
 };
 
 bool is_complex(CType a) {
@@ -33,56 +43,8 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
-  case AstNodeType::ForeignFunc: {
-    return node->ctype;
-  } break;
-
-  case AstNodeType::ListNode: {
-    return node->ctype;
-  } break;
-
-  case AstNodeType::StringNode: {
-    return node->ctype;
-  } break;
-
   case AstNodeType::NumberNode: {
     return node->ctype;
-  } break;
-
-  case AstNodeType::MessageNode: {
-    auto mess_node = (MessageNode *)node;
-
-    // Find the entity definition
-    //printf("%s\n", mess_node->entity_ref_name.c_str());
-    //assert(context->typestore.find(mess_node->entity_ref_name) != context->typestore.end());
-
-    //CType entity_node_type = context->typestore[mess_node->entity_ref_name];
-    //assert(entity_node_type.basetype == PType::Entity);
-    //assert(context->program.find(entity_node_type.subtype->entity_name) != context->program.end());
-
-    //EntityDef* entity_def = (EntityDef*)context->program[entity_node_type.subtype->entity_name];
-
-    ////context[mess_node->entity_ref_name
-    //// TODO Check that the parameters passed to are solved
-    //// Look up the return value and return that values
-    //return entity_def->ctype;
-    return node->ctype;
-  } break;
-
-  case AstNodeType::NamespaceAccess: {
-    auto ns_node = (NamespaceAccess *)node;
-    // TODO change context
-    return typesolve_sub(context, ns_node->field);
-  } break;
-
-  case AstNodeType::ReturnNode: {
-    auto ret_node = (ReturnNode*)node;
-    return typesolve_sub(context, ret_node->expr);
-  } break;
-
-  case AstNodeType::CreateEntity: {
-    auto ce_node = (CreateEntityNode *)node;
-    return ce_node->ctype;
   } break;
 
   case AstNodeType::FuncStmt: {
@@ -121,67 +83,36 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   } break;
 
-  case AstNodeType::OperatorExpr: {
-    auto op_expr = (OperatorExpr *)node;
-
-    auto lexpr = typesolve_sub(context, op_expr->term1);
-    auto rexpr = typesolve_sub(context, op_expr->term2);
-
-    if (lexpr.basetype == PType::str) {
-      if (op_expr->op != OperatorExpr::Op::Plus) {
-        printf("Can only add strings\n");
-        exit(1);
-      }
-      exact_match(lexpr, rexpr);
-    } else if (lexpr.basetype == PType::u8) {
-      exact_match(lexpr, rexpr);
-    } else {
-      printf("Only numbers and strings can be operated on.\n");
-      exit(1);
-    }
-
-    // FIXME -> should compute a proper return expr
-    return lexpr;
-  } break;
-
-  case AstNodeType::AssignmentStmt: {
-    auto assmt_node = (AssignmentStmt *)node;
-    CType lexpr;
-    //if (typestore_find_symbol(context, assmt_node->sym)) {
-    //}
-
-    CType rexpr = typesolve_sub(context, assmt_node->value);
-
-    if (!exact_match(lexpr, rexpr)) {
-      //auto *exc = new TypesolverException;
-
-      //exc->msg = "Attempted assign to a " + ctype_to_string(&lexpr) + " from a " + ctype_to_string(&rexpr);
-
-      //context->exceptions.push_back(exc);
-    }
-
-    //context->typestore[assmt_node->sym->sym] = lexpr;
-
-    return rexpr;
-  } break;
-
   case AstNodeType::EntityDef: {
     auto ent_node = (EntityDef *)node;
     for (auto &[k, v] : ent_node->data) {
-      //context->typestore[k] = v;
+      // context->typestore[k] = v;
     }
 
     for (auto &[k, v] : ent_node->functions) {
       typesolve_sub(context, v);
-      // all_valid = all_valid && typesolve_sub(v);
     }
     return CType();
   } break;
-  }
 
-  // We should never reach here
-  printf("Didn't handle type %s\n", ast_type_to_string(node->type).c_str());
-  assert(false);
+  case AstNodeType::AssignmentStmt: {
+    auto assmt_node = (AssignmentStmt *)node;
+    CType lexpr = assmt_node->sym->ctype;
+    CType rexpr = typesolve_sub(context, assmt_node->value);
+
+    //printf("Ctype: %s\n", ctype_to_string(&lexpr).c_str());
+    //printf("Ctype: %s\n", ctype_to_string(&rexpr).c_str());
+
+    assert(exact_match(lexpr, rexpr));
+    //context->typestore[assmt_node->sym->sym] = lexpr;
+
+    // They're the same type, so return either
+    return rexpr;
+  } break;
+  }
+    // We should never reach here
+    printf("Didn't handle type %s\n", ast_type_to_string(node->type).c_str());
+    assert(false);
 }
 
 void print_typesolver_exceptions(std::vector<TypesolverException*> exceptions) {
@@ -190,18 +121,35 @@ void print_typesolver_exceptions(std::vector<TypesolverException*> exceptions) {
   }
 }
 
-void typesolve(std::map<std::string, AstNode *> program) {
-  TypeContext context;
-  context.scope = new Scope;
-  context.scope->table = program;
+TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
 
-  bool all_valid = true;
-  for (auto &[k, v] : program) {
-    //all_valid = all_valid && typesolve_sub(v);
-    //typesolve_sub(&context, v);
+  TopTypes *tt = new TopTypes;
+
+  for (auto &[k, v] : module->imports) {
+    printf("Found import: %s\n", k.c_str());
+    tt->imported[k] = record_top_types(context, v);
   }
 
-  print_typesolver_exceptions(context.exceptions);
+  for (auto &[k, v] : module->entity_defs) {
 
-  assert(context.exceptions.empty());
+    EntityDef* def = (EntityDef*)v;
+    printf("Found entity: %s\n", k.c_str());
+    for (auto &[fname, fbod] : def->functions) {
+      printf("Found function: %s with Ctype %s\n", fname.c_str(), ctype_to_string(&fbod->ctype).c_str());
+      tt->functions[k] = v->ctype;
+    }
+  }
+
+  return tt;
+
+}
+
+void typesolve(HylicModule* module) {
+  TypeContext context;
+  // First scan for all entities and function signatures (including in imports)
+  TopTypes *tt = record_top_types(&context, module);
+
+  for (auto &[k, v] : module->entity_defs) {
+    typesolve_sub(&context, v);
+  }
 }

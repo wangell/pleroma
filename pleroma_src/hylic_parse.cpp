@@ -570,6 +570,11 @@ AstNode *parse_actor(ParseContext *context) {
   if (context->ts->accept(TokenType::LeftBrace)) {
     while (true) {
       auto cap = context->ts->accept(TokenType::Symbol);
+
+      // Empty inoc table
+      if (!cap) {
+        break;
+      }
       context->ts->expect(TokenType::Colon);
       auto cap_type = parse_type(context);
 

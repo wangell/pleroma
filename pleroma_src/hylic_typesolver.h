@@ -8,4 +8,4 @@
 class TypesolverException : CompileException {
 };
 
-void typesolve(std::map<std::string, AstNode *> program);
+void typesolve(HylicModule* module);

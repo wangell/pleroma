@@ -344,6 +344,9 @@ CType *clone_ctype(CType *ctype) {
 
 std::string ctype_to_string(CType *ctype) {
   switch (ctype->basetype) {
+  case PType::None:
+    return "None";
+    break;
   case PType::u8:
     return "u8";
     break;
