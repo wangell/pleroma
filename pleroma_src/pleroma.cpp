@@ -96,9 +96,10 @@ void process_vq() {
             }
           }
         } catch (PleromaException &e) {
-          printf("PleromaException: %s", e.what());
+          printf("PleromaException: %s\n", e.what());
+          printf("Calling message: \n");
           print_msg(&m);
-          exit(1);
+          throw;
         }
       }
 

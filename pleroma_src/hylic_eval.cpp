@@ -62,12 +62,11 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
                          std::vector<AstNode *> args) {
 
 
-
-  //for (auto k : entity->entity_def->functions) {
-  //  printf("Func %s\n", k.first.c_str());
-  //}
   auto func = entity->entity_def->functions.find(function_name);
-  assert(func != entity->entity_def->functions.end());
+  if(func == entity->entity_def->functions.end()) {
+    std::string msg = "Attempted to call function '" + function_name + "' on entity '" + entity->entity_def->name + "': function not found.";
+    throw PleromaException(msg.c_str());
+  }
 
   FuncStmt *func_def_node = (FuncStmt *)func->second;
   assert(func_def_node->args.size() == args.size());
