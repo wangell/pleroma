@@ -198,7 +198,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       i++;
     }
 
-    return msg_node->ctype;
+    // Handle entities
+    CType ct = sig.return_type;
+    return ct;
   } break;
 
   case AstNodeType::AssignmentStmt: {
@@ -304,7 +306,7 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
       FuncStmt *b = (FuncStmt*) fbod;
       //printf("Found function: %s with Ctype %s\n", fname.c_str(), ctype_to_string(&fbod->ctype).c_str());
       FuncSig sig;
-      sig.return_type = v->ctype;
+      sig.return_type = b->ctype;
       sig.param_types = b->param_types;
       sig.pure = b->pure;
       // FIXME
