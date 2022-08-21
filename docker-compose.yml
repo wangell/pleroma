@@ -4,9 +4,9 @@ services:
 
   pleroma:
     build: .
-    command: sleep 10000
-    #volumes:
-    #  - ./:/pleroma
+    command: bash
+    volumes:
+      - ./:/pleroma
     networks:
       - po_nw
 
