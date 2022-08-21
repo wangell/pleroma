@@ -71,6 +71,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::CreateEntity: {
+    auto ent_node = (CreateEntityNode *)node;
+    return ent_node->ctype;
+  } break;
+
   case AstNodeType::ReturnNode: {
     auto ret_node = (ReturnNode*) node;
     return typesolve_sub(context, ret_node->expr);
