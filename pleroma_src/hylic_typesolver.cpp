@@ -136,6 +136,13 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     for (auto &[k, v] : ent_node->functions) {
       push_scope(context);
+
+      for (auto &[k, v] : ent_node->data) {
+        // danger?
+        css(context).table[k] = &v->ctype;
+        //printf("%s : %s\n", k.c_str(), ctype_to_string(&v->ctype).c_str());
+      }
+
       typesolve_sub(context, v);
       pop_scope(context);
     }

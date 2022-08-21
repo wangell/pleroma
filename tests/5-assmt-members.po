@@ -1,0 +1,7 @@
+ε Kernel {}
+
+	testvar : u8
+
+	δ basic() -> u8
+		testvar = 1
+		↵ 0

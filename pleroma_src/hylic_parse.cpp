@@ -635,6 +635,7 @@ AstNode *parse_actor(ParseContext *context) {
       CType *data_type = parse_type(context);
 
       data[data_sym->lexeme] = new AstNode;
+      data[data_sym->lexeme]->ctype = *data_type;
 
     } else if (context->ts->check(TokenType::Function)) {
       // Parse functions
