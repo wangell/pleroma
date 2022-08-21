@@ -4,7 +4,7 @@ import sys, os
 import glob
 import subprocess
 
-for test_file in glob.glob("tests/*"):
+for test_file in sorted(glob.glob("tests/*")):
     # We expect a failure
     success = False
     output = subprocess.run("./pleroma test {}".format(test_file), shell = True, capture_output = True)
