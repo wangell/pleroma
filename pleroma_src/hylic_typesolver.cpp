@@ -117,17 +117,17 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
   TopTypes *tt = new TopTypes;
 
   for (auto &[k, v] : module->imports) {
-    printf("Found import: %s\n", k.c_str());
+    //printf("Found import: %s\n", k.c_str());
     tt->imported[k] = record_top_types(context, v);
   }
 
   for (auto &[k, v] : module->entity_defs) {
 
     EntityDef* def = (EntityDef*)v;
-    printf("Found entity: %s\n", k.c_str());
+    //printf("Found entity: %s\n", k.c_str());
     for (auto &[fname, fbod] : def->functions) {
       FuncStmt *b = (FuncStmt*) fbod;
-      printf("Found function: %s with Ctype %s\n", fname.c_str(), ctype_to_string(&fbod->ctype).c_str());
+      //printf("Found function: %s with Ctype %s\n", fname.c_str(), ctype_to_string(&fbod->ctype).c_str());
       FuncSig sig;
       sig.return_type = v->ctype;
       sig.param_types = b->param_types;
