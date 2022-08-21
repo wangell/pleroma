@@ -8,6 +8,9 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
+  case AstNodeType::ForStmt:
+    return "ForStmt";
+    break;
   case AstNodeType::EntityRefNode:
     return "EntityRefNode";
     break;

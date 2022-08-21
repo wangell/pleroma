@@ -496,10 +496,9 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   }
 
   for (auto &k : entity_def->inocaps) {
-    //printf("%s %s\n", k.var_name.c_str(), k.ctype->entity_name.c_str());
 
     // Hack for now
-    if (k.ctype->entity_name == "Io") {
+    if (k.ctype->entity_name == "io.Io") {
       // FIXME: we need more temporary context swap functions
       auto old_vat = context->vat;
       context->vat = vat;

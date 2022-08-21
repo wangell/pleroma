@@ -428,8 +428,8 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
         if (current_indent == expected_indent + 1) {
           body.push_back(parse_stmt(context));
-          context->ts->expect(TokenType::Newline);
         } else {
+          context->ts->go_back(current_indent);
           break;
         }
       }

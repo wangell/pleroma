@@ -75,6 +75,30 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::ForStmt: {
+    auto for_node = (ForStmt *)node;
+
+    push_scope(context);
+
+    auto list_node_type = typesolve_sub(context, for_node->generator);
+
+    // Grab the subtype of the list
+    CType p;
+    p.basetype = list_node_type.subtype->basetype;
+    css(context).table[for_node->sym] = &p;
+
+    for (auto blocknode : for_node->body) {
+      typesolve_sub(context, blocknode);
+    }
+    pop_scope(context);
+
+    return CType();
+  } break;
+
+  case AstNodeType::ListNode: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::CreateEntity: {
     auto ent_node = (CreateEntityNode *)node;
     return ent_node->ctype;
@@ -128,7 +152,13 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
       ent_name = context->entity_def->name;
     }
-    printf("%s\n", ent_name.c_str());
+
+    // FIXME
+    if (ent_name == "Io") {
+      CType c;
+      c.basetype = PType::None;
+      return c;
+    }
 
     auto ent_it = context->top_types->functions.find(ent_name);
     assert(ent_it != context->top_types->functions.end());
