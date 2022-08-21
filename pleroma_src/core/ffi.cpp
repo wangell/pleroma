@@ -22,5 +22,5 @@ FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
 
   body.push_back(make_return(ffi));
 
-  return (FuncStmt *)make_function(name, args, body, arg_types);
+  return (FuncStmt *)make_function(name, args, body, arg_types, false);
 }

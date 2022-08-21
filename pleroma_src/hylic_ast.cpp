@@ -235,13 +235,14 @@ AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, Fu
   return actor_def;
 }
 
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType*> param_types) {
+AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType*> param_types, bool pure) {
   FuncStmt *func_stmt = new FuncStmt;
   func_stmt->type = AstNodeType::FuncStmt;
   func_stmt->name = s;
   func_stmt->args = args;
   func_stmt->param_types = param_types;
   func_stmt->body = body;
+  func_stmt->pure = pure;
   return func_stmt;
 }
 

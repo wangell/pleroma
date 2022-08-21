@@ -63,7 +63,7 @@ FuncStmt *setup_test() {
 
   body.push_back(make_foreign_func_call(test_ffi, {make_symbol("sys")}));
 
-  return (FuncStmt *)make_function("main", {"sys"}, body, {});
+  return (FuncStmt *)make_function("main", {"sys"}, body, {}, false);
 }
 
 AstNode *amoeba_init(EvalContext *context, std::vector<AstNode *> args) {

@@ -136,6 +136,7 @@ struct FuncStmt : AstNode {
   std::vector<std::string> args;
 
   std::vector<AstNode *> body;
+  bool pure;
 };
 
 struct ForStmt : AstNode {
@@ -283,7 +284,7 @@ AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
 AstNode *make_symbol(std::string s);
 AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps);
-AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types);
+AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types, bool pure);
 AstNode *make_nop();
 AstNode *make_undefined();
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);

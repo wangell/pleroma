@@ -577,7 +577,7 @@ AstNode *parse_function(ParseContext *context) {
 
   auto body = parse_block(context, 2);
 
-  auto func_stmt = make_function(func_name->lexeme, args, body, param_types);
+  auto func_stmt = make_function(func_name->lexeme, args, body, param_types, pure);
   func_stmt->ctype = *return_type;
   return func_stmt;
 }
@@ -661,7 +661,7 @@ AstNode *parse_actor(ParseContext *context) {
       data[data_sym->lexeme] = new AstNode;
       data[data_sym->lexeme]->ctype = *data_type;
 
-    } else if (context->ts->check(TokenType::Function)) {
+    } else if (context->ts->check(TokenType::Function) || context->ts->check(TokenType::Pure)) {
       // Parse functions
       FuncStmt *func = (FuncStmt *)parse_function(context);
       functions[func->name] = func;

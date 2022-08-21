@@ -7,6 +7,7 @@
 
 struct FuncSig {
   CType return_type;
+  bool pure;
   std::vector<CType*> param_types;
 };
 
@@ -27,6 +28,7 @@ struct TypeContext {
   std::string module_name;
 
   TopTypes *top_types;
+  bool pure_func;
 };
 
 void push_scope(TypeContext *context) {
@@ -171,6 +173,15 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       sig = func_it->second;
     }
 
+    if (context->pure_func && !sig.pure) {
+      throw TypesolverException("", 0, 0, "Tried to call an impure function from a pure function.");
+    }
+
+    // Network == impure
+    if (context->pure_func && msg_node->comm_mode == CommMode::Async) {
+      throw TypesolverException("", 0, 0, "Tried to send an async message from a pure function.");
+    }
+
     // Check param number
     if (sig.param_types.size() != msg_node->args.size()) {
       throw TypesolverException("", 0, 0, "Number of parameters doesn't match.");
@@ -243,6 +254,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     for (auto &[k, v] : ent_node->functions) {
       push_scope(context);
       context->entity_def = ent_node;
+      context->pure_func = v->pure;
 
       for (auto &k : ent_node->inocaps) {
         css(context).table[k.var_name] = k.ctype;
@@ -294,6 +306,7 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
       FuncSig sig;
       sig.return_type = v->ctype;
       sig.param_types = b->param_types;
+      sig.pure = b->pure;
       // FIXME
       tt->functions[k][fname] = sig;
     }
