@@ -11,7 +11,7 @@ struct FuncSig {
 };
 
 struct TopTypes {
-  std::map<std::string, FuncSig> functions;
+  std::map<std::string, std::map<std::string, FuncSig>> functions;
   std::map<std::string, TopTypes *> imported;
 };
 
@@ -80,6 +80,13 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return ent_node->ctype;
   } break;
 
+  case AstNodeType::SymbolNode: {
+    auto sym_node = (SymbolNode *)node;
+    auto look = typescope_has(context, sym_node->sym);
+    assert(look != nullptr);
+    return *look;
+  } break;
+
   case AstNodeType::ReturnNode: {
     auto ret_node = (ReturnNode*) node;
     return typesolve_sub(context, ret_node->expr);
@@ -93,35 +100,47 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::EntityRefNode: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::MessageNode: {
     auto msg_node = (MessageNode*) node;
 
     auto ent_ref = (EntityRefNode*)msg_node->entity_ref;
-    // If we're sending this message to ourself, check our own ent
+
+    auto ent_type = typesolve_sub(context, ent_ref);
+    auto ent_name = ent_type.entity_name;
+
     if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
-      auto func_it = context->entity_def->functions.find(msg_node->function_name);
-      if (func_it == context->entity_def->functions.end()) {
-        throw TypesolverException("", 0, 0, "Cannot find called function in entity definition.");
-      } else {
+      ent_name = context->entity_def->name;
+    }
 
-        auto func_stmt = (FuncStmt*) func_it->second;
+    auto ent_it = context->top_types->functions.find(ent_name);
+    assert(ent_it != context->top_types->functions.end());
 
-        // Check param number
-        if (func_stmt->param_types.size() != msg_node->args.size()) {
-          throw TypesolverException("", 0, 0, "Number of parameters doesn't match.");
-        }
+    auto func_it = ent_it->second.find(msg_node->function_name);
+    FuncSig sig;
+    if (func_it == ent_it->second.end()) {
+      throw TypesolverException("", 0, 0, "Cannot find called function in entity definition.");
+    } else {
+      sig = func_it->second;
+    }
 
-        // Check param type
-        int i = 0;
-        for (int i = 0; i < func_stmt->param_types.size(); ++i) {
-          auto t1 = *func_stmt->param_types[i];
-          auto t2 = typesolve_sub(context, msg_node->args[0]);
-          if (!exact_match(t1, t2)) {
-            throw TypesolverException("", 0, 0, "Function parameter types don't match.");
-          }
-          i++;
-        }
+    // Check param number
+    if (sig.param_types.size() != msg_node->args.size()) {
+      throw TypesolverException("", 0, 0, "Number of parameters doesn't match.");
+    }
+
+    // Check param type
+    int i = 0;
+    for (int i = 0; i < sig.param_types.size(); ++i) {
+      auto t1 = sig.param_types[i];
+      auto t2 = typesolve_sub(context, msg_node->args[0]);
+      if (!exact_match(*t1, t2)) {
+        throw TypesolverException("", 0, 0, "Function parameter types don't match.");
       }
+      i++;
     }
 
     return msg_node->ctype;
@@ -224,7 +243,8 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
       FuncSig sig;
       sig.return_type = v->ctype;
       sig.param_types = b->param_types;
-      tt->functions[k] = sig;
+      // FIXME
+      tt->functions[k][fname] = sig;
     }
   }
 
@@ -236,6 +256,7 @@ void typesolve(HylicModule* module) {
   TypeContext context;
   // First scan for all entities and function signatures (including in imports)
   TopTypes *tt = record_top_types(&context, module);
+  context.top_types = tt;
 
   for (auto &[k, v] : module->entity_defs) {
     typesolve_sub(&context, v);

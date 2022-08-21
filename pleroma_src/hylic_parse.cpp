@@ -190,6 +190,33 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(expr1);
         }
       }
+    } else if (context->ts->check(TokenType::Dot)) {
+      context->ts->accept(TokenType::Dot);
+      auto tt = context->ts->accept(TokenType::Symbol);
+      auto expr1 = make_symbol(tt->lexeme);
+
+      context->ts->accept(TokenType::LeftParen);
+
+      int n_args = 0;
+      // While next token does not equal right paren
+      while (!context->ts->check(TokenType::RightParen)) {
+        auto expr = parse_expr(context);
+        val_stack.push(expr);
+        n_args++;
+
+        if (!context->ts->check(TokenType::RightParen)) {
+          context->ts->expect(TokenType::Comma);
+        }
+      }
+
+      context->ts->expect(TokenType::RightParen);
+
+      InfixOp op;
+      op.type = InfixOpType::MessageSync;
+      op.n_args = n_args;
+      op.name = tt->lexeme;
+      op_stack.push(op);
+
     } else if (context->ts->check(TokenType::Message)) {
       context->ts->accept(TokenType::Message);
       auto tt = context->ts->accept(TokenType::Symbol);
@@ -224,14 +251,6 @@ AstNode *parse_expr(ParseContext *context) {
       op.n_args = 2;
       op.name = "Plus";
       op_stack.push(op);
-    } else if (context->ts->check(TokenType::Dot)) {
-      context->ts->accept(TokenType::Dot);
-      InfixOp op;
-      op.type = InfixOpType::Namespace;
-      op.n_args = 1;
-      op.name = "Namespace";
-      op_stack.push(op);
-      val_stack.push(parse_expr(context));
     } else if (context->ts->check(TokenType::LessThan)) {
       context->ts->accept(TokenType::LessThan);
       InfixOp op;
@@ -342,7 +361,7 @@ AstNode *parse_expr(ParseContext *context) {
         if (op.type == InfixOpType::NewVat) {
           new_vat = true;
         }
-        // FIXME
+        // FIXME: All entity names must be capitalized? keep it?
         if (isupper(op.name[0])) {
           val_stack.push(make_create_entity(op.name, new_vat));
         } else {

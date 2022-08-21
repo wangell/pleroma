@@ -1,0 +1,15 @@
+ε TestEnt2 {}
+
+	δ test2(i : u8) -> u8
+		↵ 0
+
+	δ basic() -> u8
+		↵ 0
+
+ε TestEnt1 {}
+
+	δ basic() -> u8
+		let q : TestEnt2 = TestEnt2()
+		q!test2(1)
+		q.test2(1)
+		↵ 0
