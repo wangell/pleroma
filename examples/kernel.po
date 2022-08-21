@@ -3,8 +3,7 @@
 	helloworld : u8
 
 	δ create() -> void
-		helloworld = 0
 
-	δ main(env: u8) -> int
+	δ main(env: u8) -> u8
 		ioinst.print("Hello, world!")
 		↵ 0

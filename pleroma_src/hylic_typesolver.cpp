@@ -50,7 +50,8 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   switch (node->type) {
 
   case AstNodeType::ReturnNode: {
-    return node->ctype;
+    auto ret_node = (ReturnNode*) node;
+    return typesolve_sub(context, ret_node->expr);
   } break;
 
   case AstNodeType::NumberNode: {
@@ -70,8 +71,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     for (auto blocknode : func_node->body) {
       if (blocknode->type == AstNodeType::ReturnNode) {
         has_return = true;
+        auto return_type = typesolve_sub(context, blocknode);
         if (!exact_match(typesolve_sub(context, blocknode), func_node->ctype)) {
-          throw TypesolverException("nil", 0, 0, "Function return type differes from a body return value.");
+          printf("Expected: %s, got %s\n", ctype_to_string(&func_node->ctype).c_str(), ctype_to_string(&return_type).c_str());
+          throw TypesolverException("nil", 0, 0, "Function return type differs from a body return value.");
         }
       } else {
         //typesolve_sub(context, blocknode);
