@@ -389,6 +389,11 @@ std::string ctype_to_string(CType *ctype) {
     assert(!ctype->entity_name.empty());
     return dstring + " " + ctype->entity_name;
     break;
+  case PType::Promise:
+    if (ctype->subtype) {
+      return "@" + ctype_to_string(ctype->subtype);
+    }
+    break;
   case PType::List:
     if (ctype->subtype) {
       return "[" + ctype_to_string(ctype->subtype) + "]";

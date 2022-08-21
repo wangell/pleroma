@@ -156,7 +156,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     }
 
     // FIXME
-    if (ent_name == "Io") {
+    if (ent_name == "io.Io") {
       CType c;
       c.basetype = PType::None;
       return c;
@@ -188,18 +188,24 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     }
 
     // Check param type
-    int i = 0;
     for (int i = 0; i < sig.param_types.size(); ++i) {
       auto t1 = sig.param_types[i];
-      auto t2 = typesolve_sub(context, msg_node->args[0]);
+      auto t2 = typesolve_sub(context, msg_node->args[i]);
       if (!exact_match(*t1, t2)) {
-        throw TypesolverException("", 0, 0, "Function parameter types don't match.");
+        throw TypesolverException("", 0, 0, "Function parameter types don't match: " + ctype_to_string(t1) + ", " + ctype_to_string(&t2));
       }
       i++;
     }
 
     // Handle entities
     CType ct = sig.return_type;
+    CType prom_t = ct;
+    // If we're doing async, wrap in a promise
+    if (msg_node->comm_mode == CommMode::Async) {
+      ct.basetype = PType::Promise;
+      ct.subtype = &prom_t;
+      ct.dtype = DType::Local;
+    }
     return ct;
   } break;
 
