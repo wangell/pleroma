@@ -7,7 +7,8 @@ import subprocess
 for test_file in glob.glob("tests/*"):
     # We expect a failure
     success = False
-    output_code = subprocess.run("./pleroma test {}".format(test_file), shell = True).returncode
+    output = subprocess.run("./pleroma test {}".format(test_file), shell = True, capture_output = True)
+    output_code = output.returncode
 
     if "fail" in test_file:
         success = output_code != 0
@@ -18,3 +19,5 @@ for test_file in glob.glob("tests/*"):
         print("\033[1;32mSuccess:\033[0m {}\n".format(test_file))
     else:
         print("\033[1;31mFailed:\033[0m {}\n".format(test_file))
+        print("\t" + str(output.stdout, 'utf-8'))
+        print("\t" + str(output.stderr, 'utf-8'))
