@@ -8,6 +8,12 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
+  case AstNodeType::BooleanNode:
+    return "BooleanNode";
+    break;
+  case AstNodeType::MatchNode:
+    return "MatchNode";
+    break;
   case AstNodeType::ForStmt:
     return "ForStmt";
     break;

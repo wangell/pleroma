@@ -97,6 +97,30 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return CType();
   } break;
 
+  case AstNodeType::MatchNode: {
+    auto match_node = (MatchNode *)node;
+
+    // FIXME - all of this
+    auto match_expr = typesolve_sub(context, match_node->match_expr);
+
+    for (auto &[case_expr, case_body] : match_node->cases) {
+      typesolve_sub(context, case_expr);
+      for (auto &k : case_body) {
+        typesolve_sub(context, k);
+      }
+    }
+
+    return node->ctype;
+  } break;
+
+  case AstNodeType::BooleanNode: {
+    return node->ctype;
+  } break;
+
+  case AstNodeType::BooleanExpr: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::ListNode: {
     return node->ctype;
   } break;
