@@ -489,7 +489,6 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     auto body = parse_block(context, expected_indent + 1);
     return make_promise_resolution_node(prom_sym->lexeme, body);
   } else if (context->ts->accept(TokenType::While)) {
-    printf("Parsing while...\n");
     auto while_expr = parse_expr(context);
     context->ts->expect(TokenType::Newline);
     std::vector<AstNode *> body;
@@ -501,8 +500,8 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
       if (current_indent == expected_indent + 1) {
         body.push_back(parse_stmt(context, expected_indent + 1));
-        context->ts->expect(TokenType::Newline);
       } else {
+        context->ts->go_back(current_indent);
         break;
       }
     }
@@ -768,7 +767,6 @@ HylicModule *parse(TokenStream *stream) {
       TokenStream *new_stream = tokenize_file(mod_path);
       auto mod_file = parse(new_stream);
 
-      Token *sym = context.ts->get();
       context.ts->expect(TokenType::Newline);
       //imports[mod_name] = mod_file;
       hm->imports[mod_name] = mod_file;
@@ -780,7 +778,7 @@ HylicModule *parse(TokenStream *stream) {
       // Skip
       make_nop();
     } else {
-      printf("Failed on token %d\n", (*context.ts->current)->type);
+      printf("Failed on token %s\n", token_type_to_string((*context.ts->current)->type));
       assert(false);
     }
   }

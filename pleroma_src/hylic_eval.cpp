@@ -174,11 +174,20 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::OperatorExpr) {
     auto op_expr = (OperatorExpr *)obj;
-    auto n1 = ((NumberNode *)eval(context, op_expr->term1));
-    auto n2 = ((NumberNode *)eval(context, op_expr->term2));
 
-    if (op_expr->op == OperatorExpr::Plus) {
-      return make_number(n1->value + n2->value);
+    auto n1 = eval(context, op_expr->term1);
+    auto n2 = eval(context, op_expr->term2);
+
+    if (n1->type == AstNodeType::NumberNode && n2->type == AstNodeType::NumberNode) {
+      if (op_expr->op == OperatorExpr::Plus) {
+        return make_number(((NumberNode*)n1)->value + ((NumberNode*)n2)->value);
+      }
+    } else if (n1->type == AstNodeType::StringNode && n2->type == AstNodeType::StringNode) {
+        if (op_expr->op == OperatorExpr::Plus) {
+          return make_string(((StringNode *)n2)->value + ((StringNode *)n1)->value);
+        }
+    } else{
+      assert(false);
     }
   }
 
@@ -280,10 +289,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
                                mess_node->function_name, mess_node->args);
 
     } else if (ref_node->type == AstNodeType::ModuleStmt) {
-      printf("%s\n", ast_type_to_string(node->field->type).c_str());
       if (node->field->type == AstNodeType::EntityDef) {
       } else {
-        printf("here2\n");
         assert(false);
       }
     } else {
@@ -301,7 +308,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     IndexNode* ind_node = (IndexNode*)obj;
     assert(obj->type == AstNodeType::IndexNode);
     ListNode* list_node = (ListNode*)eval(context, ind_node->list);
-    printf("%s %s\n", ast_type_to_string(list_node->type).c_str(), ast_type_to_string(ind_node->accessor->type).c_str());
     assert(list_node->type == AstNodeType::ListNode);
 
     auto index = ((NumberNode*)eval(context, ind_node->accessor))->value;
@@ -314,13 +320,12 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::BooleanExpr) {
     auto node = (BooleanExpr *)obj;
+    auto term1 = eval(context, node->term1);
+    auto term2 = eval(context, node->term2);
     if (node->op == BooleanExpr::GreaterThan ||
         node->op == BooleanExpr::LessThan ||
         node->op == BooleanExpr::GreaterThanEqual ||
-        node->op == BooleanExpr::LessThanEqual ||
-        node->op == BooleanExpr::Equals) {
-      auto term1 = eval(context, node->term1);
-      auto term2 = eval(context, node->term2);
+        node->op == BooleanExpr::LessThanEqual) {
 
       NumberNode *n1 = (NumberNode *)term1;
       NumberNode *n2 = (NumberNode *)term2;
@@ -338,14 +343,23 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       case BooleanExpr::LessThanEqual:
         return make_boolean(n1->value <= n2->value);
         break;
-      case BooleanExpr::Equals:
-        return make_boolean(n1->value == n2->value);
-        break;
       }
     }
 
     if (node->op == BooleanExpr::Equals) {
+      if (term1->type == AstNodeType::NumberNode && term2->type == AstNodeType::NumberNode) {
+        NumberNode *n1 = (NumberNode *)term1;
+        NumberNode *n2 = (NumberNode *)term2;
+        return make_boolean(n1->value == n2->value);
+      } else if (term1->type == AstNodeType::StringNode && term2->type == AstNodeType::StringNode) {
+        StringNode *n1 = (StringNode *)term1;
+        StringNode *n2 = (StringNode *)term2;
+        return make_boolean(n1->value == n2->value);
+      } else {
+        assert(false);
+      }
     }
+
     return make_boolean(false);
   }
 
@@ -378,6 +392,19 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     for (auto arg : node->args) {
       args.push_back(eval(context, arg));
+    }
+
+    // HACK
+    if (node->function_name == "append") {
+      auto list_node = (ListNode*) args[1];
+      auto val = args[0];
+      list_node->list.push_back(val);
+      return make_nop();
+    }
+
+    if (node->function_name == "len") {
+      auto list_node = (ListNode *)args[0];
+      return make_number(list_node->list.size());
     }
 
     // Are we calling this on our self?
@@ -539,6 +566,20 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
 
       auto io_ent = create_entity(context, (EntityDef *)kernel_map["Io"], false);
       e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+
+      // FIXME: see above
+      context->vat = old_vat;
+    }
+    if (k.ctype->entity_name == "net.Net") {
+      // FIXME: we need more temporary context swap functions
+      auto old_vat = context->vat;
+      context->vat = vat;
+
+      auto io_ent =
+          create_entity(context, (EntityDef *)kernel_map["Net"], false);
+      e->data[k.var_name] =
+          make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
+                          io_ent->address.entity_id);
 
       // FIXME: see above
       context->vat = old_vat;

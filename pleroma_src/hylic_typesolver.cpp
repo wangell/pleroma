@@ -3,6 +3,8 @@
 #include <cassert>
 #include <map>
 #include <sys/socket.h>
+#include <utility>
+#include <algorithm>
 #include <vector>
 
 struct FuncSig {
@@ -73,6 +75,11 @@ CType *typescope_has(TypeContext *context, std::string sym) {
   return nullptr;
 }
 
+bool built_in_func(std::string func_name) {
+  std::vector<std::string> builtins = {"append", "len"};
+  return std::find(builtins.begin(), builtins.end(), func_name) != builtins.end();
+}
+
 CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
@@ -95,6 +102,19 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     pop_scope(context);
 
     return CType();
+  } break;
+
+  case AstNodeType::WhileStmt: {
+    auto while_node = (WhileStmt *)node;
+
+    // FIXME - all of this
+    auto while_expr = typesolve_sub(context, while_node->generator);
+
+    for (auto &body_stmt : while_node->body) {
+      typesolve_sub(context, body_stmt);
+    }
+
+    return node->ctype;
   } break;
 
   case AstNodeType::MatchNode: {
@@ -196,6 +216,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   case AstNodeType::MessageNode: {
     auto msg_node = (MessageNode*) node;
 
+    // HACK
+    if (built_in_func(msg_node->function_name)) {
+      return CType();
+    }
+
     auto ent_ref = (EntityRefNode*)msg_node->entity_ref;
 
     auto ent_type = typesolve_sub(context, ent_ref);
@@ -207,9 +232,15 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     // FIXME
     if (ent_name == "io.Io") {
-      CType c;
-      c.basetype = PType::None;
-      return c;
+      if (msg_node->function_name == "readline") {
+        CType c;
+        c.basetype = PType::str;
+        return c;
+      } else {
+        CType c;
+        c.basetype = PType::None;
+        return c;
+      }
     }
 
     auto ent_it = context->top_types->functions.find(ent_name);
@@ -296,6 +327,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     CType rexpr = typesolve_sub(context, assmt_node->value);
 
+    // If the right expression is an empty list, assign it the value from the left expr
+    if (lexpr->basetype == PType::List && rexpr.basetype == PType::List && rexpr.subtype->basetype == PType::NotAssigned) {
+      rexpr = *lexpr;
+    }
+
     if (!exact_match(*lexpr, rexpr)) {
       throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable " + sym->sym + " which has type " + ctype_to_string(lexpr));
     }
@@ -324,7 +360,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     if (!has_return) {
       if (func_node->ctype.basetype != PType::None) {
-        throw TypesolverException("nil", 0, 0, "Function is marked void, but returns a value in the body.");
+        throw TypesolverException("nil", 0, 0, "Function doesn't return a value, but is not marked void");
       }
     }
 

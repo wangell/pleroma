@@ -8,6 +8,9 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
+  case AstNodeType::WhileStmt:
+    return "WhileStmt";
+    break;
   case AstNodeType::IndexNode:
     return "IndexNode";
     break;

@@ -1,0 +1,53 @@
+~io
+~net
+
+ε Kernel {ioinst : io►Io, netinst : net►Net}
+
+	pingpongcount : u8
+	bookmarks : [str]
+
+	δ create() -> void
+		pingpongcount = 0
+		bookmarks = []
+
+	δ addbookmark(toadd : str) -> void
+		append(bookmarks, toadd)
+		ioinst.print("")
+		ioinst.print("Total marks:")
+		x | bookmarks
+			ioinst.print(x)
+		ioinst.print("cool")
+
+	δ test(path: str) -> str
+		let basersp : str = "HTTP/1.1 200 OK
+Content-Type: text/html"
+		let htmlrsp : str = ""
+		ioinst.print("Path: " + path)
+		? path
+			"/"
+				htmlrsp = "
+
+<html>
+<body>
+Welcome to Pleroma: <a href='blah'>hi</a>
+</body>
+</html>"
+			"/blah"
+				ioinst.print("no")
+				htmlrsp = "
+
+<html>
+The secret page!
+</html>
+"
+		↵ basersp + htmlrsp
+
+	δ main(env: u8) -> u8
+		let blah : Kernel = Kernel()
+		netinst.start(blah)
+		whl #t
+			netinst.next()
+		whl #t
+			let newmark : str = ioinst.readline()
+			addbookmark(newmark)
+		↵ 0

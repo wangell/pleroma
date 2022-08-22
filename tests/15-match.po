@@ -1,0 +1,8 @@
+ε TestEnt1 {}
+
+	δ basic2() -> u8
+		let a : u8 = 2
+		? a > 1
+			#t
+				let b : u8 = 4
+		↵ 2

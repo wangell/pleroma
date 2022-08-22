@@ -400,6 +400,12 @@ const char *token_type_to_string(TokenType t) {
   case TokenType::IndexEnd:
     return "IndexEnd";
     break;
+  case TokenType::Breakthrough:
+    return "Breakthrough";
+    break;
+  case TokenType::Import:
+    return "Import";
+    break;
   }
 
   return "Unimplemented";

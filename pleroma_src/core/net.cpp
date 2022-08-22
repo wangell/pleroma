@@ -65,16 +65,26 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
     exit(EXIT_FAILURE);
   }
   valread = read(new_socket, buffer, 1024);
-  //printf("%s\n", buffer);
+
+  std::string word;
+
+  std::istringstream iss(buffer, std::istringstream::in);
+
+  int i = 0;
+  while( iss >> word )
+  {
+    if (i == 1) break;
+    i++;
+  }
 
   // Call our function here
   //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
-  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(buffer)});
+  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(word)});
 
   auto res_str = (StringNode*) eval(context, res);
 
+  //printf("Response %s\n", res_str->value.c_str());
   send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
-  //printf("Hello message sent\n");
   close(new_socket);
 
   return make_number(0);
@@ -98,5 +108,5 @@ void load_net() {
   functions["create"] = setup_direct_call(net_create, "create", {}, {}, test_type);
   functions["create"]->ctype.basetype = PType::u8;
 
-  //kernel_map["Net"] = make_actor("Net", functions, {});
+  kernel_map["Net"] = make_actor(nullptr, "Net", functions, {}, {});
 }

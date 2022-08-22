@@ -1,0 +1,5 @@
+ε Net {}
+
+	δ start(e : Entity) -> void
+
+	δ next() -> void

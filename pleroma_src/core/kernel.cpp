@@ -122,7 +122,9 @@ void load_kernel() {
   std::map<std::string, FuncStmt *> io_functions;
 
   io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {}, test_type);
-  //io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {});
+  CType str_type;
+  str_type.basetype = PType::str;
+  io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {}, str_type);
 
   io_functions["print"]->ctype.basetype = PType::u8;
   io_functions["create"] = setup_direct_call(io_create, "create", {}, {}, test_type);

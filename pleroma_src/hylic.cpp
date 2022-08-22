@@ -51,7 +51,7 @@ HylicModule *load_file(std::string path) {
     //auto program = resolve_thunks(parse(tokenstream));
     program = parse(stream);
 
-    typesolve(program);
+    //typesolve(program);
 
   return program;
 }
