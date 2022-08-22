@@ -1,0 +1,25 @@
+version: "3.9"
+
+services:
+
+  pleroma1:
+    build: .
+    command: bash
+    hostname: pleroma1
+    volumes:
+      - ./:/pleroma
+    networks:
+      - po_nw
+
+  pleroma2:
+    build: .
+    command: bash
+    hostname: pleroma2
+    volumes:
+      - ./:/pleroma
+    networks:
+      - po_nw
+
+networks:
+  po_nw:
+    driver: bridge

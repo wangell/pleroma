@@ -161,7 +161,15 @@ void usage() {
   printf("Usage: ...\n");
 }
 
-void start_pleroma() {
+struct ConnectionInfo {
+  std::string host_ip;
+  int host_port;
+
+  std::string first_contact_ip;
+  int first_contact_port;
+};
+
+void start_pleroma(ConnectionInfo connect_info) {
   read_node_config();
   load_kernel();
 
@@ -170,11 +178,11 @@ void start_pleroma() {
   inoculate_pleroma(ukernel, ent0);
 
   init_network();
-  setup_server("127.0.0.1", 8080);
+  setup_server(connect_info.host_ip, connect_info.host_port);
 
-  //if (argc > 3) {
-  //  connect_client(std::string(argv[3]), std::stoi(argv[4]));
-  //}
+  if (connect_info.first_contact_ip != "") {
+    connect_client(connect_info.first_contact_ip, connect_info.first_contact_port);
+  }
 
   std::thread burners[processor_count];
 
@@ -200,7 +208,24 @@ int main(int argc, char **argv) {
   }
 
   if (std::string(argv[1]) == "start") {
-    start_pleroma();
+
+    ConnectionInfo connect_info;
+    if (argc < 4) {
+      connect_info.host_ip = "0.0.0.0";
+      connect_info.host_port = 8080;
+    } else {
+      connect_info.host_ip = argv[2];
+      connect_info.host_port = std::stoi(argv[3]);
+    }
+
+    //throw PleromaException(
+    //    "Usage: ./pleroma start hostIP hostPort [clientIP clientPort].");
+    if (argc > 4) {
+      connect_info.first_contact_ip = argv[4];
+      connect_info.first_contact_port = std::stoi(argv[5]);
+    }
+
+    start_pleroma(connect_info);
   } else if (std::string(argv[1]) == "test") {
     std::string target_file = argv[2];
     load_file(target_file);
