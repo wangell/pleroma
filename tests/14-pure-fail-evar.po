@@ -1,0 +1,15 @@
+ε TestEnt1 {}
+
+	evar : u8
+
+	δ create() -> u8
+		evar = 0
+		↵ 0
+
+	δ basic2() -> u8
+		↵ 2
+
+	λ basic() -> u8
+		let a : u8 = 2
+		let b : u8 = evar + 1
+		↵ 0

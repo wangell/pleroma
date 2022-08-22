@@ -212,6 +212,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   case AstNodeType::AssignmentStmt: {
     auto assmt_node = (AssignmentStmt *)node;
 
+    // TODO: Disallow shadowing
+    if (context->pure_func && context->entity_def->data.find(assmt_node->sym->sym) != context->entity_def->data.end()) {
+      throw TypesolverException("nil", 0, 0, "Attempted to assign to an entity-level variable inside of a pure function.");
+    }
     CType *lexpr = typescope_has(context, assmt_node->sym->sym);
     if (!lexpr) {
       lexpr = &assmt_node->sym->ctype;

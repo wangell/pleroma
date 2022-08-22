@@ -1,0 +1,8 @@
+ε TestEnt1 {}
+	δ basic2() -> u8
+		↵ 2
+
+	λ basic() -> u8
+		let a : u8 = 2
+		basic2()
+		↵ 0
