@@ -366,16 +366,35 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::MatchNode) {
     auto node = (MatchNode *)obj;
     // FIXME only handles boolean
-    auto mexpr = (BooleanNode *)eval(context, node->match_expr);
+    auto mexpr = eval(context, node->match_expr);
 
     for (auto match_case : node->cases) {
       // TODO Make it so the order doesn't matter for fallthrough
       if (std::get<0>(match_case)->type == AstNodeType::FallthroughExpr) {
         return eval_block(context, std::get<1>(match_case), {});
       } else {
-        auto mca_eval = (BooleanNode *)eval(context, std::get<0>(match_case));
-        if (mexpr->value == mca_eval->value) {
-          return eval_block(context, std::get<1>(match_case), {});
+        auto mca_eval = eval(context, std::get<0>(match_case));
+
+        if (mexpr->type == AstNodeType::StringNode) {
+          auto sexpr = (StringNode*) mexpr;
+          auto sexpr_match = (StringNode *)mca_eval;
+          if (sexpr->value == sexpr_match->value) {
+            return eval_block(context, std::get<1>(match_case), {});
+          }
+        } else if (mexpr->type == AstNodeType::NumberNode) {
+          auto sexpr = (NumberNode *)mexpr;
+          auto sexpr_match = (NumberNode *)mca_eval;
+          if (sexpr->value == sexpr_match->value) {
+            return eval_block(context, std::get<1>(match_case), {});
+          }
+        } else if (mexpr->type == AstNodeType::BooleanNode) {
+          auto sexpr = (BooleanNode *)mexpr;
+          auto sexpr_match = (BooleanNode *)mca_eval;
+          if (sexpr->value == sexpr_match->value) {
+            return eval_block(context, std::get<1>(match_case), {});
+          }
+        } else {
+          assert(false);
         }
       }
     }
