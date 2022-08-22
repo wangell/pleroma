@@ -483,7 +483,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     } else {
       context->ts->go_back(1);
       auto expr = parse_expr(context);
-      context->ts->expect(TokenType::Newline);
+      eat_newlines(context);
       return expr;
     }
   } else if (context->ts->accept(TokenType::PromiseType)) {
@@ -494,7 +494,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     return make_promise_resolution_node(prom_sym->lexeme, body);
   } else if (context->ts->accept(TokenType::While)) {
     auto while_expr = parse_expr(context);
-    context->ts->expect(TokenType::Newline);
+    eat_newlines(context);
     std::vector<AstNode *> body;
     while (true) {
       int current_indent = 0;
@@ -515,7 +515,9 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     eat_newlines(context);
     return make_return(expr);
   } else if (context->ts->accept(TokenType::Newline)) {
-    // return nop node?
+    // This shouldn't happen ever
+    eat_newlines(context);
+    assert(false);
     return nullptr;
   } else if (context->ts->accept(TokenType::Match)) {
     auto match_expr = parse_expr(context);
