@@ -24,6 +24,10 @@ bool check_type(std::string type) {
   return false;
 }
 
+void eat_newlines(ParseContext *ctx) {
+  while (ctx->ts->accept(TokenType::Newline));
+}
+
 CType *parse_type(ParseContext *ctx) {
 
   CType *var_type = new CType;
@@ -435,7 +439,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
       AstNode *expr = parse_expr(context);
 
-      context->ts->expect(TokenType::Newline);
+      eat_newlines(context);
 
       return make_assignment(sym_node, expr);
     }
@@ -446,7 +450,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
       context->ts->expect(TokenType::Equals);
       AstNode *expr2 = parse_expr(context);
 
-      context->ts->expect(TokenType::Newline);
+      eat_newlines(context);
 
       return make_assignment(make_index_node(make_symbol(t->lexeme), expr), expr2);
     }
@@ -454,11 +458,11 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     if (context->ts->accept(TokenType::Equals)) {
       SymbolNode *sym_node = (SymbolNode *)make_symbol(t->lexeme);
       auto expr = parse_expr(context);
-      context->ts->expect(TokenType::Newline);
+      eat_newlines(context);
       return make_assignment(sym_node, expr);
     } else if (context->ts->accept(TokenType::For)) {
       auto for_generator = parse_expr(context);
-      context->ts->expect(TokenType::Newline);
+      eat_newlines(context);
 
       std::vector<AstNode *> body;
       while (true) {
@@ -485,7 +489,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
   } else if (context->ts->accept(TokenType::PromiseType)) {
 
     auto prom_sym = context->ts->accept(TokenType::Symbol);
-    context->ts->expect(TokenType::Newline);
+    eat_newlines(context);
     auto body = parse_block(context, expected_indent + 1);
     return make_promise_resolution_node(prom_sym->lexeme, body);
   } else if (context->ts->accept(TokenType::While)) {
@@ -508,14 +512,14 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     return make_while(while_expr, body);
   } else if (context->ts->accept(TokenType::Return)) {
     auto expr = parse_expr(context);
-    context->ts->expect(TokenType::Newline);
+    eat_newlines(context);
     return make_return(expr);
   } else if (context->ts->accept(TokenType::Newline)) {
     // return nop node?
     return nullptr;
   } else if (context->ts->accept(TokenType::Match)) {
     auto match_expr = parse_expr(context);
-    context->ts->expect(TokenType::Newline);
+    eat_newlines(context);
 
     std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> match_cases;
     AstNode *match_case = nullptr;
@@ -536,7 +540,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
           match_case = parse_expr(context);
         }
         case_body.clear();
-        context->ts->expect(TokenType::Newline);
+        eat_newlines(context);
       } else if (current_indent > expected_indent + 1) {
         // FIXME is this the right indnet level?
         case_body.push_back(parse_stmt(context, expected_indent + 2));
@@ -552,7 +556,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
   } else {
     // try parse expr
     auto expr = parse_expr(context);
-    context->ts->expect(TokenType::Newline);
+    eat_newlines(context);
     return expr;
   }
 
@@ -612,7 +616,7 @@ AstNode *parse_function(ParseContext *context) {
 
   CType *return_type = parse_type(context);
 
-  context->ts->expect(TokenType::Newline);
+  eat_newlines(context);
 
   auto body = parse_block(context, 2);
 
@@ -659,7 +663,7 @@ AstNode *parse_actor(ParseContext *context) {
     context->ts->expect(TokenType::RightBrace);
   }
 
-  context->ts->expect(TokenType::Newline);
+  eat_newlines(context);
 
   while (true) {
     int current_indent = 0;
@@ -707,6 +711,8 @@ AstNode *parse_actor(ParseContext *context) {
     } else {
       assert(false);
     }
+
+    eat_newlines(context);
 
     if (context->ts->accept(TokenType::EndOfFile)) {
       break;
@@ -766,7 +772,7 @@ HylicModule *parse(TokenStream *stream) {
       TokenStream *new_stream = tokenize_file(mod_path);
       auto mod_file = parse(new_stream);
 
-      context.ts->expect(TokenType::Newline);
+      eat_newlines(&context);
       //imports[mod_name] = mod_file;
       hm->imports[mod_name] = mod_file;
     } else if (context.ts->accept(TokenType::Actor)) {
@@ -774,8 +780,7 @@ HylicModule *parse(TokenStream *stream) {
       symbol_map[actor->name] = (AstNode *)actor;
       //print_ast(actor);
     } else if (context.ts->accept(TokenType::Newline)) {
-      // Skip
-      make_nop();
+      eat_newlines(&context);
     } else {
       printf("Failed on token %s\n", token_type_to_string((*context.ts->current)->type));
       assert(false);
