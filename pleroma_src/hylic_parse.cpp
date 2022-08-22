@@ -508,8 +508,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     return make_while(while_expr, body);
   } else if (context->ts->accept(TokenType::Return)) {
     auto expr = parse_expr(context);
-    // FIXME
-    // expect(TokenType::Newline);
+    context->ts->expect(TokenType::Newline);
     return make_return(expr);
   } else if (context->ts->accept(TokenType::Newline)) {
     // return nop node?
