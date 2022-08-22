@@ -343,6 +343,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::FuncStmt: {
     auto func_node = (FuncStmt *)node;
+    push_scope(context);
+
+    for (int k = 0; k < func_node->args.size(); ++k) {
+      css(context).table[func_node->args[k]] = func_node->param_types[k];
+    }
 
     bool has_return = false;
     for (auto blocknode : func_node->body) {
@@ -364,6 +369,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       }
     }
 
+    pop_scope(context);
     // No need to return a real type, we already have this in this info TopTypes struct
     return CType();
 
