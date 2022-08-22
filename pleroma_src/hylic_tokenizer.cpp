@@ -244,12 +244,18 @@ TokenStream* tokenize_file(std::string filepath) {
       tokenstream->add_token(TokenType::String, sym);
     } else if (c == '*') {
       tokenstream->add_token(TokenType::Star, "*");
+    } else if (c == '*') {
+      tokenstream->add_token(TokenType::Star, "*");
     } else if (c == U'ε') {
       tokenstream->add_token(TokenType::Actor, "ε");
     } else if (c == U'$') {
       tokenstream->add_token(TokenType::Dollar, "$");
     } else if (c == '/') {
       tokenstream->add_token(TokenType::Slash, "/");
+    } else if (c == U'⌜') {
+      tokenstream->add_token(TokenType::IndexStart, "⌜");
+    } else if (c == U'⌟') {
+      tokenstream->add_token(TokenType::IndexEnd, "⌟");
     } else if (c == '(') {
       tokenstream->add_token(TokenType::LeftParen, "(");
     } else if (c == ')') {
@@ -387,6 +393,12 @@ const char *token_type_to_string(TokenType t) {
     break;
   case TokenType::EndOfFile:
     return "EOF";
+    break;
+  case TokenType::IndexStart:
+    return "IndexStart";
+    break;
+  case TokenType::IndexEnd:
+    return "IndexEnd";
     break;
   }
 

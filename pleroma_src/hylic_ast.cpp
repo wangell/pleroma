@@ -8,6 +8,9 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
+  case AstNodeType::IndexNode:
+    return "IndexNode";
+    break;
   case AstNodeType::BooleanNode:
     return "BooleanNode";
     break;
@@ -121,7 +124,7 @@ AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2) {
   return exp;
 }
 
-AstNode *make_assignment(SymbolNode* sym, AstNode *expr) {
+AstNode *make_assignment(AstNode* sym, AstNode *expr) {
   AssignmentStmt *assignment_stmt = new AssignmentStmt;
   assignment_stmt->type = AstNodeType::AssignmentStmt;
   assignment_stmt->sym = sym;
@@ -334,6 +337,14 @@ AstNode *make_foreign_func_call(AstNode *(*foreign_func)(EvalContext* context, s
   ffc->foreign_func = foreign_func;
   ffc->args = args;
   return ffc;
+}
+
+AstNode *make_index_node(AstNode *list, AstNode *accessor) {
+  IndexNode *index_node = new IndexNode;
+  index_node->type = AstNodeType::IndexNode;
+  index_node->list = list;
+  index_node->accessor = accessor;
+  return index_node;
 }
 
 void print_ast(AstNode *node, int indent_level) {

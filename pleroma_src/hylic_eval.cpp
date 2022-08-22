@@ -4,6 +4,7 @@
 #include "other.h"
 #include "pleroma.h"
 #include <cassert>
+#include <utility>
 #include "core/kernel.h"
 
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
@@ -276,6 +277,21 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
   if (obj->type == AstNodeType::BooleanNode) {
     return obj;
+  }
+
+  if (obj->type == AstNodeType::IndexNode) {
+    IndexNode* ind_node = (IndexNode*)obj;
+    assert(obj->type == AstNodeType::IndexNode);
+    ListNode* list_node = (ListNode*)eval(context, ind_node->list);
+    printf("%s\n", ast_type_to_string(list_node->type).c_str());
+    assert(list_node->type == AstNodeType::ListNode);
+
+    auto index = ((NumberNode*)eval(context, ind_node->accessor))->value;
+
+    if (index >= list_node->list.size()) {
+      throw PleromaException("Attempted to access array out of bounds.");
+    }
+    return list_node->list[index];
   }
 
   if (obj->type == AstNodeType::BooleanExpr) {

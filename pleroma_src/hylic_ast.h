@@ -43,6 +43,7 @@ enum class AstNodeType {
   ReturnNode,
   BooleanNode,
   MatchNode,
+  IndexNode,
 
   ForeignFunc,
 
@@ -256,10 +257,14 @@ struct CreateEntityNode : AstNode {
 };
 
 struct AssignmentStmt : AstNode {
-  SymbolNode *sym;
+  AstNode *sym;
   AstNode *value;
 };
 
+struct IndexNode : AstNode {
+  AstNode *list;
+  AstNode *accessor;
+};
 
 struct EvalContext;
 
@@ -274,7 +279,7 @@ AstNode *make_operator_expr(OperatorExpr::Op op, AstNode *expr1,
                             AstNode *expr2);
 AstNode *make_fallthrough();
 AstNode *make_boolean_expr(BooleanExpr::Op op, AstNode *expr1, AstNode *expr2);
-AstNode *make_assignment(SymbolNode *sym, AstNode *expr);
+AstNode *make_assignment(AstNode *sym, AstNode *expr);
 AstNode *make_match(AstNode *match_expr, std::vector<std::tuple<AstNode *, std::vector<AstNode *>>> cases);
 AstNode *make_namespace_access(AstNode* ref, AstNode* field);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
@@ -294,6 +299,7 @@ AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
 AstNode *make_list(std::vector<AstNode *> list, CType* ctype);
 AstNode *make_promise_node(int promise_id);
 AstNode *make_mod_use(std::string mod_name, AstNode* accessor);
+AstNode *make_index_node(AstNode* list, AstNode* accessor);
 // HACK Make this an AstNode and then eval + check in symbol table
 AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);
 

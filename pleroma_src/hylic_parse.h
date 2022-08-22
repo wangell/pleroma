@@ -31,7 +31,9 @@ enum class InfixOpType {
   LessThanEqual,
   GreaterThan,
   GreaterThanEqual,
-  Equals
+  Equals,
+
+  Index
 };
 
 struct InfixOp {

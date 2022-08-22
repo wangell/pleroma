@@ -113,6 +113,19 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::OperatorExpr: {
+    auto op_expr = (OperatorExpr*)node;
+
+    CType lexpr = typesolve_sub(context, op_expr->term2);
+    CType rexpr = typesolve_sub(context, op_expr->term1);
+
+    if (!exact_match(lexpr, rexpr)) {
+      throw TypesolverException("", 0, 0, "Operator expression types don't match: " + ctype_to_string(&lexpr) + ", " + ctype_to_string(&rexpr));
+    }
+
+    return lexpr;
+  } break;
+
   case AstNodeType::BooleanNode: {
     return node->ctype;
   } break;
@@ -133,6 +146,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   case AstNodeType::SymbolNode: {
     auto sym_node = (SymbolNode *)node;
     auto look = typescope_has(context, sym_node->sym);
+
+    if (context->pure_func && context->entity_def->data.find(sym_node->sym) != context->entity_def->data.end()) {
+      throw TypesolverException("nil", 0, 0, "Attempted to access to an entity-level variable inside of a pure function.");
+    }
+
     assert(look != nullptr);
     return *look;
   } break;
@@ -140,6 +158,14 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   case AstNodeType::ReturnNode: {
     auto ret_node = (ReturnNode*) node;
     return typesolve_sub(context, ret_node->expr);
+  } break;
+
+  case AstNodeType::IndexNode: {
+    auto index_node = (IndexNode *)node;
+    auto ltype = typesolve_sub(context, index_node->list);
+    CType st;
+    st.basetype = ltype.basetype;
+    return st;
   } break;
 
   case AstNodeType::NumberNode: {
@@ -235,12 +261,26 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   case AstNodeType::AssignmentStmt: {
     auto assmt_node = (AssignmentStmt *)node;
+    SymbolNode *sym;
+    if (assmt_node->sym->type == AstNodeType::SymbolNode) {
+      sym = (SymbolNode*)make_symbol(((SymbolNode*)assmt_node->sym)->sym);
+    } else if (assmt_node->sym->type == AstNodeType::IndexNode){
+      IndexNode* ind = (IndexNode*)assmt_node->sym;
+      if (ind->list->type == AstNodeType::SymbolNode) {
+        sym = (SymbolNode *)make_symbol(((SymbolNode *)ind->list)->sym);
+      } else {
+        assert(false);
+      }
+    } else {
+      assert(false);
+    }
 
     // TODO: Disallow shadowing
-    if (context->pure_func && context->entity_def->data.find(assmt_node->sym->sym) != context->entity_def->data.end()) {
+    if (context->pure_func && context->entity_def->data.find(sym->sym) != context->entity_def->data.end()) {
       throw TypesolverException("nil", 0, 0, "Attempted to assign to an entity-level variable inside of a pure function.");
     }
-    CType *lexpr = typescope_has(context, assmt_node->sym->sym);
+
+    CType *lexpr = typescope_has(context, sym->sym);
     if (!lexpr) {
       lexpr = &assmt_node->sym->ctype;
     }
@@ -248,10 +288,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     CType rexpr = typesolve_sub(context, assmt_node->value);
 
     if (!exact_match(*lexpr, rexpr)) {
-      throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable " + assmt_node->sym->sym + " which has type " + ctype_to_string(lexpr));
+      throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable " + sym->sym + " which has type " + ctype_to_string(lexpr));
     }
 
-    css(context).table[assmt_node->sym->sym] = lexpr;
+    css(context).table[sym->sym] = lexpr;
 
     return *lexpr;
   } break;

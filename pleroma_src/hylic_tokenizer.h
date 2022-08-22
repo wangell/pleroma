@@ -67,7 +67,9 @@ enum class TokenType {
   Character,
   Symbol,
 
-  ModUse
+  ModUse,
+  IndexStart,
+  IndexEnd
 };
 
 struct Token {

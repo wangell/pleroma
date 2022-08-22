@@ -253,7 +253,16 @@ AstNode *parse_expr(ParseContext *context) {
       op.n_args = n_args;
       op.name = tt->lexeme;
       op_stack.push(op);
-
+    } else if (context->ts->check(TokenType::IndexStart)) {
+      context->ts->accept(TokenType::IndexStart);
+      auto ind_expr = parse_expr(context);
+      context->ts->expect(TokenType::IndexEnd);
+      val_stack.push(ind_expr);
+      InfixOp op;
+      op.type = InfixOpType::Index;
+      op.n_args = 1;
+      op.name = "Index";
+      op_stack.push(op);
     } else if (context->ts->check(TokenType::Plus)) {
       context->ts->accept(TokenType::Plus);
       InfixOp op;
@@ -297,7 +306,9 @@ AstNode *parse_expr(ParseContext *context) {
       op.name = "Equals";
       op_stack.push(op);
     } else {
-      printf("%d\n", context->ts->get()->type);
+      // FIXME not sure if we should break here
+      break;
+      printf("%s\n", token_type_to_string(context->ts->get()->type));
       assert(false);
     }
   }
@@ -336,6 +347,16 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.pop();
 
       val_stack.push(make_operator_expr(OperatorExpr::Plus, expr1, expr2));
+    }
+
+    if (op.type == InfixOpType::Index) {
+      auto expr2 = val_stack.top();
+      val_stack.pop();
+
+      auto expr1 = val_stack.top();
+      val_stack.pop();
+
+      val_stack.push(make_index_node(expr1, expr2));
     }
 
     if (op.type == InfixOpType::Namespace) {
@@ -417,6 +438,17 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
       context->ts->expect(TokenType::Newline);
 
       return make_assignment(sym_node, expr);
+    }
+
+    if (context->ts->accept(TokenType::IndexStart)) {
+      auto expr = parse_expr(context);
+      context->ts->expect(TokenType::IndexEnd);
+      context->ts->expect(TokenType::Equals);
+      AstNode *expr2 = parse_expr(context);
+
+      context->ts->expect(TokenType::Newline);
+
+      return make_assignment(expr, expr2);
     }
 
     if (context->ts->accept(TokenType::Equals)) {
