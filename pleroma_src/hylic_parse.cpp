@@ -448,7 +448,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
       context->ts->expect(TokenType::Newline);
 
-      return make_assignment(expr, expr2);
+      return make_assignment(make_index_node(make_symbol(t->lexeme), expr), expr2);
     }
 
     if (context->ts->accept(TokenType::Equals)) {

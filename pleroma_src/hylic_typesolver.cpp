@@ -280,9 +280,18 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       throw TypesolverException("nil", 0, 0, "Attempted to assign to an entity-level variable inside of a pure function.");
     }
 
-    CType *lexpr = typescope_has(context, sym->sym);
-    if (!lexpr) {
-      lexpr = &assmt_node->sym->ctype;
+    CType *lexpr;
+    if (assmt_node->sym->type == AstNodeType::SymbolNode) {
+      lexpr = typescope_has(context, sym->sym);
+      if (!lexpr) {
+        lexpr = &assmt_node->sym->ctype;
+      }
+    } else if (assmt_node->sym->type == AstNodeType::IndexNode) {
+      CType *temp_type = typescope_has(context, sym->sym);
+      CType index_subtype;
+      lexpr = temp_type->subtype;
+    } else {
+      assert(false);
     }
 
     CType rexpr = typesolve_sub(context, assmt_node->value);

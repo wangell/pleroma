@@ -140,15 +140,33 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::AssignmentStmt) {
     auto ass_stmt = (AssignmentStmt *)obj;
 
+    AstNode* expr;
     SymbolNode *sym;
-    sym = ass_stmt->sym;
-    auto expr = eval(context, ass_stmt->value);
+    if (ass_stmt->sym->type == AstNodeType::SymbolNode) {
+      sym = ((SymbolNode*)ass_stmt->sym);
+      expr = eval(context, ass_stmt->value);
 
-    std::map<std::string, AstNode *> *find_it = find_symbol_table(context, sym->sym);
-    if (find_it) {
-      (*find_it)[sym->sym] = expr;
+      std::map<std::string, AstNode *> *find_it = find_symbol_table(context, sym->sym);
+      if (find_it) {
+        (*find_it)[sym->sym] = expr;
+      } else {
+        css(context).table[sym->sym] = expr;
+      }
+    } else if (ass_stmt->sym->type == AstNodeType::IndexNode) {
+      IndexNode* ind_node = (IndexNode*) ass_stmt->sym;
+      if (ind_node->list->type == AstNodeType::SymbolNode) {
+        sym = ((SymbolNode *)ind_node->list);
+        expr = eval(context, ass_stmt->value);
+
+        auto find_list = (ListNode*)find_symbol(context, sym->sym);
+        int index_value = ((NumberNode*)eval(context, ind_node->accessor))->value;
+
+        find_list->list[index_value] = expr;
+        expr = find_list->list[index_value];
+
+      }
     } else {
-      css(context).table[sym->sym] = expr;
+      throw PleromaException("Invalid assignment.");
     }
 
     return expr;
@@ -283,7 +301,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     IndexNode* ind_node = (IndexNode*)obj;
     assert(obj->type == AstNodeType::IndexNode);
     ListNode* list_node = (ListNode*)eval(context, ind_node->list);
-    printf("%s\n", ast_type_to_string(list_node->type).c_str());
+    printf("%s %s\n", ast_type_to_string(list_node->type).c_str(), ast_type_to_string(ind_node->accessor->type).c_str());
     assert(list_node->type == AstNodeType::ListNode);
 
     auto index = ((NumberNode*)eval(context, ind_node->accessor))->value;
