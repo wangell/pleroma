@@ -66,20 +66,19 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   }
   valread = read(new_socket, buffer, 1024);
 
-  std::string word;
+  std::string verb;
+  std::string path;
+  std::string version;
 
   std::istringstream iss(buffer, std::istringstream::in);
 
-  int i = 0;
-  while( iss >> word )
-  {
-    if (i == 1) break;
-    i++;
-  }
+  iss >> verb;
+  iss >> path;
+  iss >> version;
 
   // Call our function here
   //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
-  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(word)});
+  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(verb), make_string(path)});
 
   auto res_str = (StringNode*) eval(context, res);
 

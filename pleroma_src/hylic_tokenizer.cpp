@@ -246,6 +246,8 @@ TokenStream* tokenize_file(std::string filepath) {
             sym.push_back('\n');
           } else if (c == 't') {
             sym.push_back('\t');
+          } else if (c == '"') {
+            sym.push_back('"');
           } else if (c == '\\') {
             sym.push_back('\\');
           } else {

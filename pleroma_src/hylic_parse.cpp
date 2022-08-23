@@ -609,6 +609,10 @@ AstNode *parse_function(ParseContext *context) {
 
     args.push_back(arg->lexeme);
     param_types.push_back(type_spec);
+
+    if (!context->ts->accept(TokenType::Comma)) {
+      break;
+    }
   }
   context->ts->expect(TokenType::RightParen);
 
