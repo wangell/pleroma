@@ -239,7 +239,22 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == '"') {
       std::string sym;
       while ((c = fgetwc(f)) != '"') {
-        sym.push_back(c);
+        if (c == '\\') {
+          c = fgetwc(f);
+
+          if (c == 'n') {
+            sym.push_back('\n');
+          } else if (c == 't') {
+            sym.push_back('\t');
+          } else if (c == '\\') {
+            sym.push_back('\\');
+          } else {
+            assert(false);
+          }
+
+        } else {
+          sym.push_back(c);
+        }
       }
       tokenstream->add_token(TokenType::String, sym);
     } else if (c == '*') {
