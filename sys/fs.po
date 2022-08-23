@@ -1,0 +1,3 @@
+ε FS {}
+
+	δ readfile() -> str
