@@ -20,6 +20,7 @@
 #include "node_config.h"
 
 #include "other.h"
+#include "system.h"
 
 // const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
@@ -175,9 +176,13 @@ void start_pleroma(ConnectionInfo connect_info) {
   read_node_config();
   load_kernel();
 
-  auto ukernel = load_file("examples/kernel.po");
-  auto ent0 = "UserProgram";
-  inoculate_pleroma(ukernel, ent0);
+  auto monad = load_system_module(SystemModule::Monad);
+
+  inoculate_pleroma(monad, "Monad");
+
+  //auto ukernel = load_file("examples/kernel.po");
+  //auto ent0 = "UserProgram";
+  //inoculate_pleroma(ukernel, ent0);
 
   init_network();
   setup_server(connect_info.host_ip, connect_info.host_port);

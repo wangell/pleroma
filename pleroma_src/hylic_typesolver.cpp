@@ -181,6 +181,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return typesolve_sub(context, ret_node->expr);
   } break;
 
+  case AstNodeType::ForeignFunc: {
+    auto ffi_node = (ForeignFuncCall *)node;
+    return ffi_node->ctype;
+  } break;
+
   case AstNodeType::IndexNode: {
     auto index_node = (IndexNode *)node;
     auto ltype = typesolve_sub(context, index_node->list);

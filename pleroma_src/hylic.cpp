@@ -48,7 +48,6 @@ HylicModule *load_file(std::string path) {
   HylicModule *program;
     TokenStream *stream = tokenize_file(path);
 
-    //auto program = resolve_thunks(parse(tokenstream));
     program = parse(stream);
 
     typesolve(program);

@@ -13,11 +13,27 @@
 
 std::map<std::string, AstNode *> kernel_map;
 
+std::map<std::string, Entity*> system_entities;
+
+EntityRefNode* get_entity_ref(Entity* e) {
+  return (EntityRefNode*)make_entity_ref(e->address.node_id, e->address.vat_id, e->address.entity_id);
+}
+
+void load_system_entity(EvalContext *context, std::string entity_name) {
+  auto io_ent = create_entity(context, (EntityDef *)kernel_map[entity_name], false);
+  system_entities[entity_name] = io_ent;
+}
+
 AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
+  load_system_entity(context, "Io");
+
+  auto eref = get_entity_ref(system_entities["Io"]);
+
+  eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
 }
 
@@ -25,7 +41,10 @@ void load_kernel() {
 
   std::map<std::string, FuncStmt *> functions;
 
-  functions["hello"] = setup_direct_call(monad_hello, "hello", {}, {}, lu8());
+  CType *c = new CType;
+  *c = lu8();
+
+  functions["main"] = setup_direct_call(monad_hello, "main", {"i"}, {c}, lu8());
   functions["create"] = setup_direct_call(monad_create, "create", {}, {}, lu8());
 
   kernel_map["Monad"] = make_actor(nullptr, "Monad", functions, {}, {});

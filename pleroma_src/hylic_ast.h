@@ -296,22 +296,25 @@ AstNode *make_undefined();
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);
-AstNode *make_list(std::vector<AstNode *> list, CType* ctype);
-AstNode *make_promise_node(int promise_id);
-AstNode *make_mod_use(std::string mod_name, AstNode* accessor);
-AstNode *make_index_node(AstNode* list, AstNode* accessor);
-// HACK Make this an AstNode and then eval + check in symbol table
-AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);
+  AstNode *make_list(std::vector<AstNode *> list, CType * ctype);
+  AstNode *make_promise_node(int promise_id);
+  AstNode *make_mod_use(std::string mod_name, AstNode * accessor);
+  AstNode *make_index_node(AstNode * list, AstNode * accessor);
+  // HACK Make this an AstNode and then eval + check in symbol table
+  AstNode *make_promise_resolution_node(std::string sym,
+                                        std::vector<AstNode *> body);
 
-AstNode *make_foreign_func_call(AstNode* (*foreign_func)(EvalContext*, std::vector<AstNode*>), std::vector<AstNode*> args);
+  AstNode *make_foreign_func_call(
+      AstNode * (*foreign_func)(EvalContext *, std::vector<AstNode *>),
+      std::vector<AstNode *> args, CType ret_type);
 
-std::string ast_type_to_string(AstNodeType t);
-std::string ctype_to_string(CType *ctype);
+  std::string ast_type_to_string(AstNodeType t);
+  std::string ctype_to_string(CType * ctype);
 
-void print_ast(AstNode *node, int indent_level = 0);
-void print_ast_block(std::vector<AstNode *> block);
+  void print_ast(AstNode * node, int indent_level = 0);
+  void print_ast_block(std::vector<AstNode *> block);
 
-CType *clone_ctype(CType* ctype);
+  CType *clone_ctype(CType * ctype);
 
-void print_ctype(CType *ctype);
-void print_ctype(CType ctype);
+  void print_ctype(CType * ctype);
+  void print_ctype(CType ctype);

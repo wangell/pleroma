@@ -11,3 +11,7 @@ public:
       : CompileException(file, line_n, char_n, msg) {}
 };
 void typesolve(HylicModule* module);
+
+bool is_complex(CType a);
+
+bool exact_match(CType a, CType b);

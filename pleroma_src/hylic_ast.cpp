@@ -1,5 +1,4 @@
 #include "hylic_ast.h"
-#include "hylic_eval.h"
 #include <cassert>
 
 AstNode *static_nop;
@@ -298,11 +297,12 @@ AstNode *make_promise_resolution_node(std::string sym,
   return promise_res_node;
 }
 
-AstNode *make_foreign_func_call(AstNode *(*foreign_func)(EvalContext* context, std::vector<AstNode *>), std::vector<AstNode*> args) {
+AstNode *make_foreign_func_call(AstNode *(*foreign_func)(EvalContext* context, std::vector<AstNode *>), std::vector<AstNode*> args, CType ret_type) {
   ForeignFuncCall *ffc = new ForeignFuncCall;
   ffc->type = AstNodeType::ForeignFunc;
   ffc->foreign_func = foreign_func;
   ffc->args = args;
+  ffc->ctype = ret_type;
   return ffc;
 }
 

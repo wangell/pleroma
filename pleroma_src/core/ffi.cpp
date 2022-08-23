@@ -17,10 +17,11 @@ FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
     nu_args.push_back(make_symbol(k));
   }
 
-  auto ffi = make_foreign_func_call(foreign_func, nu_args);
-  ffi->ctype.basetype = ctype.basetype;
+  auto ffi = make_foreign_func_call(foreign_func, nu_args, ctype);
 
   body.push_back(make_return(ffi));
 
-  return (FuncStmt *)make_function(name, args, body, arg_types, false);
+  auto func = (FuncStmt *)make_function(name, args, body, arg_types, false);
+  func->ctype = ctype;
+  return func;
 }
