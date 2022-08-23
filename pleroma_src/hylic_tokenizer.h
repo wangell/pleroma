@@ -75,6 +75,11 @@ enum class TokenType {
 struct Token {
   TokenType type;
   std::string lexeme;
+
+  int start_char = 0;
+  int end_char = 0;
+
+  int line_n = 0;
 };
 
 struct TokenStream {
@@ -97,7 +102,7 @@ struct TokenStream {
 
   Token *check(TokenType t);
   Token *accept(TokenType t);
-  void add_token(TokenType t, std::string lexeme);
+  void add_token(TokenType t, std::string lexeme, int start_char, int end_char, int line_n);
   std::vector<Token *> accept_all(std::vector<TokenType> toks);
 };
 
