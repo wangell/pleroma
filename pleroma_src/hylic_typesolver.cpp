@@ -229,7 +229,12 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     auto ent_ref = (EntityRefNode*)msg_node->entity_ref;
 
     auto ent_type = typesolve_sub(context, ent_ref);
-    auto ent_name = ent_type.entity_name;
+    std::string ent_name;
+    if (ent_type.basetype == PType::Promise) {
+      ent_name = ent_type.subtype->entity_name;
+    } else {
+      ent_name = ent_type.entity_name;
+    }
 
     if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
       ent_name = context->entity_def->name;
@@ -257,7 +262,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     }
 
     auto ent_it = context->top_types->functions.find(ent_name);
-    assert(ent_it != context->top_types->functions.end());
+    if (ent_it == context->top_types->functions.end()) {
+      throw TypesolverException("", 0, 0, "Couldn't find entity " + ent_name);
+    }
 
     auto func_it = ent_it->second.find(msg_node->function_name);
     FuncSig sig;
@@ -346,7 +353,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     }
 
     if (!exact_match(*lexpr, rexpr)) {
-      throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable " + sym->sym + " which has type " + ctype_to_string(lexpr));
+      throw TypesolverException("nil", 0, 0, "Attempted to assign a " + ctype_to_string(&rexpr) + " to variable '" + sym->sym + "' which has type " + ctype_to_string(lexpr));
     }
 
     css(context).table[sym->sym] = lexpr;

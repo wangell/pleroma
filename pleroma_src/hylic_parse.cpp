@@ -399,9 +399,6 @@ AstNode *parse_expr(ParseContext *context) {
         // FIXME: All entity names must be capitalized? keep it?
         if (isupper(op.name[0])) {
           auto ent = make_create_entity(op.name, new_vat);
-          if (new_vat) {
-            ent->ctype.dtype = DType::Far;
-          }
           val_stack.push(ent);
         } else {
           val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));

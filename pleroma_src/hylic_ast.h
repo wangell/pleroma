@@ -312,3 +312,6 @@ void print_ast(AstNode *node, int indent_level = 0);
 void print_ast_block(std::vector<AstNode *> block);
 
 CType *clone_ctype(CType* ctype);
+
+void print_ctype(CType *ctype);
+void print_ctype(CType ctype);

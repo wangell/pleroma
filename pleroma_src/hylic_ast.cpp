@@ -240,9 +240,21 @@ AstNode *make_create_entity(std::string entity_def_name, bool new_vat) {
   CreateEntityNode *entity_node = new CreateEntityNode;
   entity_node->type = AstNodeType::CreateEntity;
   entity_node->entity_def_name = entity_def_name;
-  entity_node->ctype.basetype = PType::Entity;
-  entity_node->ctype.entity_name = entity_def_name;
   entity_node->new_vat = new_vat;
+
+  // If it's a new vat, return @far Ent, otherwise loc Ent
+  if (new_vat) {
+    entity_node->ctype.basetype = PType::Promise;
+    entity_node->ctype.dtype = DType::Local;
+    entity_node->ctype.subtype = new CType;
+    entity_node->ctype.subtype->basetype = PType::Entity;
+    entity_node->ctype.subtype->entity_name = entity_def_name;
+    entity_node->ctype.subtype->dtype = DType::Far;
+  } else {
+    entity_node->ctype.basetype = PType::Entity;
+    entity_node->ctype.entity_name = entity_def_name;
+    entity_node->ctype.dtype = DType::Local;
+  }
 
   return entity_node;
 }
@@ -363,7 +375,7 @@ std::string ctype_to_string(CType *ctype) {
     break;
   case PType::Promise:
     if (ctype->subtype) {
-      return "@" + ctype_to_string(ctype->subtype);
+      return dstring + "@" + ctype_to_string(ctype->subtype);
     }
     break;
   case PType::List:
@@ -377,4 +389,12 @@ std::string ctype_to_string(CType *ctype) {
 
   printf("Failed to catch type %d\n", ctype->basetype);
   assert(false);
+}
+
+void print_ctype(CType *ctype) {
+  printf("%s\n", ctype_to_string(ctype).c_str());
+}
+
+void print_ctype(CType ctype) {
+  printf("%s\n", ctype_to_string(&ctype).c_str());
 }
