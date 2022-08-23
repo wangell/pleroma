@@ -49,7 +49,10 @@ struct ParseContext {
   HylicModule* module;
 };
 
-class ParseException : CompileException {
+class ParserException : public CompileException {
+public:
+  ParserException(std::string file, u32 line_n, u32 char_n, std::string msg)
+      : CompileException(file, line_n, char_n, msg) {}
 };
 
 HylicModule *parse(TokenStream *stream);

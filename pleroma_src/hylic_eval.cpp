@@ -54,7 +54,6 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     subs.push_back(std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
   }
 
-  printf("eval prom\n");
   return eval_block(context, resolve_node->callback->body, subs);
 }
 
@@ -596,6 +595,20 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
 
       auto io_ent =
           create_entity(context, (EntityDef *)kernel_map["Net"], false);
+      e->data[k.var_name] =
+          make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
+                          io_ent->address.entity_id);
+
+      // FIXME: see above
+      context->vat = old_vat;
+    }
+    if (k.ctype->entity_name == "fs.FS") {
+      // FIXME: we need more temporary context swap functions
+      auto old_vat = context->vat;
+      context->vat = vat;
+
+      auto io_ent =
+          create_entity(context, (EntityDef *)kernel_map["FS"], false);
       e->data[k.var_name] =
           make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
                           io_ent->address.entity_id);

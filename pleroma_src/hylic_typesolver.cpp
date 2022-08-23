@@ -94,6 +94,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     // Grab the subtype of the list
     CType p;
     p.basetype = list_node_type.subtype->basetype;
+    p.dtype = DType::Local;
     css(context).table[for_node->sym] = &p;
 
     for (auto blocknode : for_node->body) {
@@ -200,6 +201,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     return node->ctype;
   } break;
 
+  case AstNodeType::PromiseResNode: {
+    return node->ctype;
+  } break;
+
   case AstNodeType::ModUseNode: {
     auto mod_use = (ModUseNode*)node;
 
@@ -239,6 +244,14 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       } else {
         CType c;
         c.basetype = PType::None;
+        return c;
+      }
+    }
+
+    if (ent_name == "fs.FS") {
+      if (msg_node->function_name == "readfile") {
+        CType c;
+        c.basetype = PType::str;
         return c;
       }
     }

@@ -42,8 +42,7 @@ void TokenStream::expect_or(std::vector<TokenType> toks) {
       tokens_allowed += "|" + std::string(token_type_to_string(j));
     }
 
-    throw TokenizerException(filename, line_number, char_number, "Reached end of tokenstream while looking for " + tokens_allowed);
-    //throw TokenizerException("Reached end of tokenstream while looking for %s\n", tokens_allowed.c_str());
+    throw ParserException(filename, line_number, char_number, "Reached end of tokenstream while looking for " + tokens_allowed);
     assert(false);
     exit(1);
   }
@@ -84,8 +83,7 @@ void TokenStream::expect(TokenType t) {
 
   auto curr = get();
   if (curr->type != t) {
-    printf("Expected token type: %s but got %s(%d), at line %d\n", token_type_to_string(t), token_type_to_string(curr->type), curr->type, line_number);
-    throw TokenizerException(filename, line_number, char_number, "Expected token type: " + std::string(token_type_to_string(t)) + " but got " + std::string(token_type_to_string(curr->type)) + "(" + std::to_string((int)curr->type) + ")");
+    throw ParserException(filename, line_number, char_number, "Expected token type: " + std::string(token_type_to_string(t)) + " but got " + std::string(token_type_to_string(curr->type)) + "(" + std::to_string((int)curr->type) + ")");
   }
 
   if (curr->type == TokenType::Newline)
@@ -239,6 +237,8 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == '"') {
       std::string sym;
       while ((c = fgetwc(f)) != '"') {
+
+        // Escaped characters
         if (c == '\\') {
           c = fgetwc(f);
 
@@ -342,87 +342,33 @@ TokenStream* tokenize_file(std::string filepath) {
 
 const char *token_type_to_string(TokenType t) {
   switch (t) {
-  case TokenType::Newline:
-    return "Newline";
-    break;
-  case TokenType::Tab:
-    return "Tab";
-    break;
-  case TokenType::Symbol:
-    return "Symbol";
-    break;
-  case TokenType::LeftParen:
-    return "Left Paren";
-    break;
-  case TokenType::RightParen:
-    return "Right Paren";
-    break;
-  case TokenType::PromiseType:
-    return "Promise";
-    break;
-  case TokenType::Actor:
-    return "Entity";
-    break;
-  case TokenType::LocVar:
-    return "LocVar";
-    break;
-  case TokenType::FarVar:
-    return "FarVar";
-    break;
-  case TokenType::AlnVar:
-    return "AlnVar";
-    break;
-  case TokenType::Message:
-    return "Message";
-    break;
-  case TokenType::Return:
-    return "Return";
-    break;
-  case TokenType::While:
-    return "While";
-    break;
-  case TokenType::True:
-    return "True";
-    break;
-  case TokenType::False:
-    return "False";
-    break;
-  case TokenType::Function:
-    return "Function";
-    break;
-  case TokenType::For:
-    return "For";
-    break;
-  case TokenType::Fallthrough:
-    return "Fallthrough";
-    break;
-  case TokenType::Colon:
-    return "Colon";
-    break;
-  case TokenType::Dot:
-    return "Dot";
-    break;
-  case TokenType::Plus:
-    return "Plus";
-    break;
-  case TokenType::ModUse:
-    return "ModUse";
-    break;
-  case TokenType::EndOfFile:
-    return "EOF";
-    break;
-  case TokenType::IndexStart:
-    return "IndexStart";
-    break;
-  case TokenType::IndexEnd:
-    return "IndexEnd";
-    break;
-  case TokenType::Breakthrough:
-    return "Breakthrough";
-    break;
-  case TokenType::Import:
-    return "Import";
-    break;
+  case TokenType::Newline: return "Newline";
+  case TokenType::Tab: return "Tab";
+  case TokenType::Symbol: return "Symbol";
+  case TokenType::LeftParen: return "Left Paren";
+  case TokenType::RightParen: return "Right Paren";
+  case TokenType::PromiseType: return "Promise";
+  case TokenType::Actor: return "Entity";
+  case TokenType::LocVar: return "LocVar";
+  case TokenType::FarVar: return "FarVar";
+  case TokenType::AlnVar: return "AlnVar";
+  case TokenType::Message: return "Message";
+  case TokenType::Return: return "Return";
+  case TokenType::While: return "While";
+  case TokenType::True: return "True";
+  case TokenType::False: return "False";
+  case TokenType::Function: return "Function";
+  case TokenType::For: return "For";
+  case TokenType::Fallthrough: return "Fallthrough";
+  case TokenType::Colon: return "Colon";
+  case TokenType::Dot: return "Dot";
+  case TokenType::Plus: return "Plus";
+  case TokenType::ModUse: return "ModUse";
+  case TokenType::EndOfFile: return "EOF";
+  case TokenType::IndexStart: return "IndexStart";
+  case TokenType::IndexEnd: return "IndexEnd";
+  case TokenType::Breakthrough: return "Breakthrough";
+  case TokenType::Import: return "Import";
   }
 
   return "Unimplemented";

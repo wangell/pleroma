@@ -8,80 +8,32 @@ AstNode *static_false;
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {
-  case AstNodeType::WhileStmt:
-    return "WhileStmt";
-    break;
-  case AstNodeType::IndexNode:
-    return "IndexNode";
-    break;
-  case AstNodeType::BooleanNode:
-    return "BooleanNode";
-    break;
-  case AstNodeType::MatchNode:
-    return "MatchNode";
-    break;
-  case AstNodeType::ForStmt:
-    return "ForStmt";
-    break;
-  case AstNodeType::EntityRefNode:
-    return "EntityRefNode";
-    break;
-  case AstNodeType::MessageNode:
-    return "MessageNode";
-    break;
-  case AstNodeType::NamespaceAccess:
-    return "NamespaceAccess";
-    break;
-  case AstNodeType::PromiseNode:
-    return "PromiseNode";
-    break;
-  case AstNodeType::EntityDef:
-    return "EntityDef";
-    break;
-  case AstNodeType::FuncStmt:
-    return "FuncStmt";
-    break;
-  case AstNodeType::ForeignFunc:
-    return "ForeignFunc";
-    break;
-  case AstNodeType::ListNode:
-    return "ListNode";
-    break;
-  case AstNodeType::SymbolNode:
-    return "SymbolNode";
-    break;
-  case AstNodeType::StringNode:
-    return "StringNode";
-    break;
-  case AstNodeType::CharacterNode:
-    return "CharacterNode";
-    break;
-  case AstNodeType::TupleNode:
-    return "TupleNode";
-    break;
-  case AstNodeType::OperatorExpr:
-    return "OperatorExpr";
-    break;
-  case AstNodeType::BooleanExpr:
-    return "BooleanExpr";
-    break;
-  case AstNodeType::NumberNode:
-    return "NumberNode";
-    break;
-  case AstNodeType::CreateEntity:
-    return "CreateEntity";
-    break;
-  case AstNodeType::ModUseNode:
-    return "ModUseNode";
-    break;
-  case AstNodeType::AssignmentStmt:
-    return "AssignmentStmt";
-    break;
-  case AstNodeType::ReturnNode:
-    return "ReturnNode";
-    break;
+  case AstNodeType::WhileStmt: return "WhileStmt";
+  case AstNodeType::IndexNode: return "IndexNode";
+  case AstNodeType::BooleanNode: return "BooleanNode";
+  case AstNodeType::MatchNode: return "MatchNode";
+  case AstNodeType::ForStmt: return "ForStmt";
+  case AstNodeType::EntityRefNode: return "EntityRefNode";
+  case AstNodeType::MessageNode: return "MessageNode";
+  case AstNodeType::NamespaceAccess: return "NamespaceAccess";
+  case AstNodeType::PromiseNode: return "PromiseNode";
+  case AstNodeType::EntityDef: return "EntityDef";
+  case AstNodeType::FuncStmt: return "FuncStmt";
+  case AstNodeType::ForeignFunc: return "ForeignFunc";
+  case AstNodeType::ListNode: return "ListNode";
+  case AstNodeType::SymbolNode: return "SymbolNode";
+  case AstNodeType::StringNode: return "StringNode";
+  case AstNodeType::CharacterNode: return "CharacterNode";
+  case AstNodeType::TupleNode: return "TupleNode";
+  case AstNodeType::OperatorExpr: return "OperatorExpr";
+  case AstNodeType::BooleanExpr: return "BooleanExpr";
+  case AstNodeType::NumberNode: return "NumberNode";
+  case AstNodeType::CreateEntity: return "CreateEntity";
+  case AstNodeType::ModUseNode: return "ModUseNode";
+  case AstNodeType::AssignmentStmt: return "AssignmentStmt";
+  case AstNodeType::ReturnNode: return "ReturnNode";
+  case AstNodeType::PromiseResNode: return "PromiseResNode";
   }
-
   printf("Failed to convert AstNode type to string: %d\n", t);
   assert(false);
 }

@@ -3,6 +3,7 @@
 #include "../hylic_eval.h"
 #include "ffi.h"
 #include "net.h"
+#include "fs.h"
 
 #include <SDL2/SDL.h>
 #include <iostream>
@@ -135,6 +136,7 @@ void load_kernel() {
   kernel_map["Io"] = make_actor(nullptr, "Io", io_functions, {}, {});
 
   load_net();
+  load_fs();
 
   //load_amoeba();
 }
