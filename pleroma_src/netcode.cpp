@@ -104,6 +104,10 @@ void net_loop() {
   Msg out_mess;
   int n_received = 0;
   while (net_out_queue.try_dequeue(out_mess)) {
+    // Sent from the void
+    if (out_mess.node_id == -1) {
+      continue;
+    }
     if (out_mess.node_id == this_pleroma_node.node_id) {
       net_in_queue.push(out_mess);
     } else {

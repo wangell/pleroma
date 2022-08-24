@@ -1,5 +1,4 @@
-ε Net {}
+ε HttpLb {}
 
-	δ start(e : Entity) -> void
-
-	δ next() -> void
+	δ start(host : str, e : Entity, func : str) -> void
+	δ stop(host : str, e : Entity, func : str) -> void

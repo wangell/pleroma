@@ -266,6 +266,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       }
     }
 
+    if (ent_name == "net.HttpLb") {
+      return CType();
+    }
+
     auto ent_it = context->top_types->functions.find(ent_name);
     if (ent_it == context->top_types->functions.end()) {
       throw TypesolverException("", 0, 0, "Couldn't find entity " + ent_name);

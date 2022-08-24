@@ -1,9 +1,27 @@
-ε Kernel {ioinst : Io}
+~io
+~monad
 
-	helloworld : u8
+ε UserProgram {ioinst : far io►Io, monad : far monad►Monad, lb : far net►HttpLb}
 
 	δ create() -> void
+		let pingpongcount : u8 = 0
+
+	δ hello(verb: str, path : str) -> str
+		↵ "HTTP/1.1 200 OK
+Content-Type: text/html
+ 
+
+<html>
+<body>
+Welcome to Pleroma!</body></html>"
 
 	δ main(env: u8) -> u8
-		ioinst.print("Hello, world!")
+
+		let q : UserProgram = UserProgram()
+
+		lb.start("localhost:8080", q, "hello")
+
+		whl #t
+			lb.next()
+
 		↵ 0

@@ -15,6 +15,9 @@ std::map<std::string, AstNode *> kernel_map;
 
 std::map<std::string, Entity*> system_entities;
 
+// Always 1, because we count the Monad
+int n_running_programs = 1;
+
 EntityRefNode* get_entity_ref(Entity* e) {
   return (EntityRefNode*)make_entity_ref(e->address.node_id, e->address.vat_id, e->address.entity_id);
 }
@@ -38,9 +41,16 @@ AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
 
   auto eref = (EntityRefNode*)args[0];
 
-  eval_message_node(context, eref, CommMode::Sync, "main", {make_number(0)});
+  n_running_programs += 1;
+  //printf("Incremented programs: %d\n", n_running_programs);
+  //printf("Called eref %d %d %d\n", eref->node_id, eref->vat_id, eref->entity_id);
+  eval_message_node(context, eref, CommMode::Async, "main", {make_number(0)});
 
   return make_number(0);
+}
+
+AstNode *monad_n_programs(EvalContext *context, std::vector<AstNode *> args) {
+  return make_string(std::to_string(n_running_programs));
 }
 
 AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
@@ -52,7 +62,7 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
 
   auto eref = get_entity_ref(system_entities["Io"]);
 
-  eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
+  //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
 }
 
@@ -70,7 +80,8 @@ void load_kernel() {
   c2->basetype = PType::BaseEntity;
   c2->dtype = DType::Far;
 
-  functions["startprogram"] = setup_direct_call(monad_start_program, "startprogram", {"eref"}, {c2}, lu8());
+  functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
+  functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
 
   kernel_map["Monad"] = make_actor(nullptr, "Monad", functions, {}, {});
 

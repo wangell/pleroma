@@ -570,6 +570,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
 
   vat->entities[e->address.entity_id] = e;
 
+
   for (auto &[k, v] : entity_def->data) {
     e->data[k] = v;
   }
@@ -577,6 +578,9 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   for (auto &k : entity_def->inocaps) {
 
     // Hack for now
+    if (k.ctype->entity_name == "monad.Monad") {
+      e->data[k.var_name] = monad_ref;
+    }
     if (k.ctype->entity_name == "io.Io") {
       // FIXME: we need more temporary context swap functions
       auto old_vat = context->vat;
@@ -588,13 +592,13 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
       // FIXME: see above
       context->vat = old_vat;
     }
-    if (k.ctype->entity_name == "net.Net") {
+    if (k.ctype->entity_name == "net.HttpLb") {
       // FIXME: we need more temporary context swap functions
       auto old_vat = context->vat;
       context->vat = vat;
 
       auto io_ent =
-          create_entity(context, (EntityDef *)kernel_map["Net"], false);
+          create_entity(context, (EntityDef *)kernel_map["HttpLb"], false);
       e->data[k.var_name] =
           make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
                           io_ent->address.entity_id);

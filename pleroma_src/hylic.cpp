@@ -22,6 +22,8 @@
 #include "hylic_tokenizer.h"
 #include "hylic_typesolver.h"
 
+EntityRefNode *monad_ref;
+
 Scope global_scope;
 
 const char *node_type_to_string(AstNodeType t) {

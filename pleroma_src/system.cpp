@@ -6,8 +6,10 @@
 #include "other.h"
 
 std::map<SystemModule, std::vector<std::string>> system_module_paths = {
-  {SystemModule::Monad, {"sys/monad.po", "Monad"}}
-};
+    {SystemModule::Monad, {"sys/monad.po", "Monad"}},
+    {SystemModule::Io, {"sys/io.po", "Io"}},
+    {SystemModule::Net, {"sys/net.po", "Net"}}
+    };
 
 HylicModule *load_system_module(SystemModule mod) {
   HylicModule *program;

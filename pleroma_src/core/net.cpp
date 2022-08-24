@@ -2,6 +2,7 @@
 
 #include "../hylic_ast.h"
 #include "../hylic_eval.h"
+#include "../type_util.h"
 #include "ffi.h"
 
 #include <cstring>
@@ -21,7 +22,8 @@ int addrlen = sizeof(address);
 char buffer[1024] = {0};
 char *hello = "Hello from server";
 
-AstNode* entity_ref;
+// Host -> Entity
+std::map<std::string, std::tuple<EntityRefNode*, std::string>> host_entity_lookup;
 
 AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
 
@@ -51,9 +53,11 @@ AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
     exit(EXIT_FAILURE);
   }
 
-  entity_ref = eval(context, args[0]);
+  std::string hostname = ((StringNode*)args[2])->value;
+  auto entity_ref = ((EntityRefNode*)args[1]);
+  std::string callback = ((StringNode*)args[0])->value;
 
-  //printf("%d Entity ref %d %d %d\n", eref->type, eref->node_id, eref->vat_id, eref->entity_id);
+  host_entity_lookup[hostname] = std::make_tuple((EntityRefNode*)make_entity_ref(entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id), callback);
 
   return make_number(0);
 }
@@ -76,11 +80,31 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   iss >> path;
   iss >> version;
 
-  // Call our function here
+  std::string header, header_contents;
+  std::string hostname;
+
+  while(iss >> header) {
+    iss >> header_contents;
+
+    if (header == "Host:") {
+      hostname = header_contents;
+    }
+  }
+
+  if (host_entity_lookup.find(hostname) == host_entity_lookup.end()) {
+    printf("couldn't find it\n");
+    std::string rsp404 = "HTTP/1.1 404 Not Found";
+    send(new_socket, rsp404.c_str(), strlen(rsp404.c_str()), 0);
+    close(new_socket);
+    return make_number(0);
+  }
+  auto host_ref = host_entity_lookup[hostname];
   //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
-  AstNode *res = eval_message_node(context, (EntityRefNode*)entity_ref, CommMode::Sync, "test", {make_string(verb), make_string(path)});
+  AstNode *res = eval_message_node(context, std::get<0>(host_ref), CommMode::Sync, std::get<1>(host_ref), {make_string(verb), make_string(path)});
 
   auto res_str = (StringNode*) eval(context, res);
+
+  printf("%s\n", res_str->value.c_str());
 
   //printf("Response %s\n", res_str->value.c_str());
   send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
@@ -99,13 +123,16 @@ void load_net() {
   CType test_type;
   test_type.basetype = PType::u8;
 
-  CType blah;
-  blah.basetype = PType::Entity;
+  CType *blah = new CType;
+  blah->basetype = PType::BaseEntity;
 
-  functions["start"] = setup_direct_call(net_start, "start", {"ent"}, {&blah}, test_type);
+  CType *blarg = new CType;
+  blarg->basetype = PType::str;
+
+  functions["start"] = setup_direct_call(net_start, "start", {"host", "e", "func"}, {blarg, blah, blarg}, test_type);
   functions["next"] = setup_direct_call(net_next, "next", {}, {}, test_type);
   functions["create"] = setup_direct_call(net_create, "create", {}, {}, test_type);
   functions["create"]->ctype.basetype = PType::u8;
 
-  kernel_map["Net"] = make_actor(nullptr, "Net", functions, {}, {});
+  kernel_map["HttpLb"] = make_actor(nullptr, "HttpLb", functions, {}, {});
 }

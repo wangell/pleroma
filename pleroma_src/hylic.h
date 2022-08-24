@@ -15,3 +15,5 @@ std::map<std::string, AstNode *> parse(TokenStream stream);
 bool typecheck(std::map<std::string, AstNode *>);
 AstNode *eval(AstNode *obj, Scope *scope);
 void parse_file(std::string path);
+
+extern EntityRefNode *monad_ref;

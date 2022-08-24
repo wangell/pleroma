@@ -26,7 +26,6 @@
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
-EntityRefNode* monad_ref;
 PleromaNode this_pleroma_node;
 
 std::map<std::string, HylicModule*> programs;
@@ -134,7 +133,7 @@ void start_program(HylicModule *program, std::string ent_name) {
   EntityDef *ent0_def = (EntityDef *)program->entity_defs[ent_name];
 
   Vat *og_vat = new Vat;
-  og_vat->id = 0;
+  og_vat->id = this_pleroma_node.vat_id_base;
   queue.enqueue(og_vat);
   this_pleroma_node.vat_id_base++;
 
@@ -147,12 +146,14 @@ void start_program(HylicModule *program, std::string ent_name) {
   og_vat->entities[0] = ent;
 
   auto eref = (EntityRefNode*)make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
+  //printf("Program ent : %d %d %d\n", eref->node_id, eref->vat_id, eref->entity_id);
+  //printf("Monad ref %d %d %d\n", monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
 
   Msg m;
   m.node_id = monad_ref->node_id;
   m.vat_id = monad_ref->vat_id;
   m.entity_id = monad_ref->entity_id;
-  m.function_name = "startprogram";
+  m.function_name = "start-program";
 
   m.values.push_back((EntityRefNode*) eref);
 
@@ -180,6 +181,7 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
   ent->module_scope = ukernel;
 
   monad_ref = (EntityRefNode*)make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
+  //printf("%d %d %d\n", monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
 
   og_vat->entities[0] = ent;
 
@@ -221,7 +223,7 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   auto ukernel = load_file("examples/kernel.po");
   auto ent0 = "UserProgram";
-  inoculate_pleroma(ukernel, ent0);
+  start_program(ukernel, ent0);
 
   init_network();
   setup_server(connect_info.host_ip, connect_info.host_port);

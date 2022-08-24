@@ -15,15 +15,6 @@ struct ParseRes {
   AstNode *node;
 };
 
-bool check_type(std::string type) {
-  // check type against symbol table
-
-  if (type == "u8")
-    return true;
-
-  return false;
-}
-
 void eat_newlines(ParseContext *ctx) {
   while (ctx->ts->accept(TokenType::Newline));
 }
