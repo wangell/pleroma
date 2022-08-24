@@ -26,7 +26,10 @@
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
+EntityRefNode* monad_ref;
 PleromaNode this_pleroma_node;
+
+std::map<std::string, HylicModule*> programs;
 
 moodycamel::BlockingConcurrentQueue<Vat*> queue;
 
@@ -127,6 +130,40 @@ void process_vq() {
   }
 }
 
+void start_program(HylicModule *program, std::string ent_name) {
+  EntityDef *ent0_def = (EntityDef *)program->entity_defs[ent_name];
+
+  Vat *og_vat = new Vat;
+  og_vat->id = 0;
+  queue.enqueue(og_vat);
+  this_pleroma_node.vat_id_base++;
+
+  EvalContext context;
+  start_context(&context, &this_pleroma_node, og_vat, program, nullptr);
+
+  Entity *ent = create_entity(&context, ent0_def, false);
+  ent->module_scope = program;
+
+  og_vat->entities[0] = ent;
+
+  auto eref = (EntityRefNode*)make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
+
+  Msg m;
+  m.node_id = monad_ref->node_id;
+  m.vat_id = monad_ref->vat_id;
+  m.entity_id = monad_ref->entity_id;
+  m.function_name = "startprogram";
+
+  m.values.push_back((EntityRefNode*) eref);
+
+  m.src_entity_id = -1;
+  m.src_node_id = -1;
+  m.src_vat_id = -1;
+  m.promise_id = -1;
+
+  net_in_queue.push(m);
+}
+
 void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
 
   EntityDef *ent0_def = (EntityDef *)ukernel->entity_defs[ent0];
@@ -141,6 +178,8 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
 
   Entity *ent = create_entity(&context, ent0_def, false);
   ent->module_scope = ukernel;
+
+  monad_ref = (EntityRefNode*)make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
 
   og_vat->entities[0] = ent;
 
@@ -180,9 +219,9 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   inoculate_pleroma(monad, "Monad");
 
-  //auto ukernel = load_file("examples/kernel.po");
-  //auto ent0 = "UserProgram";
-  //inoculate_pleroma(ukernel, ent0);
+  auto ukernel = load_file("examples/kernel.po");
+  auto ent0 = "UserProgram";
+  inoculate_pleroma(ukernel, ent0);
 
   init_network();
   setup_server(connect_info.host_ip, connect_info.host_port);

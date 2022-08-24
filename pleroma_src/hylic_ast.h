@@ -76,7 +76,8 @@ enum class PType {
   List,
   UserType,
   Promise,
-  Entity
+  Entity,
+  BaseEntity
 };
 
 struct CType {

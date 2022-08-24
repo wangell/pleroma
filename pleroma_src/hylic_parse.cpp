@@ -71,6 +71,9 @@ CType *parse_type(ParseContext *ctx) {
       var_type->dtype = DType::Local;
     } else if (basic_type->lexeme == "void") {
       var_type->basetype = PType::None;
+    } else if (basic_type->lexeme == "Entity") {
+      var_type->basetype = PType::BaseEntity;
+      var_type->dtype = dist;
     } else {
       std::string final_type = basic_type->lexeme;
 
@@ -763,7 +766,8 @@ HylicModule *parse(TokenStream *stream) {
       // ModuleStmt
       auto mod_name_tok = context.ts->accept(TokenType::Symbol);
       std::string mod_name = mod_name_tok->lexeme;
-      std::string mod_path = mod_name + ".po";
+      // FIXME
+      std::string mod_path = "sys/" + mod_name + ".po";
 
       bool namespaced = true;
 

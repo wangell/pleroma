@@ -11,6 +11,7 @@
 
 extern moodycamel::ConcurrentQueue<Msg> net_out_queue;
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
+extern std::queue<Msg> net_in_queue;
 
 void init_network();
 void net_loop();

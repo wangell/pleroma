@@ -366,6 +366,9 @@ std::string ctype_to_string(CType *ctype) {
   case PType::str:
     return dstring + " str";
     break;
+  case PType::BaseEntity:
+    return dstring + " Entity";
+    break;
   case PType::NotAssigned:
     return "n/a";
     break;

@@ -2,4 +2,7 @@
 
 	δ create() -> u8
 
+	δ startprogram(eref : far Entity) -> u8
+
 	δ main(i : u8) -> u8
+
