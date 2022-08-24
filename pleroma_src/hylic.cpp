@@ -48,11 +48,11 @@ HylicModule *load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
 
   HylicModule *program;
-    TokenStream *stream = tokenize_file(path);
+  TokenStream *stream = tokenize_file(path);
 
-    program = parse(stream);
+  program = parse(stream);
 
-    typesolve(program);
+  typesolve(program);
 
   return program;
 }

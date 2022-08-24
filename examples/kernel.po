@@ -6,22 +6,25 @@
 	δ create() -> void
 		let pingpongcount : u8 = 0
 
-	δ hello(verb: str, path : str) -> str
+	δ http-ok(rsp : str) -> str
 		↵ "HTTP/1.1 200 OK
-Content-Type: text/html
- 
+Content-Type: text/html\n\n" + rsp
 
-<html>
+	δ bang(verb: str, path : str) -> str
+		↵ http-ok("<html>
 <body>
-Welcome to Pleroma!</body></html>"
+Welcome to Pleroma!</body></html>")
+
+	δ serve() -> void
+		! serve()
 
 	δ main(env: u8) -> u8
 
 		let q : UserProgram = UserProgram()
 
-		lb.start("localhost:8080", q, "hello")
+		! serve()
+		lb.start("localhost:8080", q, "bang")
+		lb.next()
 
-		whl #t
-			lb.next()
 
 		↵ 0

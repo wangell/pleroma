@@ -68,22 +68,24 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
 
 void load_kernel() {
 
-  std::map<std::string, FuncStmt *> functions;
+  HalfModule* monad_hm;
+
+  // Monad
+  kernel_map["Monad"] = make_actor(nullptr, "Monad", {}, {}, {});
 
   CType *c = new CType;
   *c = lu8();
 
-  functions["main"] = setup_direct_call(monad_hello, "main", {"i"}, {c}, lu8());
-  functions["create"] = setup_direct_call(monad_create, "create", {}, {}, lu8());
+  add_function(monad_hm, setup_direct_call(monad_hello, "main", {"i"}, {c}, lu8()));
+  add_function(monad_hm, setup_direct_call(monad_create, "create", {}, {}, lu8()));
 
   CType *c2 = new CType;
   c2->basetype = PType::BaseEntity;
   c2->dtype = DType::Far;
 
-  functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
-  functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
+  add_function(monad_hm, setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8()));
+  add_function(monad_hm, setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr()));
 
-  kernel_map["Monad"] = make_actor(nullptr, "Monad", functions, {}, {});
 
   load_io();
   load_net();

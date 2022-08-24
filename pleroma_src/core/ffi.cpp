@@ -5,6 +5,7 @@
 
 #include "../hylic_ast.h"
 #include "../hylic_eval.h"
+#include "ffi.h"
 
 FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
                                                      std::vector<AstNode *>),
@@ -24,4 +25,8 @@ FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
   auto func = (FuncStmt *)make_function(name, args, body, arg_types, false);
   func->ctype = ctype;
   return func;
+}
+
+void add_function(HalfModule* hm, FuncStmt *fs) {
+  hm->functions[fs->name] = fs;
 }
