@@ -1,5 +1,7 @@
 ε Io {}
 
-	δ print(i : u8) -> void
+	δ create() -> void
+
+	δ print(val : str) -> u8
 
 	δ readline() -> str

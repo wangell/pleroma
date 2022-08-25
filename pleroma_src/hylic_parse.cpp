@@ -3,6 +3,7 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_tokenizer.h"
+#include "system.h"
 #include <cassert>
 #include <filesystem>
 #include <functional>
@@ -69,7 +70,7 @@ CType *parse_type(ParseContext *ctx) {
       std::string final_type = basic_type->lexeme;
 
       while (ctx->ts->accept(TokenType::ModUse)) {
-        final_type += "." + ctx->ts->accept(TokenType::Symbol)->lexeme;
+        final_type += "►" + ctx->ts->accept(TokenType::Symbol)->lexeme;
       }
       var_type->basetype = PType::Entity;
       var_type->dtype = dist;
@@ -743,7 +744,6 @@ std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
 HylicModule *parse(TokenStream *stream) {
 
   ParseContext context;
-  context.tl_symbol_table = get_tl_types(stream);
   context.ts = stream;
 
   std::map<std::string, HylicModule*> imports;
@@ -755,24 +755,19 @@ HylicModule *parse(TokenStream *stream) {
   while (stream->current != stream->tokens.end()) {
     if (context.ts->accept(TokenType::Import)) {
       // ModuleStmt
-      auto mod_name_tok = context.ts->accept(TokenType::Symbol);
-      std::string mod_name = mod_name_tok->lexeme;
-      // FIXME
-      std::string mod_path = "sys/" + mod_name + ".po";
-
-      bool namespaced = true;
-
-      if (!std::filesystem::exists(mod_path)) {
-        printf("Module %s does not exist.\n", mod_name.c_str());
-        exit(1);
+      std::string mod_name = context.ts->accept(TokenType::Symbol)->lexeme;
+      while (context.ts->accept(TokenType::ModUse)) {
+        mod_name += "►" + context.ts->accept(TokenType::Symbol)->lexeme;
+      }
+      HylicModule* imported_mod;
+      if (is_system_module(mod_name)) {
+        imported_mod = load_system_module(system_import_to_enum(mod_name));
+      } else {
+        assert(false);
       }
 
-      TokenStream *new_stream = tokenize_file(mod_path);
-      auto mod_file = parse(new_stream);
-
       eat_newlines(&context);
-      //imports[mod_name] = mod_file;
-      hm->imports[mod_name] = mod_file;
+      hm->imports[mod_name] = imported_mod;
     } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
       symbol_map[actor->name] = (AstNode *)actor;

@@ -541,11 +541,14 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
     return cfs(context).entity->module_scope->entity_defs.find(sym)->second;
   }
 
+  for (auto &[k, v]: cfs(context).entity->data) {
+    printf("Data %s %s\n", sym.c_str(), k.c_str());
+  }
+
   throw PleromaException((std::string("Failed to find symbol: ") + sym).c_str());
 }
 
-Entity *create_entity(EvalContext *context, EntityDef *entity_def,
-                      bool new_vat) {
+Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
   Entity *e = new Entity;
   Vat *vat;
 
@@ -578,10 +581,10 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   for (auto &k : entity_def->inocaps) {
 
     // Hack for now
-    if (k.ctype->entity_name == "monad.Monad") {
+    if (k.ctype->entity_name == "monad►Monad") {
       e->data[k.var_name] = monad_ref;
     }
-    if (k.ctype->entity_name == "io.Io") {
+    if (k.ctype->entity_name == "io►Io") {
       // FIXME: we need more temporary context swap functions
       auto old_vat = context->vat;
       context->vat = vat;

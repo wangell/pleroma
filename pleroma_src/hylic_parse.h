@@ -45,7 +45,6 @@ struct InfixOp {
 
 struct ParseContext {
   TokenStream *ts;
-  std::map<std::string, TLUserType> tl_symbol_table;
   HylicModule* module;
 };
 

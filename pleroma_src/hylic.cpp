@@ -24,26 +24,6 @@
 
 EntityRefNode *monad_ref;
 
-Scope global_scope;
-
-const char *node_type_to_string(AstNodeType t) {
-  switch (t) {
-  case AstNodeType::AssignmentStmt:
-    return "AssignmentStmt";
-    break;
-  }
-
-  return "Unimplemented";
-}
-
-void print(AstNode *s) {
-  if (s->type == AstNodeType::NumberNode) {
-    auto node = (NumberNode *)s;
-  }
-}
-
-void parse_match_blocks() {}
-
 HylicModule *load_file(std::string path) {
   printf("Loading %s...\n", path.c_str());
 

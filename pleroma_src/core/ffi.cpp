@@ -28,5 +28,5 @@ FuncStmt *setup_direct_call(AstNode *(*foreign_func)(EvalContext *,
 }
 
 void add_function(HalfModule* hm, FuncStmt *fs) {
-  hm->functions[fs->name] = fs;
+  //hm->functions[fs->name] = fs;
 }

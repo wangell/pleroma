@@ -223,6 +223,7 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   auto ukernel = load_file("examples/kernel.po");
   auto ent0 = "UserProgram";
+  assert(ukernel->entity_defs.find(ent0) != ukernel->entity_defs.end());
   start_program(ukernel, ent0);
 
   init_network();

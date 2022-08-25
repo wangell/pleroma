@@ -2,10 +2,13 @@
 #include "hylic_ast.h"
 #include <cassert>
 #include <map>
+#include <string>
 #include <sys/socket.h>
 #include <utility>
 #include <algorithm>
 #include <vector>
+#include <codecvt>
+#include <locale>
 
 struct FuncSig {
   CType return_type;
@@ -78,6 +81,31 @@ CType *typescope_has(TypeContext *context, std::string sym) {
 bool built_in_func(std::string func_name) {
   std::vector<std::string> builtins = {"append", "len"};
   return std::find(builtins.begin(), builtins.end(), func_name) != builtins.end();
+}
+
+std::vector<std::string> split_import(std::string bstr) {
+
+  std::vector<std::string> tokens;
+
+  size_t pos = 0;
+  std::string token;
+  int i = 0;
+  while ((pos = bstr.find("►")) != std::string::npos)
+  {
+      token = bstr.substr(0, pos);
+      tokens.push_back(token);
+
+      // This probably doesn't work, need real UTF-8 library
+      bstr.erase(0, pos + 3);
+  }
+
+  tokens.push_back(bstr);
+
+  //for (auto k : tokens) {
+  //  printf("tok %s\n", k.c_str());
+  //}
+
+  return tokens;
 }
 
 CType typesolve_sub(TypeContext* context, AstNode *node) {
@@ -218,7 +246,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     } else {
 
       auto sub_type = typesolve_sub(context, mod_use->accessor);
-      sub_type.entity_name = mod_use->mod_name + "." + sub_type.entity_name;
+      sub_type.entity_name = mod_use->mod_name + "►" + sub_type.entity_name;
       return sub_type;
     }
   } break;
@@ -245,39 +273,35 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       ent_name = context->entity_def->name;
     }
 
-    // FIXME
-    if (ent_name == "io.Io") {
-      if (msg_node->function_name == "readline") {
-        CType c;
-        c.basetype = PType::str;
-        return c;
-      } else {
-        CType c;
-        c.basetype = PType::None;
-        return c;
+    // If we're using an import
+    TopTypes *tt = context->top_types;
+    //for (auto &[k, v] : tt->imported) {
+    //  printf("IMPORT %s\n", k.c_str());
+    //}
+    //printf("ent name %s\n", ent_name.c_str());
+    std::map<std::string, FuncSig> *ent_types;
+    if (ent_name.find("►") != std::string::npos) {
+      auto import_path = split_import(ent_name);
+      auto final_ent_name = import_path[import_path.size() - 1];
+
+      //printf("HERE 2 %s\n", ent_name.c_str());
+      for (int i = 0; i < import_path.size() - 1; i++) {
+        //printf("here2 %s\n", import_path[i].c_str());
+        assert(tt->imported.find(import_path[i]) != tt->imported.end());
+        tt = tt->imported[import_path[i]];
+        ent_name = final_ent_name;
       }
     }
 
-    if (ent_name == "fs.FS") {
-      if (msg_node->function_name == "readfile") {
-        CType c;
-        c.basetype = PType::str;
-        return c;
-      }
-    }
-
-    if (ent_name == "net.HttpLb") {
-      return CType();
-    }
-
-    auto ent_it = context->top_types->functions.find(ent_name);
-    if (ent_it == context->top_types->functions.end()) {
+    auto ent_it = tt->functions.find(ent_name);
+    if (ent_it == tt->functions.end()) {
       throw TypesolverException("", 0, 0, "Couldn't find entity " + ent_name);
     }
+    ent_types = &ent_it->second;
 
-    auto func_it = ent_it->second.find(msg_node->function_name);
+    auto func_it = ent_types->find(msg_node->function_name);
     FuncSig sig;
-    if (func_it == ent_it->second.end()) {
+    if (func_it == ent_types->end()) {
       throw TypesolverException("", 0, 0, "Cannot find called function in entity definition.");
     } else {
       sig = func_it->second;
@@ -394,7 +418,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
     if (!has_return) {
       if (func_node->ctype.basetype != PType::None) {
-        throw TypesolverException("nil", 0, 0, "Function doesn't return a value, but is not marked void");
+        throw TypesolverException("nil", 0, 0, "Function " + func_node->name + " doesn't return a value, but is not marked void");
       }
     }
 
@@ -445,10 +469,15 @@ TopTypes *record_top_types(TypeContext* context, HylicModule* module) {
   TopTypes *tt = new TopTypes;
 
   for (auto &[k, v] : module->imports) {
-    tt->imported[k] = record_top_types(context, v);
+    auto splm = split_import(k);
 
-    for (auto &[k2, v2] : tt->imported[k]->functions) {
-      tt->functions[k + "." + k2] = v2;
+    std::string last_import = splm[splm.size() - 1];
+
+    tt->imported[last_import] = record_top_types(context, v);
+
+    for (auto &[k2, v2] : tt->imported[last_import]->functions) {
+      //tt->functions[k + "►" + k2] = v2;
+      tt->functions[k2] = v2;
     }
   }
 

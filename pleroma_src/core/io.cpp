@@ -1,5 +1,6 @@
 #include "io.h"
 #include "ffi.h"
+#include "../type_util.h"
 
 #include <iostream>
 #include <string>
@@ -48,17 +49,22 @@ AstNode *io_create(EvalContext *context, std::vector<AstNode *> args) {
 void load_io() {
   std::map<std::string, FuncStmt *> io_functions;
 
-  CType test_type;
-  test_type.basetype = PType::u8;
+  CType *strl = new CType;
+  strl->basetype = PType::str;
+  strl->dtype = DType::Local;
 
-  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {}, test_type);
+  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {strl}, lu8());
   CType str_type;
   str_type.basetype = PType::str;
+  str_type.dtype = DType::Local;
   io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {}, str_type);
 
   io_functions["print"]->ctype.basetype = PType::u8;
-  io_functions["create"] = setup_direct_call(io_create, "create", {}, {}, test_type);
-  io_functions["create"]->ctype.basetype = PType::u8;
+
+  CType none_type;
+  none_type.basetype = PType::None;
+  none_type.dtype = DType::Local;
+  io_functions["create"] = setup_direct_call(io_create, "create", {}, {}, none_type);
 
   //io_functions["readline"]->ctype.basetype = PType::str;
 
