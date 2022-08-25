@@ -3,4 +3,4 @@
 #include <string>
 #include "../hylic_ast.h"
 
-void load_net();
+std::map<std::string, AstNode *> load_net();

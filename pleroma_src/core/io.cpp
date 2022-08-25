@@ -6,8 +6,6 @@
 #include <string>
 #include <vector>
 
-extern std::map<std::string, AstNode *> kernel_map;
-
 AstNode *io_print(EvalContext *context, std::vector<AstNode *> args) {
 
   auto pval = args[0];
@@ -46,7 +44,7 @@ AstNode *io_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-void load_io() {
+std::map<std::string, AstNode*> load_io() {
   std::map<std::string, FuncStmt *> io_functions;
 
   CType *strl = new CType;
@@ -68,5 +66,7 @@ void load_io() {
 
   //io_functions["readline"]->ctype.basetype = PType::str;
 
-  kernel_map["Io"] = make_actor(nullptr, "Io", io_functions, {}, {});
+  return {
+    {"Io", make_actor(nullptr, "Io", io_functions, {}, {})}
+  };
 }

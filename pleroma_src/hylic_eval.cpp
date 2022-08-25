@@ -6,6 +6,8 @@
 #include <cassert>
 #include <utility>
 #include "core/kernel.h"
+#include "system.h"
+#include "general_util.h"
 
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
@@ -69,7 +71,9 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity,
   }
 
   FuncStmt *func_def_node = (FuncStmt *)func->second;
-  assert(func_def_node->args.size() == args.size());
+  if (func_def_node->args.size() != args.size()) {
+    throw PleromaException(std::string("Runtime error: Amount of arguments in function " + entity->entity_def->name + "::" + function_name +  " doesn't match in eval_func_local. Expected " + std::to_string(func_def_node->args.size()) + ", but got " + std::to_string(args.size())).c_str());
+  }
 
   std::vector<std::tuple<std::string, AstNode *>> subs;
   for (int i = 0; i < func_def_node->args.size(); ++i) {
@@ -97,6 +101,8 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   // printf("Eval: message node %s %s\n",
   // target_entity->entity_def->name.c_str(), function_name.c_str());
 
+  //printf("Eval msg node : %d %d %d\n", entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
+
   if (comm_mode == CommMode::Sync) {
     Entity *target_entity = context->stack.back().entity;
     target_entity = resolve_local_entity(context, entity_ref);
@@ -105,9 +111,17 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   } else {
 
     Msg m;
-    m.entity_id = entity_ref->entity_id;
-    m.vat_id = entity_ref->vat_id;
-    m.node_id = entity_ref->node_id;
+
+    // We shouldn't have this, replace with self ref
+    if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 && entity_ref->node_id == 0) {
+      m.entity_id = cfs(context).entity->address.entity_id;
+      m.vat_id = cfs(context).entity->address.vat_id;
+      m.node_id = cfs(context).entity->address.node_id;
+    } else {
+      m.entity_id = entity_ref->entity_id;
+      m.vat_id = entity_ref->vat_id;
+      m.node_id = entity_ref->node_id;
+    }
     m.src_node_id = cfs(context).entity->address.node_id;
     m.src_vat_id = cfs(context).entity->address.vat_id;
     m.src_entity_id = cfs(context).entity->address.entity_id;
@@ -265,38 +279,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       eval_block(context, node->body, subs);
     }
     return make_nop();
-  }
-
-  if (obj->type == AstNodeType::NamespaceAccess) {
-    auto node = (NamespaceAccess *)obj;
-
-    // Lookup the symbol
-    auto ref_node = eval(context, node->ref);
-
-    if (ref_node->type == AstNodeType::EntityRefNode) {
-
-      auto ent_node = (EntityRefNode *)ref_node;
-      auto mess_node = (MessageNode *)node->field;
-
-      //EvalContext new_context;
-      //new_context.vat = context->vat;
-      //new_context.entity = resolve_local_entity(context, (EntityRefNode *)ref_node);
-      //push_stack_frame(context);
-      //context->stack.back().scope.table["self"] = new_context.stack.back().entity->entity_def;
-
-      return eval_message_node(context, ent_node, mess_node->comm_mode,
-                               mess_node->function_name, mess_node->args);
-
-    } else if (ref_node->type == AstNodeType::ModuleStmt) {
-      if (node->field->type == AstNodeType::EntityDef) {
-      } else {
-        assert(false);
-      }
-    } else {
-      assert(false);
-    }
-
-    assert(false);
   }
 
   if (obj->type == AstNodeType::BooleanNode) {
@@ -580,45 +562,38 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
 
   for (auto &k : entity_def->inocaps) {
 
+    // If far - run get_far_inocap() otherwise if local, just find the symbol and run create
     // Hack for now
     if (k.ctype->entity_name == "monad►Monad") {
       e->data[k.var_name] = monad_ref;
-    }
-    if (k.ctype->entity_name == "io►Io") {
-      // FIXME: we need more temporary context swap functions
+      //} else if (k.ctype->dtype == DType::Local) {
+    } else {
       auto old_vat = context->vat;
       context->vat = vat;
 
-      auto io_ent = create_entity(context, (EntityDef *)kernel_map["Io"], false);
+      std::map<std::string, std::string> fqn_map;
+
+      for (auto &[k, v] : entity_def->module->imports) {
+        std::vector<std::string> split_name = split_import(k);
+        std::string base_name = split_name[split_name.size() - 1];
+        fqn_map[base_name] = k;
+      }
+
+      std::vector<std::string> split_name = split_import(k.ctype->entity_name);
+
+      std::string lib_name = split_name[split_name.size() - 2];
+      std::string base_name = split_name[split_name.size() - 1];
+      // printf("%s\n", base_name.c_str());
+      // printf("%d\n", system_import_to_enum(k.ctype->entity_name));
+      // printf("%s\n", k.ctype->entity_name.c_str());
+
+      // for (auto &[k, v] : entity_def->module->imports) {
+      //  printf("avail : %s\n", k.c_str());
+      //}
+      Entity* io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[fqn_map[lib_name]]->entity_defs[base_name], false);
+      //auto io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[], false);
+      //auto io_ent = create_entity(context, (EntityDef *) kernel_map[system_import_to_enum(split_name[0])][base_name], false);
       e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
-
-      // FIXME: see above
-      context->vat = old_vat;
-    }
-    if (k.ctype->entity_name == "net.HttpLb") {
-      // FIXME: we need more temporary context swap functions
-      auto old_vat = context->vat;
-      context->vat = vat;
-
-      auto io_ent =
-          create_entity(context, (EntityDef *)kernel_map["HttpLb"], false);
-      e->data[k.var_name] =
-          make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
-                          io_ent->address.entity_id);
-
-      // FIXME: see above
-      context->vat = old_vat;
-    }
-    if (k.ctype->entity_name == "fs.FS") {
-      // FIXME: we need more temporary context swap functions
-      auto old_vat = context->vat;
-      context->vat = vat;
-
-      auto io_ent =
-          create_entity(context, (EntityDef *)kernel_map["FS"], false);
-      e->data[k.var_name] =
-          make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id,
-                          io_ent->address.entity_id);
 
       // FIXME: see above
       context->vat = old_vat;

@@ -117,11 +117,15 @@ AstNode *net_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-void load_net() {
+std::map<std::string, AstNode *> load_net() {
   std::map<std::string, FuncStmt *> functions;
 
   CType test_type;
   test_type.basetype = PType::u8;
+
+  CType none_type;
+  none_type.basetype = PType::None;
+  none_type.dtype = DType::Local;
 
   CType *blah = new CType;
   blah->basetype = PType::BaseEntity;
@@ -129,10 +133,14 @@ void load_net() {
   CType *blarg = new CType;
   blarg->basetype = PType::str;
 
-  functions["start"] = setup_direct_call(net_start, "start", {"host", "e", "func"}, {blarg, blah, blarg}, test_type);
-  functions["next"] = setup_direct_call(net_next, "next", {}, {}, test_type);
-  functions["create"] = setup_direct_call(net_create, "create", {}, {}, test_type);
-  functions["create"]->ctype.basetype = PType::u8;
+  functions["start"] =
+      setup_direct_call(net_start, "start", {"host", "e", "func"}, {blarg, blah, blarg}, none_type);
+  functions["next"] = setup_direct_call(net_next, "next", {}, {}, none_type);
+  functions["create"] = setup_direct_call(net_create, "create", {}, {}, none_type);
 
   kernel_map["HttpLb"] = make_actor(nullptr, "HttpLb", functions, {}, {});
+
+  return {
+    {"HttpLb", make_actor(nullptr, "HttpLb", functions, {}, {})}
+  };
 }

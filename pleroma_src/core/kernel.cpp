@@ -6,12 +6,13 @@
 #include "fs.h"
 #include "io.h"
 #include "../type_util.h"
+#include "../system.h"
 
 #include <iostream>
 #include <string>
 #include <vector>
 
-std::map<std::string, AstNode *> kernel_map;
+std::map<SystemModule, std::map<std::string, AstNode *>> kernel_map;
 
 std::map<std::string, Entity*> system_entities;
 
@@ -23,7 +24,7 @@ EntityRefNode* get_entity_ref(Entity* e) {
 }
 
 void load_system_entity(EvalContext *context, std::string entity_name) {
-  auto io_ent = create_entity(context, (EntityDef *)kernel_map[entity_name], false);
+  auto io_ent = create_entity(context, (EntityDef *)kernel_map[SystemModule::Io]["Io"], false);
   system_entities[entity_name] = io_ent;
 }
 
@@ -83,10 +84,12 @@ void load_kernel() {
   functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
   functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
 
-  kernel_map["Monad"] = make_actor(nullptr, "Monad", functions, {}, {});
+  kernel_map[SystemModule::Monad] = {
+    {"Monad", make_actor(nullptr, "Monad", functions, {}, {})}
+  };
 
-  load_io();
-  load_net();
+  kernel_map[SystemModule::Io] = load_io();
+  kernel_map[SystemModule::Net] = load_net();
   load_fs();
   //load_amoeba();
 }

@@ -396,6 +396,7 @@ AstNode *parse_expr(ParseContext *context) {
           auto ent = make_create_entity(op.name, new_vat);
           val_stack.push(ent);
         } else {
+          // FIXME Replace with keyword self
           val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
         }
       } else {

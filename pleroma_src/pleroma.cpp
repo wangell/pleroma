@@ -63,7 +63,7 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        //print_msg(&m);
+        print_msg(&m);
 
         try {
           auto find_entity = our_vat->entities.find(m.entity_id);
