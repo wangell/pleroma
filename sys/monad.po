@@ -1,7 +1,7 @@
 ε Monad {}
 
 	δ create() -> u8
-	δ main(i : u8) -> u8
+	δ hello(i : u8) -> u8
 	δ start-program(eref : far Entity) -> u8
 	δ n-programs() -> str
 
