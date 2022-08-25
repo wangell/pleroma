@@ -1,0 +1,34 @@
+~sys►io
+~sys►net
+~sys►monad
+
+ε UserProgram {ioinst : far io►Io, lb : far net►HttpLb, md : monad►Monad}
+
+	δ create() -> void
+		let pingpongcount : u8 = 0
+
+	δ http-ok(rsp : str) -> str
+		↵ "HTTP/1.1 200 OK
+Content-Type: text/html\n\n" + rsp
+
+	δ bang(verb: str, path : str) -> str
+		↵ http-ok("<html>
+<body>
+Welcome to Pleroma!</body></html>")
+
+	δ serve() -> void
+		! serve()
+
+	δ main(env: u8) -> u8
+
+		let zz : @str = md ! n-programs()
+		@zz
+			ioinst.print(zz)
+
+		let q : UserProgram = UserProgram()
+
+		lb ! start("localhost:8080", q, "bang")
+
+		lb ! next()
+
+		↵ 0
