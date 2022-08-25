@@ -49,6 +49,8 @@ enum class AstNodeType {
 
   ModUseNode,
 
+  SelfNode,
+
   UndefinedNode
 };
 
@@ -156,6 +158,9 @@ struct WhileStmt : AstNode {
 struct NamespaceAccess : AstNode {
   AstNode *ref;
   AstNode *field;
+};
+
+struct SelfNode : AstNode {
 };
 
 enum class ValueType {

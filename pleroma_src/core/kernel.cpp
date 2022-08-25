@@ -74,7 +74,7 @@ void load_kernel() {
   CType *c = new CType;
   *c = lu8();
 
-  functions["main"] = setup_direct_call(monad_hello, "main", {"i"}, {c}, lu8());
+  functions["hello"] = setup_direct_call(monad_hello, "hello", {"i"}, {c}, lu8());
   functions["create"] = setup_direct_call(monad_create, "create", {}, {}, lu8());
 
   CType *c2 = new CType;

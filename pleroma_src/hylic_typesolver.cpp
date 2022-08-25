@@ -200,7 +200,9 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       throw TypesolverException("nil", 0, 0, "Attempted to access to an entity-level variable inside of a pure function.");
     }
 
-    assert(look != nullptr);
+    if(look == nullptr) {
+      printf("Failed to find symbol %s.\n", sym_node->sym.c_str());
+    }
     return *look;
   } break;
 
@@ -269,7 +271,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       ent_name = ent_type.entity_name;
     }
 
-    if (ent_ref->node_id == 0 && ent_ref->vat_id == 0 && ent_ref->entity_id == 0) {
+    if (ent_ref->node_id == -1 && ent_ref->vat_id == -1 && ent_ref->entity_id == -1) {
       ent_name = context->entity_def->name;
     }
 
@@ -298,6 +300,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       throw TypesolverException("", 0, 0, "Couldn't find entity " + ent_name);
     }
     ent_types = &ent_it->second;
+
+    // this should be able to be turned off
+    if ((msg_node->comm_mode == CommMode::Sync) && (ent_type.dtype == DType::Far || ent_type.dtype == DType::Alien)) {
+      throw TypesolverException("", 0, 0, "Tried to call a sync function " + msg_node->function_name + " on a far/aln entity " + ent_name);
+    }
 
     auto func_it = ent_types->find(msg_node->function_name);
     FuncSig sig;

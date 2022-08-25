@@ -187,7 +187,7 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
 
   Msg m;
   m.entity_id = 0;
-  m.function_name = "main";
+  m.function_name = "hello";
   m.node_id = 0;
 
   m.src_entity_id = -1;

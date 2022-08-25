@@ -241,14 +241,16 @@ TokenStream* tokenize_file(std::string filepath) {
         tokenstream->add_token(TokenType::While, sym, start_char, end_char, line_n);
       } else if (sym == "loc") {
         end_char = char_n;
-        tokenstream->add_token(TokenType::LocVar, sym, start_char, end_char,
-                               line_n);
+        tokenstream->add_token(TokenType::LocVar, sym, start_char, end_char, line_n);
       } else if (sym == "far") {
         end_char = char_n;
         tokenstream->add_token(TokenType::FarVar, sym, start_char, end_char, line_n);
       } else if (sym == "aln") {
         end_char = char_n;
         tokenstream->add_token(TokenType::AlnVar, sym, start_char, end_char, line_n);
+      } else if (sym == "self") {
+        end_char = char_n;
+        tokenstream->add_token(TokenType::Self, sym, start_char, end_char, line_n);
       } else {
         end_char = char_n;
         tokenstream->add_token(TokenType::Symbol, sym, start_char, end_char, line_n);

@@ -37,8 +37,8 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
 
 Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
   //printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
-  if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 &&
-      entity_ref->node_id == 0) {
+  // FIXME - self fix
+  if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
     return context->stack.back().entity;
   } else {
     auto found_ent = context->vat->entities.find(entity_ref->entity_id);
@@ -59,10 +59,7 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
   return eval_block(context, resolve_node->callback->body, subs);
 }
 
-AstNode *eval_func_local(EvalContext *context, Entity *entity,
-                         std::string function_name,
-                         std::vector<AstNode *> args) {
-
+AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args) {
 
   auto func = entity->entity_def->functions.find(function_name);
   if(func == entity->entity_def->functions.end()) {
@@ -104,8 +101,10 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   //printf("Eval msg node : %d %d %d\n", entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
   if (comm_mode == CommMode::Sync) {
-    Entity *target_entity = context->stack.back().entity;
+    Entity *target_entity;
     target_entity = resolve_local_entity(context, entity_ref);
+    printf("%d %d %d\n", target_entity->address.node_id, target_entity->address.vat_id, target_entity->address.entity_id);
+    printf("%s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
     assert(target_entity != nullptr);
     return eval_func_local(context, target_entity, function_name, args);
   } else {
@@ -113,7 +112,7 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
     Msg m;
 
     // We shouldn't have this, replace with self ref
-    if (entity_ref->entity_id == 0 && entity_ref->vat_id == 0 && entity_ref->node_id == 0) {
+    if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
       m.entity_id = cfs(context).entity->address.entity_id;
       m.vat_id = cfs(context).entity->address.vat_id;
       m.node_id = cfs(context).entity->address.node_id;
@@ -413,9 +412,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     //  ref = (EntityRefNode *)eval(context, node->entity_ref);
     //}
 
-    return eval_message_node(context,
-                             (EntityRefNode *)eval(context, node->entity_ref),
-                             node->comm_mode, node->function_name, args);
+    return eval_message_node(context, (EntityRefNode *)eval(context, node->entity_ref), node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
@@ -669,7 +666,7 @@ void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModul
 
   if (entity) {
     css(context).table = entity->module_scope->entity_defs;
-    css(context).table["self"] = make_entity_ref(0, 0, 0);
+    css(context).table["self"] = make_entity_ref(-1, -1, -1);
   }
 }
 

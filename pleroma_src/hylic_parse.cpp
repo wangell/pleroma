@@ -194,7 +194,7 @@ AstNode *parse_expr(ParseContext *context) {
 
         // TODO make a keyword
         if (tt->lexeme == "self") {
-          val_stack.push(make_entity_ref(0, 0, 0));
+          val_stack.push(make_entity_ref(-1, -1, -1));
         } else {
           val_stack.push(expr1);
         }
@@ -397,7 +397,7 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(ent);
         } else {
           // FIXME Replace with keyword self
-          val_stack.push(make_message_node(make_entity_ref(0, 0, 0), op.name, mode, args));
+          val_stack.push(make_message_node(make_entity_ref(-1, -1, -1), op.name, mode, args));
         }
       } else {
         auto topstack = val_stack.top();

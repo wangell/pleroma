@@ -72,10 +72,6 @@ HylicModule *load_system_module(SystemModule mod) {
     file_ent->module = program;
   }
 
-  for (auto &[k, v] : program->entity_defs) {
-    printf("here %p\n", (EntityDef*)v);
-  }
-
   typesolve(program);
 
   return program;

@@ -37,6 +37,12 @@ std::string ast_type_to_string(AstNodeType t) {
   assert(false);
 }
 
+AstNode *make_self() {
+  SelfNode *node = new SelfNode;
+  node->type = AstNodeType::SelfNode;
+  return node;
+}
+
 AstNode *make_for(std::string sym, AstNode *gen, std::vector<AstNode *> body) {
   ForStmt *node = new ForStmt;
   node->type = AstNodeType::ForStmt;

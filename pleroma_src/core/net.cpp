@@ -57,6 +57,7 @@ AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
   auto entity_ref = ((EntityRefNode*)args[1]);
   std::string callback = ((StringNode*)args[0])->value;
 
+  printf("registered %s\n", hostname.c_str());
   host_entity_lookup[hostname] = std::make_tuple((EntityRefNode*)make_entity_ref(entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id), callback);
 
   return make_number(0);
@@ -109,6 +110,8 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   //printf("Response %s\n", res_str->value.c_str());
   send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
   close(new_socket);
+
+  eval_message_node(context, (EntityRefNode*)make_entity_ref(-1, -1, -1), CommMode::Async, "next", {});
 
   return make_number(0);
 }
