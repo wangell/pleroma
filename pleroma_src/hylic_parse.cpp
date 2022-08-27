@@ -99,6 +99,10 @@ AstNode *parse_expr(ParseContext *context) {
       context->ts->accept(TokenType::True);
       auto expr1 = make_boolean(true);
       val_stack.push(expr1);
+    } else if (context->ts->check(TokenType::Self)) {
+      context->ts->accept(TokenType::Self);
+      auto expr1 = make_self();
+      val_stack.push(expr1);
     } else if (context->ts->check(TokenType::False)) {
       context->ts->accept(TokenType::False);
       auto expr1 = make_boolean(false);
@@ -191,13 +195,7 @@ AstNode *parse_expr(ParseContext *context) {
         // val_stack.push(make_message_node(, tt->lexeme, CommMode::Sync,
         // args));
       } else {
-
-        // TODO make a keyword
-        if (tt->lexeme == "self") {
-          val_stack.push(make_entity_ref(-1, -1, -1));
-        } else {
-          val_stack.push(expr1);
-        }
+        val_stack.push(expr1);
       }
     } else if (context->ts->check(TokenType::Dot)) {
       context->ts->accept(TokenType::Dot);
@@ -397,7 +395,7 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(ent);
         } else {
           // FIXME Replace with keyword self
-          val_stack.push(make_message_node(make_entity_ref(-1, -1, -1), op.name, mode, args));
+          val_stack.push(make_message_node(make_self(), op.name, mode, args));
         }
       } else {
         auto topstack = val_stack.top();
@@ -416,7 +414,17 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
   // NOTE create function to context->ts->accept row of symbols
   Token *t;
-  if ((t = context->ts->accept(TokenType::Symbol))) {
+  if (context->ts->accept(TokenType::Comment)) {
+    printf("getting comment\n");
+    std::string comment;
+    Token *comment_t;
+    while ((comment_t = context->ts->get())->type != TokenType::Comment) {
+      comment += comment_t->lexeme;
+    }
+    eat_newlines(context);
+    return make_comment(comment);
+
+  } else if ((t = context->ts->accept(TokenType::Symbol))) {
 
     // Creating a variable
     if (t->lexeme == "let") {

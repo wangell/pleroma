@@ -112,6 +112,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
 
   switch (node->type) {
 
+  case AstNodeType::CommentNode: {
+    return CType();
+  } break;
+
   case AstNodeType::ForStmt: {
     auto for_node = (ForStmt *)node;
 
@@ -237,7 +241,19 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   } break;
 
   case AstNodeType::PromiseResNode: {
+    PromiseResNode* res_node = (PromiseResNode*)node;
+    for (auto &k : res_node->body) {
+      typesolve_sub(context, k);
+    }
     return node->ctype;
+  } break;
+
+  case AstNodeType::SelfNode: {
+    CType ctype;
+    ctype.basetype = PType::Entity;
+    ctype.entity_name = context->entity_def->name;
+    ctype.dtype = DType::Local;
+    return ctype;
   } break;
 
   case AstNodeType::ModUseNode: {

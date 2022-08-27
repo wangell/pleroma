@@ -32,9 +32,18 @@ std::string ast_type_to_string(AstNodeType t) {
   case AstNodeType::AssignmentStmt: return "AssignmentStmt";
   case AstNodeType::ReturnNode: return "ReturnNode";
   case AstNodeType::PromiseResNode: return "PromiseResNode";
+  case AstNodeType::SelfNode: return "SelfNode";
+  case AstNodeType::CommentNode: return "CommentNode";
   }
   printf("Failed to convert AstNode type to string: %d\n", t);
   assert(false);
+}
+
+AstNode *make_comment(std::string comment) {
+  CommentNode *node = new CommentNode;
+  node->type = AstNodeType::CommentNode;
+  node->comment = comment;
+  return node;
 }
 
 AstNode *make_self() {

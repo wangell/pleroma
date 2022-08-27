@@ -51,7 +51,9 @@ enum class AstNodeType {
 
   SelfNode,
 
-  UndefinedNode
+  UndefinedNode,
+
+  CommentNode
 };
 
 enum class MessageDistance { Local, Far, Alien };
@@ -114,6 +116,10 @@ struct HylicModule {
 };
 
 struct Nop : AstNode {};
+
+struct CommentNode : AstNode {
+  std::string comment;
+};
 
 struct ReturnNode : AstNode {
   AstNode *expr;
@@ -299,6 +305,8 @@ AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncSt
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types, bool pure);
 AstNode *make_nop();
 AstNode *make_undefined();
+AstNode *make_self();
+AstNode *make_comment(std::string comment);
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
 AstNode *make_entity_ref(int node_id, int vat_id, int entity_id);

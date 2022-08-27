@@ -70,7 +70,8 @@ enum class TokenType {
   ModUse,
   IndexStart,
   IndexEnd,
-  Self
+  Self,
+  Comment
 };
 
 struct Token {

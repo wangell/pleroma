@@ -38,6 +38,10 @@ EntityRefNode* get_system_entity_ref(CType ctype) {
   return get_entity_ref(ent->second);
 }
 
+AstNode *request_far_entity() {
+  return make_number(0);
+}
+
 AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
 
   auto eref = (EntityRefNode*)args[0];

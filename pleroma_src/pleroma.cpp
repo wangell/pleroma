@@ -22,7 +22,7 @@
 #include "other.h"
 #include "system.h"
 
-// const auto processor_count = std::thread::hardware_concurrency();
+//const auto processor_count = std::thread::hardware_concurrency();
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 

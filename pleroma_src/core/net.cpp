@@ -20,7 +20,6 @@ struct sockaddr_in address;
 int opt = 1;
 int addrlen = sizeof(address);
 char buffer[1024] = {0};
-char *hello = "Hello from server";
 
 // Host -> Entity
 std::map<std::string, std::tuple<EntityRefNode*, std::string>> host_entity_lookup;
@@ -105,7 +104,7 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
 
   auto res_str = (StringNode*) eval(context, res);
 
-  printf("%s\n", res_str->value.c_str());
+  //printf("%s\n", res_str->value.c_str());
 
   //printf("Response %s\n", res_str->value.c_str());
   send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);

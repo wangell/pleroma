@@ -186,6 +186,9 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == '?') {
       end_char = char_n;
       tokenstream->add_token(TokenType::Match, "?", start_char, end_char, line_n);
+    } else if (c == U'♦') {
+      end_char = char_n;
+      tokenstream->add_token(TokenType::Comment, "♦", start_char, end_char, line_n);
     } else if (c == '|') {
       end_char = char_n;
       tokenstream->add_token(TokenType::For, "|", start_char, end_char, line_n);
@@ -437,6 +440,7 @@ const char *token_type_to_string(TokenType t) {
   case TokenType::IndexEnd: return "IndexEnd";
   case TokenType::Breakthrough: return "Breakthrough";
   case TokenType::Import: return "Import";
+  case TokenType::Comment: return "Comment";
   }
 
   return "Unimplemented";

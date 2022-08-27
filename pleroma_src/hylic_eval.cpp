@@ -229,6 +229,15 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     // return eval(node->expr, scope);
   }
 
+  if (obj->type == AstNodeType::SelfNode) {
+    auto eadd = cfs(context).entity->address;
+    return make_entity_ref(eadd.node_id, eadd.vat_id, eadd.entity_id);
+  }
+
+  if (obj->type == AstNodeType::CommentNode) {
+    return obj;
+  }
+
   if (obj->type == AstNodeType::NumberNode) {
     return obj;
   }
