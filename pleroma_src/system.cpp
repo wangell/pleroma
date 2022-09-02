@@ -72,6 +72,11 @@ HylicModule *load_system_module(SystemModule mod) {
     file_ent->module = program;
   }
 
+  for (auto &[k, v] : program->entity_defs) {
+    auto edef = (EntityDef*) v;
+    assert(edef->module);
+  }
+
   typesolve(program);
 
   return program;

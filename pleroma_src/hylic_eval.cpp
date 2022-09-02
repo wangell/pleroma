@@ -1,5 +1,6 @@
 #include "hylic_eval.h"
 #include "blockingconcurrentqueue.h"
+#include "hylic.h"
 #include "hylic_ast.h"
 #include "other.h"
 #include "pleroma.h"
@@ -574,8 +575,8 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
       e->data[k.var_name] = monad_ref;
       //} else if (k.ctype->dtype == DType::Local) {
     } else {
-      auto old_vat = context->vat;
-      context->vat = vat;
+      //auto old_vat = context->vat;
+      //context->vat = vat;
 
       std::map<std::string, std::string> fqn_map;
 
@@ -585,24 +586,23 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
         fqn_map[base_name] = k;
       }
 
-      std::vector<std::string> split_name = split_import(k.ctype->entity_name);
+      std::vector<std::string> split_name = split_import(k.ctype->subtype->entity_name);
 
       std::string lib_name = split_name[split_name.size() - 2];
       std::string base_name = split_name[split_name.size() - 1];
-      // printf("%s\n", base_name.c_str());
-      // printf("%d\n", system_import_to_enum(k.ctype->entity_name));
-      // printf("%s\n", k.ctype->entity_name.c_str());
 
-      // for (auto &[k, v] : entity_def->module->imports) {
-      //  printf("avail : %s\n", k.c_str());
-      //}
-      Entity* io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[fqn_map[lib_name]]->entity_defs[base_name], false);
-      //auto io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[], false);
-      //auto io_ent = create_entity(context, (EntityDef *) kernel_map[system_import_to_enum(split_name[0])][base_name], false);
-      e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+      // Old-method
+      //Entity* io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[fqn_map[lib_name]]->entity_defs[base_name], false);
+      //e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+      push_stack_frame(context, e, e->module_scope);
+      if (!monad_ref) {
+        monad_ref = (EntityRefNode*)make_entity_ref(0, 0, 0);
+      }
+      e->data[k.var_name] = eval_message_node(context, monad_ref, CommMode::Async, "request-far-entity", {});
+      pop_stack_frame(context);
 
       // FIXME: see above
-      context->vat = old_vat;
+      //context->vat = old_vat;
     }
   }
 

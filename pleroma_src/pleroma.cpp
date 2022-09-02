@@ -1,4 +1,5 @@
 #include "pleroma.h"
+#include "general_util.h"
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
@@ -45,7 +46,7 @@ Msg create_response(Msg msg_in, AstNode *return_val) {
   response_m.src_node_id = msg_in.node_id;
   response_m.promise_id = msg_in.promise_id;
 
-  if (return_val->type == AstNodeType::NumberNode || return_val->type == AstNodeType::StringNode) {
+  if (return_val->type == AstNodeType::NumberNode || return_val->type == AstNodeType::StringNode || return_val->type == AstNodeType::EntityRefNode) {
     response_m.values.push_back((ValueNode*)return_val);
   }
 
@@ -63,12 +64,14 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        print_msg(&m);
+        //print_msg(&m);
 
         try {
           auto find_entity = our_vat->entities.find(m.entity_id);
           assert(find_entity != our_vat->entities.end());
           Entity* target_entity = find_entity->second;
+
+          printf("ent name %s\n", target_entity->entity_def->name.c_str());
 
           EvalContext context;
           start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
@@ -213,39 +216,54 @@ struct ConnectionInfo {
 };
 
 void start_pleroma(ConnectionInfo connect_info) {
+  dbp(log_debug, "Reading node config [pleroma.json]...");
 
   read_node_config();
+
   load_kernel();
 
-  auto monad = load_system_module(SystemModule::Monad);
+  if (connect_info.first_contact_ip == "") {
+    dbp(log_debug, "Inoculating Pleroma [Monad]...");
+    auto monad = load_system_module(SystemModule::Monad);
 
-  inoculate_pleroma(monad, "Monad");
+    inoculate_pleroma(monad, "Monad");
+    dbp(log_debug, "Successfully inoculated.");
+  }
+
+  dbp(log_debug, "Initializing host [%s : %d]...", connect_info.host_ip.c_str(), connect_info.host_port);
+  init_network();
+  setup_server(connect_info.host_ip, connect_info.host_port);
+  dbp(log_debug, "Host initialized");
+
+  if (connect_info.first_contact_ip != "") {
+    dbp(log_info, "Connecting to network [%s : %d]...", connect_info.first_contact_ip.c_str(), connect_info.first_contact_port);
+    connect_client(connect_info.first_contact_ip, connect_info.first_contact_port);
+    dbp(log_info, "Successfully connected");
+  }
 
   auto ukernel = load_file("examples/kernel.po");
   auto ent0 = "UserProgram";
   assert(ukernel->entity_defs.find(ent0) != ukernel->entity_defs.end());
   start_program(ukernel, ent0);
 
-  init_network();
-  setup_server(connect_info.host_ip, connect_info.host_port);
-
-  if (connect_info.first_contact_ip != "") {
-    connect_client(connect_info.first_contact_ip, connect_info.first_contact_port);
-  }
-
   std::thread burners[processor_count];
 
+  dbp(log_debug, "Starting %d burner processes...", processor_count);
   for (int k = 0; k < processor_count; ++k) {
     burners[k] = std::thread(process_vq);
   }
 
+  dbp(log_debug, "Starting net loop...");
   while (true) {
     net_loop();
   }
 
+  dbp(log_debug, "Net loop finished, joining all processes");
   for (int k = 0; k < processor_count; ++k) {
     burners[k].join();
   }
+
+  dbp(log_info, "Burners joined, exiting.");
 }
 
 int main(int argc, char **argv) {

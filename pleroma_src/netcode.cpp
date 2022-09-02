@@ -1,13 +1,16 @@
 #include "netcode.h"
 #include "../shared_src/protoloma.pb.h"
 #include "concurrentqueue.h"
+#include "hylic.h"
 #include "hylic_ast.h"
 #include "pleroma.h"
+#include "general_util.h"
 #include <arpa/inet.h>
 #include <cstdio>
 #include <cstdlib>
 #include <enet/enet.h>
 #include <enet/types.h>
+#include <immintrin.h>
 #include <map>
 #include <string>
 #include <tuple>
@@ -63,6 +66,27 @@ void announce_new_peer(enet_uint32 host, enet_uint16 port) {
   }
 }
 
+void assign_cluster_info_msg(enet_uint32 host, enet_uint16 port) {
+  ENetAddress address;
+  address.host = host;
+  address.port = port;
+
+  romabuf::PleromaMessage message;
+  auto peer_msg = message.mutable_assign_cluster_info();
+
+  char ip_address[32];
+  enet_address_get_host_ip(&address, ip_address, 32);
+
+  peer_msg->set_monad_entity_id(monad_ref->entity_id);
+  peer_msg->set_monad_vat_id(monad_ref->vat_id);
+  peer_msg->set_monad_node_id(monad_ref->node_id);
+
+  this_pleroma_node.node_id++;
+  peer_msg->set_node_id(this_pleroma_node.node_id);
+
+  send_msg(address, message);
+}
+
 void net_loop() {
   ENetEvent event;
   romabuf::PleromaMessage message;
@@ -79,6 +103,9 @@ void net_loop() {
         u32 connect_back_port = event.data;
 
         connect_client(host32_to_string(event.peer->address.host), connect_back_port);
+        printf("Connected, sending cluster info\n");
+
+        assign_cluster_info_msg(event.peer->address.host, event.peer->address.port);
 
         announce_new_peer(event.peer->address.host, event.peer->address.port);
       }
@@ -186,8 +213,6 @@ void on_receive_packet(ENetEvent *event) {
   }
 }
 
-void on_client_connect() {}
-
 void init_network() {
   if (enet_initialize() != 0) {
     fprintf(stderr, "An error occurred while initializing ENet.\n");
@@ -222,6 +247,7 @@ void send_node_msg(Msg m) {
 
   call->set_response(m.response);
 
+  printf("CALL FUNC MSG %s\n", m.function_name.c_str());
   call->set_function_id(m.function_name);
   call->set_src_function_id(m.function_name);
 
@@ -245,6 +271,15 @@ void setup_server(std::string ip, u16 port) {
   pnet.src_port = port;
 }
 
+void initial_connect() {
+}
+
+void connect_back() {
+}
+
+void handle_first_contact() {
+}
+
 void connect_client(std::string ip, u16 port) {
   ENetAddress address;
   enet_address_set_host(&address, ip.c_str());
@@ -260,11 +295,35 @@ void connect_client(std::string ip, u16 port) {
   ENetEvent event;
   if (enet_host_service(pnet.server, &event, 5000) > 0 &&
       event.type == ENET_EVENT_TYPE_CONNECT) {
-    printf("Connection succeeded.\n");
+    dbp(log_debug, "Connection succeeded.\n");
   } else {
     printf("Connection failed.\n");
     exit(EXIT_FAILURE);
   }
 
-  pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
-}
+  while (enet_host_service(pnet.server, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT) {
+    printf("got event %d\n", event.type);
+  }
+
+    if (enet_host_service(pnet.server, &event, 5000) && event.type == ENET_EVENT_TYPE_RECEIVE) {
+      printf("Assigned node ID + got Monad entity ref %d\n", event.type);
+      std::string buf =
+          std::string((char *)event.packet->data, event.packet->dataLength);
+
+      romabuf::PleromaMessage message;
+      message.ParseFromString(buf);
+      assert(message.has_assign_cluster_info());
+
+      pnet.node_host_map[0] = std::make_tuple(event.peer->address.host, event.peer->address.port);
+
+      auto clusterinfo = message.assign_cluster_info();
+      monad_ref = (EntityRefNode*)make_entity_ref(clusterinfo.monad_node_id(), clusterinfo.monad_vat_id(), clusterinfo.monad_entity_id());
+
+      this_pleroma_node.node_id = clusterinfo.node_id();
+      printf("Got the following info: our ID %d (%d %d %d)\n",
+             this_pleroma_node.node_id, monad_ref->node_id, monad_ref->vat_id,
+             monad_ref->entity_id);
+    }
+
+    pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
+  }

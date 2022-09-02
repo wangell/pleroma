@@ -24,7 +24,12 @@ EntityRefNode* get_entity_ref(Entity* e) {
 }
 
 void load_system_entity(EvalContext *context, std::string entity_name) {
-  auto io_ent = create_entity(context, (EntityDef *)kernel_map[SystemModule::Io]["Io"], false);
+  auto io_def = load_system_module(SystemModule::Io);
+
+  auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs["Io"], false);
+  io_ent->module_scope = io_ent->entity_def->module;
+  assert(io_ent->entity_def->module);
+  assert(io_ent->module_scope);
   system_entities[entity_name] = io_ent;
 }
 
@@ -38,8 +43,18 @@ EntityRefNode* get_system_entity_ref(CType ctype) {
   return get_entity_ref(ent->second);
 }
 
-AstNode *request_far_entity() {
-  return make_number(0);
+AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> args) {
+
+  CType c;
+  c.basetype = PType::Entity;
+  c.dtype = DType::Far;
+  c.entity_name = "Io";
+
+  auto io_ent = get_system_entity_ref(c);
+
+  printf("Found io ent @ : %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
+
+  return io_ent;
 }
 
 AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
@@ -85,8 +100,14 @@ void load_kernel() {
   c2->basetype = PType::BaseEntity;
   c2->dtype = DType::Far;
 
+  CType *c3 = new CType;
+  c3->basetype = PType::Entity;
+  c3->entity_name = "Io";
+  c3->dtype = DType::Far;
+
   functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
   functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
+  functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {}, {}, *c3);
 
   kernel_map[SystemModule::Monad] = {
     {"Monad", make_actor(nullptr, "Monad", functions, {}, {})}
@@ -95,5 +116,6 @@ void load_kernel() {
   kernel_map[SystemModule::Io] = load_io();
   kernel_map[SystemModule::Net] = load_net();
   load_fs();
+
   //load_amoeba();
 }
