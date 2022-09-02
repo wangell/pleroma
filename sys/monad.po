@@ -4,4 +4,5 @@
 	δ hello(i : u8) -> u8
 	δ start-program(eref : far Entity) -> u8
 	δ n-programs() -> str
+	δ request-far-entity() -> far Io
 
