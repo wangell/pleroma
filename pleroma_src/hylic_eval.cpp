@@ -595,9 +595,10 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
       //Entity* io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[fqn_map[lib_name]]->entity_defs[base_name], false);
       //e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
       push_stack_frame(context, e, e->module_scope);
-      if (!monad_ref) {
-        monad_ref = (EntityRefNode*)make_entity_ref(0, 0, 0);
-      }
+      assert(monad_ref);
+      //if (!monad_ref) {
+      //  monad_ref = (EntityRefNode*)make_entity_ref(0, 0, 0);
+      //}
       e->data[k.var_name] = eval_message_node(context, monad_ref, CommMode::Async, "request-far-entity", {});
       pop_stack_frame(context);
 

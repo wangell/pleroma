@@ -32,7 +32,7 @@ file(GLOB_RECURSE allo_SRC
     "shared_src/*.cc"
 )
 
-set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g")
+set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -g -fuse-ld=mold")
 
 # To make sure GLAD doesn't complain
 add_compile_definitions(GLFW_INCLUDE_NONE)

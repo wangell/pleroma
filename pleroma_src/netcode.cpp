@@ -81,8 +81,7 @@ void assign_cluster_info_msg(enet_uint32 host, enet_uint16 port) {
   peer_msg->set_monad_vat_id(monad_ref->vat_id);
   peer_msg->set_monad_node_id(monad_ref->node_id);
 
-  this_pleroma_node.node_id++;
-  peer_msg->set_node_id(this_pleroma_node.node_id);
+  peer_msg->set_node_id(this_pleroma_node.node_id + 1);
 
   send_msg(address, message);
 }
@@ -91,31 +90,13 @@ void net_loop() {
   ENetEvent event;
   romabuf::PleromaMessage message;
 
-  /* Wait up to 1000 milliseconds for an event. */
   while (enet_host_service(pnet.server, &event, 0) > 0) {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:
-      printf("Got connection.\n");
-      if (pnet.peers.find(std::make_tuple(event.peer->address.host,
-                                          event.peer->address.port)) ==
-          pnet.peers.end()) {
-        printf("Connecting to...\n");
-        u32 connect_back_port = event.data;
-
-        connect_client(host32_to_string(event.peer->address.host), connect_back_port);
-        printf("Connected, sending cluster info\n");
-
-        assign_cluster_info_msg(event.peer->address.host, event.peer->address.port);
-
-        announce_new_peer(event.peer->address.host, event.peer->address.port);
-      }
-
-      // send_msg(event.peer->address.host, message);
-      /* Store any relevant client information here. */
+      printf("handling\n");
+      handle_connection(&event);
       break;
     case ENET_EVENT_TYPE_RECEIVE:
-      /* Clean up the packet now that we're done using it. */
-      printf("got a packet!\n");
       on_receive_packet(&event);
       enet_packet_destroy(event.packet);
 
@@ -187,10 +168,23 @@ void on_receive_packet(ENetEvent *event) {
 
     local_m.promise_id = call.promise_id();
     local_m.response = call.response();
+    local_m.function_name = call.function_id();
 
-    // for (auto val : message.pvalue_case()) {
-    //}
-    // local_m.values.push_back((ValueNode *)make_number(100));
+    for (int i = 0; i < call.pvalues_size(); ++i) {
+      auto pval = call.pvalues(i);
+      if (pval.has_eref_val()) {
+        auto eref = pval.eref_val();
+        local_m.values.push_back((ValueNode *)make_entity_ref(eref.node_id(), eref.vat_id(), eref.entity_id()));
+      }
+      if (pval.has_num_val()) {
+        auto num = pval.num_val();
+        local_m.values.push_back((ValueNode *)make_number(num.value()));
+      }
+      if (pval.has_str_val()) {
+        auto pval_str = pval.str_val();
+        local_m.values.push_back((ValueNode *)make_string(pval_str.value()));
+      }
+    }
 
     net_in_queue.push(local_m);
   } else {
@@ -208,7 +202,7 @@ void on_receive_packet(ENetEvent *event) {
       }
 
       printf("Connecting to new peer\n");
-      connect_client(apeer.address(), apeer.port());
+      connect_to_client(mk_netaddr(apeer.address(), apeer.port()));
     }
   }
 }
@@ -221,8 +215,7 @@ void init_network() {
 }
 
 void send_packet(ENetPeer *peer, const char *buf, int buf_len) {
-  ENetPacket *packet =
-      enet_packet_create(buf, buf_len, ENET_PACKET_FLAG_RELIABLE);
+  ENetPacket *packet = enet_packet_create(buf, buf_len, ENET_PACKET_FLAG_RELIABLE);
   enet_peer_send(peer, 0, packet);
   enet_host_flush(pnet.server);
 }
@@ -247,11 +240,34 @@ void send_node_msg(Msg m) {
 
   call->set_response(m.response);
 
-  printf("CALL FUNC MSG %s\n", m.function_name.c_str());
   call->set_function_id(m.function_name);
   call->set_src_function_id(m.function_name);
 
   call->set_promise_id(m.promise_id);
+
+  for (auto &k : m.values) {
+    auto pval = call->add_pvalues();
+    if (k->type == AstNodeType::EntityRefNode) {
+      EntityRefNode* node = (EntityRefNode*)k;
+      romabuf::ERefVal e;
+      auto blah = pval->mutable_eref_val();
+      blah->set_node_id(node->node_id);
+      blah->set_vat_id(node->vat_id);
+      blah->set_entity_id(node->entity_id);
+    }
+    if (k->type == AstNodeType::NumberNode) {
+      NumberNode* node = (NumberNode*)k;
+      romabuf::NumVal n;
+      auto blah = pval->mutable_num_val();
+      blah->set_value(node->value);
+    }
+    if (k->type == AstNodeType::StringNode) {
+      StringNode* node = (StringNode*)k;
+      romabuf::StrVal n;
+      auto blah = pval->mutable_str_val();
+      blah->set_value(node->value);
+    }
+  }
 
   std::string buf = message.SerializeAsString();
   send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(),
@@ -271,59 +287,85 @@ void setup_server(std::string ip, u16 port) {
   pnet.src_port = port;
 }
 
-void initial_connect() {
-}
-
-void connect_back() {
-}
-
-void handle_first_contact() {
-}
-
-void connect_client(std::string ip, u16 port) {
-  ENetAddress address;
-  enet_address_set_host(&address, ip.c_str());
-  address.port = port;
-
-  printf("Connecting to %s : %d\n", ip.c_str(), port);
+ENetPeer *pconnect(ENetAddress address) {
   ENetPeer *peer = enet_host_connect(pnet.server, &address, 2, pnet.src_port);
-  if (peer == NULL) {
-    fprintf(stderr, "No available peers for initiating an ENet connection.\n");
-    exit(EXIT_FAILURE);
-  }
+  assert(peer);
+  return peer;
+}
 
+bool connection_confirmed() {
   ENetEvent event;
   if (enet_host_service(pnet.server, &event, 5000) > 0 &&
       event.type == ENET_EVENT_TYPE_CONNECT) {
-    dbp(log_debug, "Connection succeeded.\n");
+    return true;
   } else {
-    printf("Connection failed.\n");
-    exit(EXIT_FAILURE);
+    return false;
+  }
+}
+
+void connect_to_client(ENetAddress address) {
+  dbp(log_debug, "Connecting back to client");
+  ENetPeer *peer = pconnect(address);
+
+  if (connection_confirmed()) {
+    dbp(log_debug, "Successfully connected to client");
   }
 
-  while (enet_host_service(pnet.server, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT) {
-    printf("got event %d\n", event.type);
+  pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
+  pnet.node_host_map[1] = std::make_tuple(peer->address.host, peer->address.port);
+}
+
+void connect_to_cluster(ENetAddress address) {
+  //dbp(log_debug, "Connecting to %s : %d\n", ip.c_str(), port);
+
+  printf("Doing initial cluster connect\n");
+  ENetPeer* peer = pconnect(address);
+
+  // Confirm outgoing connection
+  if (connection_confirmed()) {
+    dbp(log_debug, "Outgoing connection succeeded.");
   }
 
-    if (enet_host_service(pnet.server, &event, 5000) && event.type == ENET_EVENT_TYPE_RECEIVE) {
-      printf("Assigned node ID + got Monad entity ref %d\n", event.type);
-      std::string buf =
-          std::string((char *)event.packet->data, event.packet->dataLength);
-
-      romabuf::PleromaMessage message;
-      message.ParseFromString(buf);
-      assert(message.has_assign_cluster_info());
-
-      pnet.node_host_map[0] = std::make_tuple(event.peer->address.host, event.peer->address.port);
-
-      auto clusterinfo = message.assign_cluster_info();
-      monad_ref = (EntityRefNode*)make_entity_ref(clusterinfo.monad_node_id(), clusterinfo.monad_vat_id(), clusterinfo.monad_entity_id());
-
-      this_pleroma_node.node_id = clusterinfo.node_id();
-      printf("Got the following info: our ID %d (%d %d %d)\n",
-             this_pleroma_node.node_id, monad_ref->node_id, monad_ref->vat_id,
-             monad_ref->entity_id);
-    }
-
-    pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
+  if (connection_confirmed()) {
+    dbp(log_debug, "Incoming connection succeeded.");
   }
+
+  ENetEvent event;
+  // Receive our cluster number/Monad info
+  if (enet_host_service(pnet.server, &event, 5000) && event.type == ENET_EVENT_TYPE_RECEIVE) {
+    std::string buf = std::string((char *)event.packet->data, event.packet->dataLength);
+
+    romabuf::PleromaMessage message;
+    message.ParseFromString(buf);
+    assert(message.has_assign_cluster_info());
+
+    pnet.node_host_map[0] = std::make_tuple(event.peer->address.host, event.peer->address.port);
+
+    auto clusterinfo = message.assign_cluster_info();
+    monad_ref = (EntityRefNode*)make_entity_ref(clusterinfo.monad_node_id(), clusterinfo.monad_vat_id(), clusterinfo.monad_entity_id());
+
+    this_pleroma_node.node_id = clusterinfo.node_id();
+    printf("Got the following info: our ID %d (%d %d %d)\n", this_pleroma_node.node_id, monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
+  }
+
+  pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
+}
+
+void handle_connection(ENetEvent* event) {
+    dbp(log_debug, "New node connecting...");
+    u32 connect_back_port = event->data;
+
+    connect_to_client(mk_netaddr(host32_to_string(event->peer->address.host), connect_back_port));
+
+    dbp(log_debug, "Sending cluster info...");
+    assign_cluster_info_msg(event->peer->address.host, event->peer->address.port);
+
+    //announce_new_peer(event->peer->address.host, event->peer->address.port);
+}
+
+ENetAddress mk_netaddr(std::string ip, u16 port) {
+  ENetAddress address;
+  enet_address_set_host(&address, ip.c_str());
+  address.port = port;
+  return address;
+}

@@ -71,8 +71,6 @@ void process_vq() {
           assert(find_entity != our_vat->entities.end());
           Entity* target_entity = find_entity->second;
 
-          printf("ent name %s\n", target_entity->entity_def->name.c_str());
-
           EvalContext context;
           start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
 
@@ -113,6 +111,7 @@ void process_vq() {
       while (!our_vat->out_messages.empty()) {
         Msg m = our_vat->out_messages.front();
         our_vat->out_messages.pop();
+        //print_msg(&m);
 
         // If we're communicating on the same node, we don't have to use the router
         if (m.node_id == this_pleroma_node.node_id && m.vat_id == our_vat->id) {
@@ -165,7 +164,7 @@ void start_program(HylicModule *program, std::string ent_name) {
   m.src_vat_id = -1;
   m.promise_id = -1;
 
-  net_in_queue.push(m);
+  net_out_queue.enqueue(m);
 }
 
 void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
@@ -237,7 +236,7 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   if (connect_info.first_contact_ip != "") {
     dbp(log_info, "Connecting to network [%s : %d]...", connect_info.first_contact_ip.c_str(), connect_info.first_contact_port);
-    connect_client(connect_info.first_contact_ip, connect_info.first_contact_port);
+    connect_to_cluster(mk_netaddr(connect_info.first_contact_ip, connect_info.first_contact_port));
     dbp(log_info, "Successfully connected");
   }
 

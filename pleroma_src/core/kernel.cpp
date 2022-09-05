@@ -26,7 +26,7 @@ EntityRefNode* get_entity_ref(Entity* e) {
 void load_system_entity(EvalContext *context, std::string entity_name) {
   auto io_def = load_system_module(SystemModule::Io);
 
-  auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs["Io"], false);
+  auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs[entity_name], false);
   io_ent->module_scope = io_ent->entity_def->module;
   assert(io_ent->entity_def->module);
   assert(io_ent->module_scope);
@@ -51,8 +51,6 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   c.entity_name = "Io";
 
   auto io_ent = get_system_entity_ref(c);
-
-  printf("Found io ent @ : %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
 
   return io_ent;
 }
@@ -80,8 +78,6 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
   load_system_entity(context, "Io");
 
-  auto eref = get_entity_ref(system_entities["Io"]);
-
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
 }
@@ -101,8 +97,7 @@ void load_kernel() {
   c2->dtype = DType::Far;
 
   CType *c3 = new CType;
-  c3->basetype = PType::Entity;
-  c3->entity_name = "Io";
+  c3->basetype = PType::BaseEntity;
   c3->dtype = DType::Far;
 
   functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
