@@ -1,15 +1,5 @@
 ~sys►io
 
-ε Pong {ioinst : @far io►Io}
-
-	δ create() -> void
-		let q : u8 = 0
-
-	δ doit() -> str
-		@ioinst
-			ioinst ! print ("Working!")
-		↵ "hi"
-
 ε UserProgram {ioinst : @far io►Io}
 	- monitor
 
@@ -18,7 +8,9 @@
 
 	δ main(env: u8) -> u8
 
-		let z : loc Pong = Pong()
-		z.doit()
+		let q : u8 = 0
+
+		@ioinst
+			ioinst ! print ("Working2!")
 
 		↵ 0
