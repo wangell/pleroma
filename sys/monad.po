@@ -9,3 +9,5 @@
 	δ n-programs() -> str
 
 	δ request-far-entity() -> far Entity
+
+	δ new-vat(entdef : far Entity) -> @far Entity

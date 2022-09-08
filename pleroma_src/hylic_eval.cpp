@@ -353,6 +353,10 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     return make_boolean(false);
   }
 
+  if (obj->type == AstNodeType::EntityDef) {
+    return obj;
+  }
+
   if (obj->type == AstNodeType::MatchNode) {
     auto node = (MatchNode *)obj;
     // FIXME only handles boolean
@@ -435,9 +439,14 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     auto creation_ast = cfs(context).module->entity_defs.find(node->entity_def_name);
 
     assert(creation_ast != cfs(context).module->entity_defs.end());
-    Entity *ent = create_entity(context, (EntityDef *)creation_ast->second, node->new_vat);
-
-    return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
+    if (node->new_vat) {
+      return promise_new_vat(context, (EntityDef *)creation_ast->second);
+    } else {
+      Entity *ent = create_entity(context, (EntityDef *)creation_ast->second,
+                                  node->new_vat);
+      return make_entity_ref(ent->address.node_id, ent->address.vat_id,
+                             ent->address.entity_id);
+    }
   }
 
   if (obj->type == AstNodeType::EntityRefNode) {
@@ -537,17 +546,16 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   throw PleromaException((std::string("Failed to find symbol: ") + sym).c_str());
 }
 
-Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
+AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def) {
+  return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {entity_def});
+}
+
+Entity *create_entity(EvalContext *context, EntityDef *entity_def,
+                          bool new_vat) {
   Entity *e = new Entity;
   Vat *vat;
 
-  if (new_vat) {
-    vat = new Vat;
-    vat->id = context->node->vat_id_base;
-    context->node->vat_id_base++;
-  } else {
-    vat = context->vat;
-  }
+  vat = context->vat;
 
   e->entity_def = entity_def;
 

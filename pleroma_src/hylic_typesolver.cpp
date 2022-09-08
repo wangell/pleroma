@@ -325,7 +325,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
       auto t1 = sig.param_types[i];
       auto t2 = typesolve_sub(context, msg_node->args[i]);
       if (!exact_match(*t1, t2)) {
-        throw TypesolverException("", 0, 0, "Function parameter types don't match: " + ctype_to_string(t1) + ", " + ctype_to_string(&t2));
+        throw TypesolverException("", 0, 0, "Function parameter types don't match: " + ctype_to_string(t1) + ", " + ctype_to_string(&t2) + " (" + msg_node->function_name.c_str() + ")");
       }
       i++;
     }

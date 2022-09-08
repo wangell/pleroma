@@ -81,7 +81,7 @@ void assign_cluster_info_msg(enet_uint32 host, enet_uint16 port) {
   peer_msg->set_monad_vat_id(monad_ref->vat_id);
   peer_msg->set_monad_node_id(monad_ref->node_id);
 
-  peer_msg->set_node_id(this_pleroma_node.node_id + 1);
+  peer_msg->set_node_id(this_pleroma_node->node_id + 1);
 
   send_msg(address, message);
 }
@@ -116,7 +116,7 @@ void net_loop() {
     if (out_mess.node_id == -1) {
       continue;
     }
-    if (out_mess.node_id == this_pleroma_node.node_id) {
+    if (out_mess.node_id == this_pleroma_node->node_id) {
       net_in_queue.push(out_mess);
     } else {
       send_node_msg(out_mess);
@@ -344,8 +344,8 @@ void connect_to_cluster(ENetAddress address) {
     auto clusterinfo = message.assign_cluster_info();
     monad_ref = (EntityRefNode*)make_entity_ref(clusterinfo.monad_node_id(), clusterinfo.monad_vat_id(), clusterinfo.monad_entity_id());
 
-    this_pleroma_node.node_id = clusterinfo.node_id();
-    printf("Got the following info: our ID %d (%d %d %d)\n", this_pleroma_node.node_id, monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
+    this_pleroma_node->node_id = clusterinfo.node_id();
+    printf("Got the following info: our ID %d (%d %d %d)\n", this_pleroma_node->node_id, monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
   }
 
   pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;

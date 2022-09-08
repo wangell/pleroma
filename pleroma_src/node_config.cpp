@@ -1,12 +1,15 @@
 #include "node_config.h"
 #include "../other_src/json.hpp"
+#include "hylic_eval.h"
 #include <fstream>
 #include <sstream>
 #include <string>
 
 using json = nlohmann::json;
 
-void read_node_config() {
+PleromaNode *read_node_config() {
+  PleromaNode* pnode = new PleromaNode;
+
   std::string config_file_contents;
   std::ifstream config_file;
 
@@ -21,4 +24,8 @@ void read_node_config() {
 
   std::string test_string = json_config["name"];
   printf("Test %s\n", test_string.c_str());
+
+  pnode->resources.push_back("gpu");
+
+  return pnode;
 }

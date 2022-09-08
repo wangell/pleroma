@@ -27,7 +27,7 @@
 const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
-PleromaNode this_pleroma_node;
+PleromaNode *this_pleroma_node;
 
 std::map<std::string, HylicModule*> programs;
 
@@ -64,7 +64,7 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        //print_msg(&m);
+        print_msg(&m);
 
         try {
           auto find_entity = our_vat->entities.find(m.entity_id);
@@ -72,7 +72,7 @@ void process_vq() {
           Entity* target_entity = find_entity->second;
 
           EvalContext context;
-          start_context(&context, &this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
+          start_context(&context, this_pleroma_node, our_vat, target_entity->entity_def->module, target_entity);
 
           // Return vs call
           if (m.response) {
@@ -114,7 +114,7 @@ void process_vq() {
         //print_msg(&m);
 
         // If we're communicating on the same node, we don't have to use the router
-        if (m.node_id == this_pleroma_node.node_id && m.vat_id == our_vat->id) {
+        if (m.node_id == this_pleroma_node->node_id && m.vat_id == our_vat->id) {
           our_vat->messages.push(m);
         } else {
           net_out_queue.enqueue(m);
@@ -135,12 +135,12 @@ void start_program(HylicModule *program, std::string ent_name) {
   EntityDef *ent0_def = (EntityDef *)program->entity_defs[ent_name];
 
   Vat *og_vat = new Vat;
-  og_vat->id = this_pleroma_node.vat_id_base;
+  og_vat->id = this_pleroma_node->vat_id_base;
   queue.enqueue(og_vat);
-  this_pleroma_node.vat_id_base++;
+  this_pleroma_node->vat_id_base++;
 
   EvalContext context;
-  start_context(&context, &this_pleroma_node, og_vat, program, nullptr);
+  start_context(&context, this_pleroma_node, og_vat, program, nullptr);
 
   Entity *ent = create_entity(&context, ent0_def, false);
   ent->module_scope = program;
@@ -174,10 +174,10 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
   Vat* og_vat = new Vat;
   og_vat->id = 0;
   queue.enqueue(og_vat);
-  this_pleroma_node.vat_id_base++;
+  this_pleroma_node->vat_id_base++;
 
   EvalContext context;
-  start_context(&context, &this_pleroma_node, og_vat, ukernel, nullptr);
+  start_context(&context, this_pleroma_node, og_vat, ukernel, nullptr);
 
   Entity *ent = create_entity(&context, ent0_def, false);
   ent->module_scope = ukernel;
@@ -217,7 +217,7 @@ struct ConnectionInfo {
 void start_pleroma(ConnectionInfo connect_info) {
   dbp(log_debug, "Reading node config [pleroma.json]...");
 
-  read_node_config();
+  this_pleroma_node = read_node_config();
 
   load_kernel();
 

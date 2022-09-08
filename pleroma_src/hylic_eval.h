@@ -70,6 +70,8 @@ struct PleromaNode {
   u32 node_id = 0;
 
   int vat_id_base = 0;
+
+  std::vector<std::string> resources;
 };
 
 struct StackFrame {
@@ -90,15 +92,18 @@ AstNode *find_symbol(EvalContext *context, std::string sym);
 Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
 AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
-void print_value_node(ValueNode *value_node);
-void print_msg(Msg *m);
+AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def);
+void print_value_node(ValueNode * value_node);
+void print_msg(Msg * m);
 
-void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModule* module, Entity *entity);
-void push_stack_frame(EvalContext* context, Entity *e, HylicModule* module);
-void pop_stack_frame(EvalContext* context);
+void start_context(EvalContext * context, PleromaNode * node, Vat * vat,
+                   HylicModule * module, Entity * entity);
+void push_stack_frame(EvalContext * context, Entity * e,
+                      HylicModule * module);
+void pop_stack_frame(EvalContext * context);
 
-void pop_scope(EvalContext *context);
-void push_scope(EvalContext *context);
+void pop_scope(EvalContext * context);
+void push_scope(EvalContext * context);
 
 AstNode *eval_message_node(EvalContext * context, EntityRefNode * entity_ref,
                            CommMode comm_mode, std::string function_name,

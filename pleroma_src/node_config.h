@@ -1,3 +1,4 @@
 #pragma once
+#include "hylic_eval.h"
 
-void read_node_config();
+PleromaNode* read_node_config();
