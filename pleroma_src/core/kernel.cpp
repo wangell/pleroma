@@ -97,7 +97,7 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
     // context->vat->promises[eval_val->promise_id].callback =
     // (PromiseResNode*)make_promise_resolution_node("nodemanref",
     // {make_return(make_symbol("nodemanref"))}); return make_nop();
-    //  FIXME
+    // IMPORTANT FIXME
     return make_entity_ref(0, 2, 0);
   }
 
@@ -197,7 +197,7 @@ void load_kernel() {
   functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"programname", "entname"}, {c_str, c_str}, lu8());
   functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
   functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {}, {}, *c3);
-  functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"entdef"}, {c_str}, *c4);
+  functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
 
   std::map<std::string, FuncStmt *> node_man_functions;
 

@@ -547,7 +547,11 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
 }
 
 AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def) {
-  return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {make_string(entity_def->abs_mod_path)});
+  // FIXME when we do deeper imports
+  auto split_name = split_import(entity_def->abs_mod_path);
+  auto prog_name = split_name[0];
+  auto ent_name = split_name[1];
+  return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {make_string(prog_name), make_string(ent_name)});
 }
 
 Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
