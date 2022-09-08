@@ -230,12 +230,13 @@ class HostInfo PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
-    kResourcesFieldNumber = 4,
+    kResourcesFieldNumber = 5,
     kAddressFieldNumber = 2,
+    kNodemanAddrFieldNumber = 4,
     kNodeIdFieldNumber = 1,
     kPortFieldNumber = 3,
   };
-  // repeated string resources = 4;
+  // repeated string resources = 5;
   int resources_size() const;
   private:
   int _internal_resources_size() const;
@@ -288,6 +289,24 @@ class HostInfo PROTOBUF_FINAL :
   std::string* _internal_mutable_address();
   public:
 
+  // required .romabuf.ERefVal nodeman_addr = 4;
+  bool has_nodeman_addr() const;
+  private:
+  bool _internal_has_nodeman_addr() const;
+  public:
+  void clear_nodeman_addr();
+  const ::romabuf::ERefVal& nodeman_addr() const;
+  ::romabuf::ERefVal* release_nodeman_addr();
+  ::romabuf::ERefVal* mutable_nodeman_addr();
+  void set_allocated_nodeman_addr(::romabuf::ERefVal* nodeman_addr);
+  private:
+  const ::romabuf::ERefVal& _internal_nodeman_addr() const;
+  ::romabuf::ERefVal* _internal_mutable_nodeman_addr();
+  public:
+  void unsafe_arena_set_allocated_nodeman_addr(
+      ::romabuf::ERefVal* nodeman_addr);
+  ::romabuf::ERefVal* unsafe_arena_release_nodeman_addr();
+
   // required int32 node_id = 1;
   bool has_node_id() const;
   private:
@@ -328,6 +347,7 @@ class HostInfo PROTOBUF_FINAL :
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> resources_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr address_;
+  ::romabuf::ERefVal* nodeman_addr_;
   ::PROTOBUF_NAMESPACE_ID::int32 node_id_;
   ::PROTOBUF_NAMESPACE_ID::uint32 port_;
   friend struct ::TableStruct_protoloma_2eproto;
@@ -2473,7 +2493,7 @@ class LoadProgram PROTOBUF_FINAL :
 
 // required int32 node_id = 1;
 inline bool HostInfo::_internal_has_node_id() const {
-  bool value = (_has_bits_[0] & 0x00000002u) != 0;
+  bool value = (_has_bits_[0] & 0x00000004u) != 0;
   return value;
 }
 inline bool HostInfo::has_node_id() const {
@@ -2481,7 +2501,7 @@ inline bool HostInfo::has_node_id() const {
 }
 inline void HostInfo::clear_node_id() {
   node_id_ = 0;
-  _has_bits_[0] &= ~0x00000002u;
+  _has_bits_[0] &= ~0x00000004u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::int32 HostInfo::_internal_node_id() const {
   return node_id_;
@@ -2491,7 +2511,7 @@ inline ::PROTOBUF_NAMESPACE_ID::int32 HostInfo::node_id() const {
   return _internal_node_id();
 }
 inline void HostInfo::_internal_set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
-  _has_bits_[0] |= 0x00000002u;
+  _has_bits_[0] |= 0x00000004u;
   node_id_ = value;
 }
 inline void HostInfo::set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
@@ -2594,7 +2614,7 @@ inline void HostInfo::unsafe_arena_set_allocated_address(
 
 // required uint32 port = 3;
 inline bool HostInfo::_internal_has_port() const {
-  bool value = (_has_bits_[0] & 0x00000004u) != 0;
+  bool value = (_has_bits_[0] & 0x00000008u) != 0;
   return value;
 }
 inline bool HostInfo::has_port() const {
@@ -2602,7 +2622,7 @@ inline bool HostInfo::has_port() const {
 }
 inline void HostInfo::clear_port() {
   port_ = 0u;
-  _has_bits_[0] &= ~0x00000004u;
+  _has_bits_[0] &= ~0x00000008u;
 }
 inline ::PROTOBUF_NAMESPACE_ID::uint32 HostInfo::_internal_port() const {
   return port_;
@@ -2612,7 +2632,7 @@ inline ::PROTOBUF_NAMESPACE_ID::uint32 HostInfo::port() const {
   return _internal_port();
 }
 inline void HostInfo::_internal_set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
-  _has_bits_[0] |= 0x00000004u;
+  _has_bits_[0] |= 0x00000008u;
   port_ = value;
 }
 inline void HostInfo::set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
@@ -2620,7 +2640,88 @@ inline void HostInfo::set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   // @@protoc_insertion_point(field_set:romabuf.HostInfo.port)
 }
 
-// repeated string resources = 4;
+// required .romabuf.ERefVal nodeman_addr = 4;
+inline bool HostInfo::_internal_has_nodeman_addr() const {
+  bool value = (_has_bits_[0] & 0x00000002u) != 0;
+  PROTOBUF_ASSUME(!value || nodeman_addr_ != nullptr);
+  return value;
+}
+inline bool HostInfo::has_nodeman_addr() const {
+  return _internal_has_nodeman_addr();
+}
+inline void HostInfo::clear_nodeman_addr() {
+  if (nodeman_addr_ != nullptr) nodeman_addr_->Clear();
+  _has_bits_[0] &= ~0x00000002u;
+}
+inline const ::romabuf::ERefVal& HostInfo::_internal_nodeman_addr() const {
+  const ::romabuf::ERefVal* p = nodeman_addr_;
+  return p != nullptr ? *p : *reinterpret_cast<const ::romabuf::ERefVal*>(
+      &::romabuf::_ERefVal_default_instance_);
+}
+inline const ::romabuf::ERefVal& HostInfo::nodeman_addr() const {
+  // @@protoc_insertion_point(field_get:romabuf.HostInfo.nodeman_addr)
+  return _internal_nodeman_addr();
+}
+inline void HostInfo::unsafe_arena_set_allocated_nodeman_addr(
+    ::romabuf::ERefVal* nodeman_addr) {
+  if (GetArena() == nullptr) {
+    delete reinterpret_cast<::PROTOBUF_NAMESPACE_ID::MessageLite*>(nodeman_addr_);
+  }
+  nodeman_addr_ = nodeman_addr;
+  if (nodeman_addr) {
+    _has_bits_[0] |= 0x00000002u;
+  } else {
+    _has_bits_[0] &= ~0x00000002u;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:romabuf.HostInfo.nodeman_addr)
+}
+inline ::romabuf::ERefVal* HostInfo::release_nodeman_addr() {
+  auto temp = unsafe_arena_release_nodeman_addr();
+  if (GetArena() != nullptr) {
+    temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+  }
+  return temp;
+}
+inline ::romabuf::ERefVal* HostInfo::unsafe_arena_release_nodeman_addr() {
+  // @@protoc_insertion_point(field_release:romabuf.HostInfo.nodeman_addr)
+  _has_bits_[0] &= ~0x00000002u;
+  ::romabuf::ERefVal* temp = nodeman_addr_;
+  nodeman_addr_ = nullptr;
+  return temp;
+}
+inline ::romabuf::ERefVal* HostInfo::_internal_mutable_nodeman_addr() {
+  _has_bits_[0] |= 0x00000002u;
+  if (nodeman_addr_ == nullptr) {
+    auto* p = CreateMaybeMessage<::romabuf::ERefVal>(GetArena());
+    nodeman_addr_ = p;
+  }
+  return nodeman_addr_;
+}
+inline ::romabuf::ERefVal* HostInfo::mutable_nodeman_addr() {
+  // @@protoc_insertion_point(field_mutable:romabuf.HostInfo.nodeman_addr)
+  return _internal_mutable_nodeman_addr();
+}
+inline void HostInfo::set_allocated_nodeman_addr(::romabuf::ERefVal* nodeman_addr) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  if (message_arena == nullptr) {
+    delete nodeman_addr_;
+  }
+  if (nodeman_addr) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(nodeman_addr);
+    if (message_arena != submessage_arena) {
+      nodeman_addr = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, nodeman_addr, submessage_arena);
+    }
+    _has_bits_[0] |= 0x00000002u;
+  } else {
+    _has_bits_[0] &= ~0x00000002u;
+  }
+  nodeman_addr_ = nodeman_addr;
+  // @@protoc_insertion_point(field_set_allocated:romabuf.HostInfo.nodeman_addr)
+}
+
+// repeated string resources = 5;
 inline int HostInfo::_internal_resources_size() const {
   return resources_.size();
 }

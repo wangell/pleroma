@@ -46,6 +46,7 @@ PleromaNode* try_preschedule(EntityDef* edef) {
         satisfied = false;
       }
     }
+    printf("Satisfied for node %d\n", k->node_id);
     if (satisfied) return k;
   }
 
@@ -83,10 +84,10 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
 
   EntityDef* edef = (EntityDef*)programs[program_name]->entity_defs[ent_name];
 
-  if (try_preschedule(edef)) {
-    printf("Sending create-vat\n");
+  if (PleromaNode* sched_node = try_preschedule(edef)) {
+    printf("Sending create-vat to %d\n", sched_node->node_id);
     //FIXME hardcoded nodeman
-    eval_message_node(context, (EntityRefNode *)make_entity_ref(1, 0, 0), CommMode::Async, "create-vat", args);
+    eval_message_node(context, (EntityRefNode *)make_entity_ref(sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id), CommMode::Async, "create-vat", args);
 
     // FIXME hardcoded, should resolve the promise then return the ent ref
     return make_entity_ref(1, 1, 0);

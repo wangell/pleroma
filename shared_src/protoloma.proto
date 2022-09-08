@@ -6,8 +6,9 @@ message HostInfo {
   required int32 node_id = 1;
   required string address = 2;
   required uint32 port = 3;
+  required ERefVal nodeman_addr = 4;
 
-  repeated string resources = 4;
+  repeated string resources = 5;
 }
 
 message NumVal {

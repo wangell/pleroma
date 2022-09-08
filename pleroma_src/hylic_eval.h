@@ -72,6 +72,8 @@ struct PleromaNode {
   int vat_id_base = 0;
 
   std::vector<std::string> resources;
+
+  EntityAddress nodeman_addr;
 };
 
 struct StackFrame {

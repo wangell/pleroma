@@ -83,6 +83,7 @@ void assign_cluster_info_msg(enet_uint32 host, enet_uint16 port) {
   peer_msg->set_monad_vat_id(monad_ref->vat_id);
   peer_msg->set_monad_node_id(monad_ref->node_id);
 
+  // FIXME
   peer_msg->set_node_id(this_pleroma_node->node_id + 1);
 
   send_msg(address, message);
@@ -334,6 +335,11 @@ void connect_to_cluster(ENetAddress address) {
   romabuf::PleromaMessage message;
   auto host_info = message.mutable_host_info();
   host_info->set_port(pnet.src_port);
+  auto ndadd = host_info->mutable_nodeman_addr();
+
+  ndadd->set_node_id(this_pleroma_node->nodeman_addr.node_id);
+  ndadd->set_vat_id(this_pleroma_node->nodeman_addr.vat_id);
+  ndadd->set_entity_id(this_pleroma_node->nodeman_addr.entity_id);
 
   //FIXME
   host_info->set_node_id(0);
@@ -391,6 +397,11 @@ void handle_connection(ENetEvent* event) {
       for (auto &k : message.host_info().resources()) {
         new_node->resources.push_back(k);
       }
+
+      new_node->nodeman_addr.node_id = this_pleroma_node->node_id + 1;
+      new_node->nodeman_addr.vat_id = message.host_info().nodeman_addr().vat_id();
+      new_node->nodeman_addr.entity_id = message.host_info().nodeman_addr().entity_id();
+      printf("Received nodeman addr: %d %d %d\n", new_node->nodeman_addr.node_id, new_node->nodeman_addr.vat_id, new_node->nodeman_addr.entity_id);
       add_new_pnode(new_node);
     }
 

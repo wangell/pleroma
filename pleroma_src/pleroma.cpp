@@ -182,7 +182,7 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
   og_vat->messages.push(m);
 }
 
-void start_nodeman(HylicModule *ukernel, std::string ent0) {
+EntityAddress start_nodeman(HylicModule *ukernel, std::string ent0) {
 
   EntityDef *ent0_def = (EntityDef *)ukernel->entity_defs[ent0];
 
@@ -198,6 +198,8 @@ void start_nodeman(HylicModule *ukernel, std::string ent0) {
   ent->module_scope = ukernel;
 
   og_vat->entities[0] = ent;
+
+  return ent->address;
 }
 
 void usage() {
@@ -227,12 +229,13 @@ void start_pleroma(ConnectionInfo connect_info) {
     dbp(log_debug, "Successfully inoculated.");
   }
 
-  start_nodeman(load_system_module(SystemModule::Monad), "NodeMan");
-
   dbp(log_debug, "Initializing host [%s : %d]...", connect_info.host_ip.c_str(), connect_info.host_port);
   init_network();
   setup_server(connect_info.host_ip, connect_info.host_port);
   dbp(log_debug, "Host initialized");
+
+  auto ent_add = start_nodeman(load_system_module(SystemModule::Monad), "NodeMan");
+  this_pleroma_node->nodeman_addr = ent_add;
 
   if (connect_info.first_contact_ip != "") {
     dbp(log_info, "Connecting to network [%s : %d]...", connect_info.first_contact_ip.c_str(), connect_info.first_contact_port);
