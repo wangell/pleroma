@@ -140,9 +140,9 @@ std::map<std::string, AstNode *> load_net() {
   functions["next"] = setup_direct_call(net_next, "next", {}, {}, none_type);
   functions["create"] = setup_direct_call(net_create, "create", {}, {}, none_type);
 
-  kernel_map["HttpLb"] = make_actor(nullptr, "HttpLb", functions, {}, {});
+  kernel_map["HttpLb"] = make_actor(nullptr, "HttpLb", functions, {}, {}, {}, {});
 
   return {
-    {"HttpLb", make_actor(nullptr, "HttpLb", functions, {}, {})}
+    {"HttpLb", make_actor(nullptr, "HttpLb", functions, {}, {}, {}, {})}
   };
 }

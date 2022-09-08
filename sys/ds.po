@@ -1,0 +1,7 @@
+ε Hashmap {}
+
+	δ create() -> void
+
+	δ set(val : str) -> void
+
+	δ get(val : str) -> str

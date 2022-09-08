@@ -635,6 +635,7 @@ AstNode *parse_function(ParseContext *context) {
 AstNode *parse_actor(ParseContext *context) {
   std::map<std::string, FuncStmt *> functions;
   std::map<std::string, AstNode *> data;
+  std::vector<std::string> preamble;
 
   Token *actor_name;
   assert(actor_name = context->ts->accept(TokenType::Symbol));
@@ -700,8 +701,13 @@ AstNode *parse_actor(ParseContext *context) {
       break;
     }
 
-    // Parse data section
-    if (context->ts->check(TokenType::Symbol)) {
+    if (context->ts->accept(TokenType::Minus)) {
+      printf("GOT PREAMBLE!\n");
+
+      auto rq = context->ts->accept(TokenType::Symbol);
+      preamble.push_back(rq->lexeme);
+    } else if (context->ts->check(TokenType::Symbol)) {
+      // Data section
       Token *data_sym = context->ts->accept(TokenType::Symbol);
 
       context->ts->expect(TokenType::Colon);
@@ -728,7 +734,7 @@ AstNode *parse_actor(ParseContext *context) {
     //context->ts->expect(TokenType::Newline);
   }
 
-  return make_actor(context->module, actor_name->lexeme, functions, data, inocaps);
+  return make_actor(context->module, actor_name->lexeme, functions, data, inocaps, preamble, {});
 }
 
 std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
@@ -750,7 +756,7 @@ std::map<std::string, TLUserType> get_tl_types(TokenStream* ts) {
   return tl_types;
 }
 
-HylicModule *parse(TokenStream *stream) {
+HylicModule *parse(std::string abs_mod_path, TokenStream *stream) {
 
   ParseContext context;
   context.ts = stream;
@@ -768,7 +774,7 @@ HylicModule *parse(TokenStream *stream) {
       while (context.ts->accept(TokenType::ModUse)) {
         mod_name += "►" + context.ts->accept(TokenType::Symbol)->lexeme;
       }
-      HylicModule* imported_mod;
+      HylicModule *imported_mod;
       if (is_system_module(mod_name)) {
         imported_mod = load_system_module(system_import_to_enum(mod_name));
       } else {
@@ -779,6 +785,7 @@ HylicModule *parse(TokenStream *stream) {
       hm->imports[mod_name] = imported_mod;
     } else if (context.ts->accept(TokenType::Actor)) {
       EntityDef *actor = (EntityDef *)parse_actor(&context);
+      actor->abs_mod_path = abs_mod_path + "►" + actor->name;
       symbol_map[actor->name] = (AstNode *)actor;
       //print_ast(actor);
     } else if (context.ts->accept(TokenType::Newline)) {

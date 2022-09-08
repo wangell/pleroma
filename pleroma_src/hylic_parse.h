@@ -46,6 +46,7 @@ struct InfixOp {
 struct ParseContext {
   TokenStream *ts;
   HylicModule* module;
+  std::string current_mod_path;
 };
 
 class ParserException : public CompileException {
@@ -54,6 +55,6 @@ public:
       : CompileException(file, line_n, char_n, msg) {}
 };
 
-HylicModule *parse(TokenStream *stream);
+HylicModule *parse(std::string abs_mod_path, TokenStream *stream);
 
 std::vector<AstNode *> parse_block(ParseContext *context, int expected_indent);

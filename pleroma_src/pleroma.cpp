@@ -29,8 +29,6 @@ const int MAX_STEPS = 3;
 
 PleromaNode *this_pleroma_node;
 
-std::map<std::string, HylicModule*> programs;
-
 moodycamel::BlockingConcurrentQueue<Vat*> queue;
 
 Msg create_response(Msg msg_in, AstNode *return_val) {
@@ -131,33 +129,15 @@ void process_vq() {
   }
 }
 
-void start_program(HylicModule *program, std::string ent_name) {
-  EntityDef *ent0_def = (EntityDef *)program->entity_defs[ent_name];
-
-  Vat *og_vat = new Vat;
-  og_vat->id = this_pleroma_node->vat_id_base;
-  queue.enqueue(og_vat);
-  this_pleroma_node->vat_id_base++;
-
-  EvalContext context;
-  start_context(&context, this_pleroma_node, og_vat, program, nullptr);
-
-  Entity *ent = create_entity(&context, ent0_def, false);
-  ent->module_scope = program;
-
-  og_vat->entities[0] = ent;
-
-  auto eref = (EntityRefNode*)make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
-  //printf("Program ent : %d %d %d\n", eref->node_id, eref->vat_id, eref->entity_id);
-  //printf("Monad ref %d %d %d\n", monad_ref->node_id, monad_ref->vat_id, monad_ref->entity_id);
-
+void start_program(std::string program_name, std::string ent_name) {
   Msg m;
   m.node_id = monad_ref->node_id;
   m.vat_id = monad_ref->vat_id;
   m.entity_id = monad_ref->entity_id;
   m.function_name = "start-program";
 
-  m.values.push_back((EntityRefNode*) eref);
+  m.values.push_back((StringNode*)make_string(program_name));
+  m.values.push_back((StringNode *)make_string(ent_name));
 
   m.src_entity_id = -1;
   m.src_node_id = -1;
@@ -202,6 +182,24 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
   og_vat->messages.push(m);
 }
 
+void start_nodeman(HylicModule *ukernel, std::string ent0) {
+
+  EntityDef *ent0_def = (EntityDef *)ukernel->entity_defs[ent0];
+
+  Vat *og_vat = new Vat;
+  og_vat->id = this_pleroma_node->vat_id_base;
+  queue.enqueue(og_vat);
+  this_pleroma_node->vat_id_base++;
+
+  EvalContext context;
+  start_context(&context, this_pleroma_node, og_vat, ukernel, nullptr);
+
+  Entity *ent = create_entity(&context, ent0_def, false);
+  ent->module_scope = ukernel;
+
+  og_vat->entities[0] = ent;
+}
+
 void usage() {
   printf("Usage: ...\n");
 }
@@ -218,16 +216,18 @@ void start_pleroma(ConnectionInfo connect_info) {
   dbp(log_debug, "Reading node config [pleroma.json]...");
 
   this_pleroma_node = read_node_config();
+  add_new_pnode(this_pleroma_node);
 
   load_kernel();
 
   if (connect_info.first_contact_ip == "") {
     dbp(log_debug, "Inoculating Pleroma [Monad]...");
     auto monad = load_system_module(SystemModule::Monad);
-
     inoculate_pleroma(monad, "Monad");
     dbp(log_debug, "Successfully inoculated.");
   }
+
+  start_nodeman(load_system_module(SystemModule::Monad), "NodeMan");
 
   dbp(log_debug, "Initializing host [%s : %d]...", connect_info.host_ip.c_str(), connect_info.host_port);
   init_network();
@@ -238,12 +238,11 @@ void start_pleroma(ConnectionInfo connect_info) {
     dbp(log_info, "Connecting to network [%s : %d]...", connect_info.first_contact_ip.c_str(), connect_info.first_contact_port);
     connect_to_cluster(mk_netaddr(connect_info.first_contact_ip, connect_info.first_contact_port));
     dbp(log_info, "Successfully connected");
+
+    start_program("helloworld", "UserProgram");
   }
 
-  auto ukernel = load_file("examples/kernel.po");
-  auto ent0 = "UserProgram";
-  assert(ukernel->entity_defs.find(ent0) != ukernel->entity_defs.end());
-  start_program(ukernel, ent0);
+  load_software();
 
   std::thread burners[processor_count];
 
@@ -294,7 +293,7 @@ int main(int argc, char **argv) {
     start_pleroma(connect_info);
   } else if (std::string(argv[1]) == "test") {
     std::string target_file = argv[2];
-    load_file(target_file);
+    load_file("test", target_file);
     exit(0);
   } else {
     usage();

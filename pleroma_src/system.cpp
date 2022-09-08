@@ -30,7 +30,7 @@ HylicModule *load_system_module(SystemModule mod) {
 
   TokenStream *stream = tokenize_file(system_module_paths[mod]);
 
-  program = parse(stream);
+  program = parse("sys", stream);
 
   // assert number of ents in file matches internal
   //assert(program->entity_defs.size() == kernel_map[SystemModule::Io]);

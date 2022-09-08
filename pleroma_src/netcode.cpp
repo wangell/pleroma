@@ -1,8 +1,10 @@
 #include "netcode.h"
 #include "../shared_src/protoloma.pb.h"
 #include "concurrentqueue.h"
+#include "core/kernel.h"
 #include "hylic.h"
 #include "hylic_ast.h"
+#include "hylic_eval.h"
 #include "pleroma.h"
 #include "general_util.h"
 #include <arpa/inet.h>
@@ -270,8 +272,7 @@ void send_node_msg(Msg m) {
   }
 
   std::string buf = message.SerializeAsString();
-  send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(),
-              buf.length() + 1);
+  send_packet(pnet.peers[pnet.node_host_map[m.node_id]], buf.c_str(), buf.length() + 1);
 }
 
 void setup_server(std::string ip, u16 port) {
@@ -295,8 +296,7 @@ ENetPeer *pconnect(ENetAddress address) {
 
 bool connection_confirmed() {
   ENetEvent event;
-  if (enet_host_service(pnet.server, &event, 5000) > 0 &&
-      event.type == ENET_EVENT_TYPE_CONNECT) {
+  if (enet_host_service(pnet.server, &event, 5000) > 0 && event.type == ENET_EVENT_TYPE_CONNECT) {
     return true;
   } else {
     return false;
@@ -312,6 +312,7 @@ void connect_to_client(ENetAddress address) {
   }
 
   pnet.peers[std::make_tuple(peer->address.host, peer->address.port)] = peer;
+  // FIXME
   pnet.node_host_map[1] = std::make_tuple(peer->address.host, peer->address.port);
 }
 
@@ -330,6 +331,23 @@ void connect_to_cluster(ENetAddress address) {
     dbp(log_debug, "Incoming connection succeeded.");
   }
 
+  romabuf::PleromaMessage message;
+  auto host_info = message.mutable_host_info();
+  host_info->set_port(pnet.src_port);
+
+  //FIXME
+  host_info->set_node_id(0);
+  host_info->set_address("blah");
+
+  auto res = host_info->add_resources();
+
+  for (auto &k : this_pleroma_node->resources) {
+    res->append(k);
+  }
+
+  std::string buf = message.SerializeAsString();
+  send_packet(peer, buf.c_str(), buf.length() + 1);
+
   ENetEvent event;
   // Receive our cluster number/Monad info
   if (enet_host_service(pnet.server, &event, 5000) && event.type == ENET_EVENT_TYPE_RECEIVE) {
@@ -339,6 +357,7 @@ void connect_to_cluster(ENetAddress address) {
     message.ParseFromString(buf);
     assert(message.has_assign_cluster_info());
 
+    // FIXME
     pnet.node_host_map[0] = std::make_tuple(event.peer->address.host, event.peer->address.port);
 
     auto clusterinfo = message.assign_cluster_info();
@@ -358,10 +377,29 @@ void handle_connection(ENetEvent* event) {
     connect_to_client(mk_netaddr(host32_to_string(event->peer->address.host), connect_back_port));
 
     dbp(log_debug, "Sending cluster info...");
-    assign_cluster_info_msg(event->peer->address.host, event->peer->address.port);
+    // TODO insert cluster info into kernel list here + sync over Raft
+    ENetEvent event_in;
+    if (enet_host_service(pnet.server, &event_in, 5000) && event_in.type == ENET_EVENT_TYPE_RECEIVE) {
+      std::string buf = std::string((char *)event_in.packet->data, event_in.packet->dataLength);
+      std::string((char *)event_in.packet->data, event_in.packet->dataLength);
 
-    //announce_new_peer(event->peer->address.host, event->peer->address.port);
-}
+      romabuf::PleromaMessage message;
+      message.ParseFromString(buf);
+      assert(message.has_host_info());
+
+      PleromaNode *new_node = new PleromaNode;
+      for (auto &k : message.host_info().resources()) {
+        new_node->resources.push_back(k);
+      }
+      add_new_pnode(new_node);
+    }
+
+      assign_cluster_info_msg(event->peer->address.host,
+                              event->peer->address.port);
+
+      // announce_new_peer(event->peer->address.host,
+      // event->peer->address.port);
+    }
 
 ENetAddress mk_netaddr(std::string ip, u16 port) {
   ENetAddress address;

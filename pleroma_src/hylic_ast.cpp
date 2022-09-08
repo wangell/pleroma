@@ -202,8 +202,7 @@ AstNode *make_symbol(std::string s) {
   return symbol_node;
 }
 
-AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, FuncStmt *> functions,
-                    std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps) {
+AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps, std::vector<std::string> preamble, std::vector<std::string> postamble) {
   EntityDef *actor_def = new EntityDef;
   actor_def->type = AstNodeType::EntityDef;
   actor_def->name = s;
@@ -211,6 +210,8 @@ AstNode *make_actor(HylicModule* module, std::string s, std::map<std::string, Fu
   actor_def->functions = functions;
   actor_def->data = data;
   actor_def->inocaps = inocaps;
+  actor_def->preamble = preamble;
+  actor_def->postamble = postamble;
   return actor_def;
 }
 

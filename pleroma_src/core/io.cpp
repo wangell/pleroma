@@ -67,6 +67,6 @@ std::map<std::string, AstNode*> load_io() {
   //io_functions["readline"]->ctype.basetype = PType::str;
 
   return {
-    {"Io", make_actor(nullptr, "Io", io_functions, {}, {})}
+    {"Io", make_actor(nullptr, "Io", io_functions, {}, {}, {}, {})}
   };
 }

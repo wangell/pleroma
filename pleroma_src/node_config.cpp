@@ -25,7 +25,9 @@ PleromaNode *read_node_config() {
   std::string test_string = json_config["name"];
   printf("Test %s\n", test_string.c_str());
 
-  pnode->resources.push_back("gpu");
+  for (auto &k : json_config["resources"]) {
+    pnode->resources.push_back(k);
+  }
 
   return pnode;
 }

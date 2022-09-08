@@ -46,5 +46,5 @@ void load_fs() {
   str_type->dtype = DType::Local;
   functions["readfile"] = setup_direct_call(fs_readfile, "readfile", {"fname"}, {str_type}, *str_type);
 
-  kernel_map["FS"] = make_actor(nullptr, "FS", functions, {}, {});
+  kernel_map["FS"] = make_actor(nullptr, "FS", functions, {}, {}, {}, {});
 }

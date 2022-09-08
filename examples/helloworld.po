@@ -1,10 +1,24 @@
-ε Kernel {ioinst : Io}
+~sys►io
 
-	helloworld : u8
+ε Pong {ioinst : @far io►Io}
+	- monitor
 
 	δ create() -> void
-		helloworld = 0
+		let q : u8 = 0
 
-	δ main(env: u8) -> int
-		ioinst.print("Hello, world!")
+	δ doit() -> str
+		@ioinst
+			ioinst ! print ("Working!")
+		↵ "hi"
+
+ε UserProgram {ioinst : @far io►Io}
+
+	δ create() -> void
+		let q : u8 = 0
+
+	δ main(env: u8) -> u8
+
+		let z : loc Pong = Pong()
+		z.doit()
+
 		↵ 0

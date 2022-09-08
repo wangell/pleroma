@@ -24,13 +24,13 @@
 
 EntityRefNode *monad_ref;
 
-HylicModule *load_file(std::string path) {
+HylicModule *load_file(std::string program_name, std::string path) {
   printf("Loading %s...\n", path.c_str());
 
   HylicModule *program;
   TokenStream *stream = tokenize_file(path);
 
-  program = parse(stream);
+  program = parse(program_name, stream);
 
   typesolve(program);
 

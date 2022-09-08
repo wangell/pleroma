@@ -442,10 +442,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     if (node->new_vat) {
       return promise_new_vat(context, (EntityDef *)creation_ast->second);
     } else {
-      Entity *ent = create_entity(context, (EntityDef *)creation_ast->second,
-                                  node->new_vat);
-      return make_entity_ref(ent->address.node_id, ent->address.vat_id,
-                             ent->address.entity_id);
+      Entity *ent = create_entity(context, (EntityDef *)creation_ast->second, node->new_vat);
+      return make_entity_ref(ent->address.node_id, ent->address.vat_id, ent->address.entity_id);
     }
   }
 
@@ -547,7 +545,7 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
 }
 
 AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def) {
-  return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {entity_def});
+  return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {make_string(entity_def->abs_mod_path)});
 }
 
 Entity *create_entity(EvalContext *context, EntityDef *entity_def,
@@ -555,7 +553,13 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
   Entity *e = new Entity;
   Vat *vat;
 
-  vat = context->vat;
+  if (new_vat) {
+    vat = new Vat;
+    vat->id = context->node->vat_id_base;
+    context->node->vat_id_base++;
+  } else {
+    vat = context->vat;
+  }
 
   e->entity_def = entity_def;
 

@@ -18,15 +18,15 @@ extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::inter
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_AssignClusterInfo_protoloma_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_Call_protoloma_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_ERefVal_protoloma_2eproto;
-extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Host_protoloma_2eproto;
+extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HostInfo_protoloma_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_NumVal_protoloma_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<3> scc_info_PValue_protoloma_2eproto;
 extern PROTOBUF_INTERNAL_EXPORT_protoloma_2eproto ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_StrVal_protoloma_2eproto;
 namespace romabuf {
-class HostDefaultTypeInternal {
+class HostInfoDefaultTypeInternal {
  public:
-  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<Host> _instance;
-} _Host_default_instance_;
+  ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<HostInfo> _instance;
+} _HostInfo_default_instance_;
 class NumValDefaultTypeInternal {
  public:
   ::PROTOBUF_NAMESPACE_ID::internal::ExplicitlyConstructed<NumVal> _instance;
@@ -52,6 +52,7 @@ class PleromaMessageDefaultTypeInternal {
   const ::romabuf::Call* call_;
   const ::romabuf::AnnouncePeer* announce_peer_;
   const ::romabuf::AssignClusterInfo* assign_cluster_info_;
+  const ::romabuf::HostInfo* host_info_;
 } _PleromaMessage_default_instance_;
 class CallDefaultTypeInternal {
  public:
@@ -105,7 +106,7 @@ static void InitDefaultsscc_info_AssignClusterInfo_protoloma_2eproto() {
 
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<1> scc_info_AssignClusterInfo_protoloma_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 1, 0, InitDefaultsscc_info_AssignClusterInfo_protoloma_2eproto}, {
-      &scc_info_Host_protoloma_2eproto.base,}};
+      &scc_info_HostInfo_protoloma_2eproto.base,}};
 
 static void InitDefaultsscc_info_Call_protoloma_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -164,19 +165,19 @@ static void InitDefaultsscc_info_GreetingAck_protoloma_2eproto() {
 ::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_GreetingAck_protoloma_2eproto =
     {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_GreetingAck_protoloma_2eproto}, {}};
 
-static void InitDefaultsscc_info_Host_protoloma_2eproto() {
+static void InitDefaultsscc_info_HostInfo_protoloma_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
 
   {
-    void* ptr = &::romabuf::_Host_default_instance_;
-    new (ptr) ::romabuf::Host();
+    void* ptr = &::romabuf::_HostInfo_default_instance_;
+    new (ptr) ::romabuf::HostInfo();
     ::PROTOBUF_NAMESPACE_ID::internal::OnShutdownDestroyMessage(ptr);
   }
-  ::romabuf::Host::InitAsDefaultInstance();
+  ::romabuf::HostInfo::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_Host_protoloma_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_Host_protoloma_2eproto}, {}};
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<0> scc_info_HostInfo_protoloma_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 0, 0, InitDefaultsscc_info_HostInfo_protoloma_2eproto}, {}};
 
 static void InitDefaultsscc_info_LoadProgram_protoloma_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -234,11 +235,12 @@ static void InitDefaultsscc_info_PleromaMessage_protoloma_2eproto() {
   ::romabuf::PleromaMessage::InitAsDefaultInstance();
 }
 
-::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<3> scc_info_PleromaMessage_protoloma_2eproto =
-    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 3, 0, InitDefaultsscc_info_PleromaMessage_protoloma_2eproto}, {
+::PROTOBUF_NAMESPACE_ID::internal::SCCInfo<4> scc_info_PleromaMessage_protoloma_2eproto =
+    {{ATOMIC_VAR_INIT(::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase::kUninitialized), 4, 0, InitDefaultsscc_info_PleromaMessage_protoloma_2eproto}, {
       &scc_info_Call_protoloma_2eproto.base,
       &scc_info_AnnouncePeer_protoloma_2eproto.base,
-      &scc_info_AssignClusterInfo_protoloma_2eproto.base,}};
+      &scc_info_AssignClusterInfo_protoloma_2eproto.base,
+      &scc_info_HostInfo_protoloma_2eproto.base,}};
 
 static void InitDefaultsscc_info_StrVal_protoloma_2eproto() {
   GOOGLE_PROTOBUF_VERIFY_VERSION;
@@ -259,17 +261,19 @@ static constexpr ::PROTOBUF_NAMESPACE_ID::EnumDescriptor const** file_level_enum
 static constexpr ::PROTOBUF_NAMESPACE_ID::ServiceDescriptor const** file_level_service_descriptors_protoloma_2eproto = nullptr;
 
 const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_protoloma_2eproto::offsets[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  PROTOBUF_FIELD_OFFSET(::romabuf::Host, _has_bits_),
-  PROTOBUF_FIELD_OFFSET(::romabuf::Host, _internal_metadata_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, _has_bits_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, _internal_metadata_),
   ~0u,  // no _extensions_
   ~0u,  // no _oneof_case_
   ~0u,  // no _weak_field_map_
-  PROTOBUF_FIELD_OFFSET(::romabuf::Host, node_id_),
-  PROTOBUF_FIELD_OFFSET(::romabuf::Host, address_),
-  PROTOBUF_FIELD_OFFSET(::romabuf::Host, port_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, node_id_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, address_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, port_),
+  PROTOBUF_FIELD_OFFSET(::romabuf::HostInfo, resources_),
   1,
   0,
   2,
+  ~0u,
   PROTOBUF_FIELD_OFFSET(::romabuf::NumVal, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::romabuf::NumVal, _internal_metadata_),
   ~0u,  // no _extensions_
@@ -312,6 +316,7 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_protoloma_2eproto::offsets[] P
   offsetof(::romabuf::PleromaMessageDefaultTypeInternal, call_),
   offsetof(::romabuf::PleromaMessageDefaultTypeInternal, announce_peer_),
   offsetof(::romabuf::PleromaMessageDefaultTypeInternal, assign_cluster_info_),
+  offsetof(::romabuf::PleromaMessageDefaultTypeInternal, host_info_),
   PROTOBUF_FIELD_OFFSET(::romabuf::PleromaMessage, msg_),
   PROTOBUF_FIELD_OFFSET(::romabuf::Call, _has_bits_),
   PROTOBUF_FIELD_OFFSET(::romabuf::Call, _internal_metadata_),
@@ -385,22 +390,22 @@ const ::PROTOBUF_NAMESPACE_ID::uint32 TableStruct_protoloma_2eproto::offsets[] P
   ~0u,  // no _weak_field_map_
 };
 static const ::PROTOBUF_NAMESPACE_ID::internal::MigrationSchema schemas[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) = {
-  { 0, 8, sizeof(::romabuf::Host)},
-  { 11, 17, sizeof(::romabuf::NumVal)},
-  { 18, 24, sizeof(::romabuf::StrVal)},
-  { 25, 33, sizeof(::romabuf::ERefVal)},
-  { 36, -1, sizeof(::romabuf::PValue)},
-  { 45, -1, sizeof(::romabuf::PleromaMessage)},
-  { 54, 70, sizeof(::romabuf::Call)},
-  { 81, 88, sizeof(::romabuf::AnnouncePeer)},
-  { 90, 100, sizeof(::romabuf::AssignClusterInfo)},
-  { 105, 111, sizeof(::romabuf::Greeting)},
-  { 112, 118, sizeof(::romabuf::GreetingAck)},
-  { 119, -1, sizeof(::romabuf::LoadProgram)},
+  { 0, 9, sizeof(::romabuf::HostInfo)},
+  { 13, 19, sizeof(::romabuf::NumVal)},
+  { 20, 26, sizeof(::romabuf::StrVal)},
+  { 27, 35, sizeof(::romabuf::ERefVal)},
+  { 38, -1, sizeof(::romabuf::PValue)},
+  { 47, -1, sizeof(::romabuf::PleromaMessage)},
+  { 57, 73, sizeof(::romabuf::Call)},
+  { 84, 91, sizeof(::romabuf::AnnouncePeer)},
+  { 93, 103, sizeof(::romabuf::AssignClusterInfo)},
+  { 108, 114, sizeof(::romabuf::Greeting)},
+  { 115, 121, sizeof(::romabuf::GreetingAck)},
+  { 122, -1, sizeof(::romabuf::LoadProgram)},
 };
 
 static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] = {
-  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::romabuf::_Host_default_instance_),
+  reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::romabuf::_HostInfo_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::romabuf::_NumVal_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::romabuf::_StrVal_default_instance_),
   reinterpret_cast<const ::PROTOBUF_NAMESPACE_ID::Message*>(&::romabuf::_ERefVal_default_instance_),
@@ -415,31 +420,33 @@ static ::PROTOBUF_NAMESPACE_ID::Message const * const file_default_instances[] =
 };
 
 const char descriptor_table_protodef_protoloma_2eproto[] PROTOBUF_SECTION_VARIABLE(protodesc_cold) =
-  "\n\017protoloma.proto\022\007romabuf\"6\n\004Host\022\017\n\007no"
-  "de_id\030\001 \002(\005\022\017\n\007address\030\002 \002(\t\022\014\n\004port\030\003 \002"
-  "(\r\"\027\n\006NumVal\022\r\n\005value\030\001 \002(\005\"\027\n\006StrVal\022\r\n"
-  "\005value\030\001 \002(\t\"=\n\007ERefVal\022\017\n\007node_id\030\001 \002(\005"
-  "\022\016\n\006vat_id\030\002 \002(\005\022\021\n\tentity_id\030\003 \002(\005\"\177\n\006P"
-  "Value\022\"\n\007num_val\030\001 \001(\0132\017.romabuf.NumValH"
-  "\000\022\"\n\007str_val\030\002 \001(\0132\017.romabuf.StrValH\000\022$\n"
-  "\010eref_val\030\003 \001(\0132\020.romabuf.ERefValH\000B\007\n\005v"
-  "alue\"\241\001\n\016PleromaMessage\022\035\n\004call\030\001 \001(\0132\r."
-  "romabuf.CallH\000\022.\n\rannounce_peer\030\002 \001(\0132\025."
-  "romabuf.AnnouncePeerH\000\0229\n\023assign_cluster"
-  "_info\030\003 \001(\0132\032.romabuf.AssignClusterInfoH"
-  "\000B\005\n\003msg\"\360\001\n\004Call\022\017\n\007node_id\030\001 \002(\005\022\016\n\006va"
-  "t_id\030\002 \002(\005\022\021\n\tentity_id\030\003 \002(\005\022\023\n\013functio"
-  "n_id\030\004 \002(\t\022\023\n\013src_node_id\030\005 \002(\005\022\022\n\nsrc_v"
-  "at_id\030\006 \002(\005\022\025\n\rsrc_entity_id\030\007 \002(\005\022\027\n\017sr"
-  "c_function_id\030\010 \002(\t\022\020\n\010response\030\t \002(\010\022\022\n"
-  "\npromise_id\030\n \002(\005\022 \n\007pvalues\030\013 \003(\0132\017.rom"
-  "abuf.PValue\"-\n\014AnnouncePeer\022\017\n\007address\030\001"
-  " \002(\t\022\014\n\004port\030\002 \002(\r\"\210\001\n\021AssignClusterInfo"
-  "\022\017\n\007node_id\030\001 \002(\r\022\025\n\rmonad_node_id\030\002 \002(\005"
-  "\022\024\n\014monad_vat_id\030\003 \002(\005\022\027\n\017monad_entity_i"
-  "d\030\004 \002(\005\022\034\n\005nodes\030\005 \003(\0132\r.romabuf.Host\"\035\n"
-  "\010Greeting\022\021\n\tnode_name\030\001 \002(\t\"\036\n\013Greeting"
-  "Ack\022\017\n\007node_id\030\001 \002(\005\"\r\n\013LoadProgram"
+  "\n\017protoloma.proto\022\007romabuf\"M\n\010HostInfo\022\017"
+  "\n\007node_id\030\001 \002(\005\022\017\n\007address\030\002 \002(\t\022\014\n\004port"
+  "\030\003 \002(\r\022\021\n\tresources\030\004 \003(\t\"\027\n\006NumVal\022\r\n\005v"
+  "alue\030\001 \002(\005\"\027\n\006StrVal\022\r\n\005value\030\001 \002(\t\"=\n\007E"
+  "RefVal\022\017\n\007node_id\030\001 \002(\005\022\016\n\006vat_id\030\002 \002(\005\022"
+  "\021\n\tentity_id\030\003 \002(\005\"\177\n\006PValue\022\"\n\007num_val\030"
+  "\001 \001(\0132\017.romabuf.NumValH\000\022\"\n\007str_val\030\002 \001("
+  "\0132\017.romabuf.StrValH\000\022$\n\010eref_val\030\003 \001(\0132\020"
+  ".romabuf.ERefValH\000B\007\n\005value\"\311\001\n\016PleromaM"
+  "essage\022\035\n\004call\030\001 \001(\0132\r.romabuf.CallH\000\022.\n"
+  "\rannounce_peer\030\002 \001(\0132\025.romabuf.AnnounceP"
+  "eerH\000\0229\n\023assign_cluster_info\030\003 \001(\0132\032.rom"
+  "abuf.AssignClusterInfoH\000\022&\n\thost_info\030\004 "
+  "\001(\0132\021.romabuf.HostInfoH\000B\005\n\003msg\"\360\001\n\004Call"
+  "\022\017\n\007node_id\030\001 \002(\005\022\016\n\006vat_id\030\002 \002(\005\022\021\n\tent"
+  "ity_id\030\003 \002(\005\022\023\n\013function_id\030\004 \002(\t\022\023\n\013src"
+  "_node_id\030\005 \002(\005\022\022\n\nsrc_vat_id\030\006 \002(\005\022\025\n\rsr"
+  "c_entity_id\030\007 \002(\005\022\027\n\017src_function_id\030\010 \002"
+  "(\t\022\020\n\010response\030\t \002(\010\022\022\n\npromise_id\030\n \002(\005"
+  "\022 \n\007pvalues\030\013 \003(\0132\017.romabuf.PValue\"-\n\014An"
+  "nouncePeer\022\017\n\007address\030\001 \002(\t\022\014\n\004port\030\002 \002("
+  "\r\"\214\001\n\021AssignClusterInfo\022\017\n\007node_id\030\001 \002(\r"
+  "\022\025\n\rmonad_node_id\030\002 \002(\005\022\024\n\014monad_vat_id\030"
+  "\003 \002(\005\022\027\n\017monad_entity_id\030\004 \002(\005\022 \n\005nodes\030"
+  "\005 \003(\0132\021.romabuf.HostInfo\"\035\n\010Greeting\022\021\n\t"
+  "node_name\030\001 \002(\t\"\036\n\013GreetingAck\022\017\n\007node_i"
+  "d\030\001 \002(\005\"\r\n\013LoadProgram"
   ;
 static const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable*const descriptor_table_protoloma_2eproto_deps[1] = {
 };
@@ -450,7 +457,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
   &scc_info_ERefVal_protoloma_2eproto.base,
   &scc_info_Greeting_protoloma_2eproto.base,
   &scc_info_GreetingAck_protoloma_2eproto.base,
-  &scc_info_Host_protoloma_2eproto.base,
+  &scc_info_HostInfo_protoloma_2eproto.base,
   &scc_info_LoadProgram_protoloma_2eproto.base,
   &scc_info_NumVal_protoloma_2eproto.base,
   &scc_info_PValue_protoloma_2eproto.base,
@@ -459,7 +466,7 @@ static ::PROTOBUF_NAMESPACE_ID::internal::SCCInfoBase*const descriptor_table_pro
 };
 static ::PROTOBUF_NAMESPACE_ID::internal::once_flag descriptor_table_protoloma_2eproto_once;
 const ::PROTOBUF_NAMESPACE_ID::internal::DescriptorTable descriptor_table_protoloma_2eproto = {
-  false, false, descriptor_table_protodef_protoloma_2eproto, "protoloma.proto", 995,
+  false, false, descriptor_table_protodef_protoloma_2eproto, "protoloma.proto", 1062,
   &descriptor_table_protoloma_2eproto_once, descriptor_table_protoloma_2eproto_sccs, descriptor_table_protoloma_2eproto_deps, 12, 0,
   schemas, file_default_instances, TableStruct_protoloma_2eproto::offsets,
   file_level_metadata_protoloma_2eproto, 12, file_level_enum_descriptors_protoloma_2eproto, file_level_service_descriptors_protoloma_2eproto,
@@ -471,11 +478,11 @@ namespace romabuf {
 
 // ===================================================================
 
-void Host::InitAsDefaultInstance() {
+void HostInfo::InitAsDefaultInstance() {
 }
-class Host::_Internal {
+class HostInfo::_Internal {
  public:
-  using HasBits = decltype(std::declval<Host>()._has_bits_);
+  using HasBits = decltype(std::declval<HostInfo>()._has_bits_);
   static void set_has_node_id(HasBits* has_bits) {
     (*has_bits)[0] |= 2u;
   }
@@ -490,15 +497,17 @@ class Host::_Internal {
   }
 };
 
-Host::Host(::PROTOBUF_NAMESPACE_ID::Arena* arena)
-  : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
+HostInfo::HostInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena)
+  : ::PROTOBUF_NAMESPACE_ID::Message(arena),
+  resources_(arena) {
   SharedCtor();
   RegisterArenaDtor(arena);
-  // @@protoc_insertion_point(arena_constructor:romabuf.Host)
+  // @@protoc_insertion_point(arena_constructor:romabuf.HostInfo)
 }
-Host::Host(const Host& from)
+HostInfo::HostInfo(const HostInfo& from)
   : ::PROTOBUF_NAMESPACE_ID::Message(),
-      _has_bits_(from._has_bits_) {
+      _has_bits_(from._has_bits_),
+      resources_(from.resources_) {
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   address_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   if (from._internal_has_address()) {
@@ -508,49 +517,50 @@ Host::Host(const Host& from)
   ::memcpy(&node_id_, &from.node_id_,
     static_cast<size_t>(reinterpret_cast<char*>(&port_) -
     reinterpret_cast<char*>(&node_id_)) + sizeof(port_));
-  // @@protoc_insertion_point(copy_constructor:romabuf.Host)
+  // @@protoc_insertion_point(copy_constructor:romabuf.HostInfo)
 }
 
-void Host::SharedCtor() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_Host_protoloma_2eproto.base);
+void HostInfo::SharedCtor() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&scc_info_HostInfo_protoloma_2eproto.base);
   address_.UnsafeSetDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
   ::memset(&node_id_, 0, static_cast<size_t>(
       reinterpret_cast<char*>(&port_) -
       reinterpret_cast<char*>(&node_id_)) + sizeof(port_));
 }
 
-Host::~Host() {
-  // @@protoc_insertion_point(destructor:romabuf.Host)
+HostInfo::~HostInfo() {
+  // @@protoc_insertion_point(destructor:romabuf.HostInfo)
   SharedDtor();
   _internal_metadata_.Delete<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-void Host::SharedDtor() {
+void HostInfo::SharedDtor() {
   GOOGLE_DCHECK(GetArena() == nullptr);
   address_.DestroyNoArena(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited());
 }
 
-void Host::ArenaDtor(void* object) {
-  Host* _this = reinterpret_cast< Host* >(object);
+void HostInfo::ArenaDtor(void* object) {
+  HostInfo* _this = reinterpret_cast< HostInfo* >(object);
   (void)_this;
 }
-void Host::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
+void HostInfo::RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena*) {
 }
-void Host::SetCachedSize(int size) const {
+void HostInfo::SetCachedSize(int size) const {
   _cached_size_.Set(size);
 }
-const Host& Host::default_instance() {
-  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_Host_protoloma_2eproto.base);
+const HostInfo& HostInfo::default_instance() {
+  ::PROTOBUF_NAMESPACE_ID::internal::InitSCC(&::scc_info_HostInfo_protoloma_2eproto.base);
   return *internal_default_instance();
 }
 
 
-void Host::Clear() {
-// @@protoc_insertion_point(message_clear_start:romabuf.Host)
+void HostInfo::Clear() {
+// @@protoc_insertion_point(message_clear_start:romabuf.HostInfo)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  resources_.Clear();
   cached_has_bits = _has_bits_[0];
   if (cached_has_bits & 0x00000001u) {
     address_.ClearNonDefaultToEmpty();
@@ -564,7 +574,7 @@ void Host::Clear() {
   _internal_metadata_.Clear<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
 }
 
-const char* Host::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
+const char* HostInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) {
 #define CHK_(x) if (PROTOBUF_PREDICT_FALSE(!(x))) goto failure
   _Internal::HasBits has_bits{};
   ::PROTOBUF_NAMESPACE_ID::Arena* arena = GetArena(); (void)arena;
@@ -587,7 +597,7 @@ const char* Host::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::inter
           auto str = _internal_mutable_address();
           ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
           #ifndef NDEBUG
-          ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "romabuf.Host.address");
+          ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "romabuf.HostInfo.address");
           #endif  // !NDEBUG
           CHK_(ptr);
         } else goto handle_unusual;
@@ -598,6 +608,22 @@ const char* Host::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::inter
           _Internal::set_has_port(&has_bits);
           port_ = ::PROTOBUF_NAMESPACE_ID::internal::ReadVarint32(&ptr);
           CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // repeated string resources = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          ptr -= 1;
+          do {
+            ptr += 1;
+            auto str = _internal_add_resources();
+            ptr = ::PROTOBUF_NAMESPACE_ID::internal::InlineGreedyStringParser(str, ptr, ctx);
+            #ifndef NDEBUG
+            ::PROTOBUF_NAMESPACE_ID::internal::VerifyUTF8(str, "romabuf.HostInfo.resources");
+            #endif  // !NDEBUG
+            CHK_(ptr);
+            if (!ctx->DataAvailable(ptr)) break;
+          } while (::PROTOBUF_NAMESPACE_ID::internal::ExpectTag<34>(ptr));
         } else goto handle_unusual;
         continue;
       default: {
@@ -623,9 +649,9 @@ failure:
 #undef CHK_
 }
 
-::PROTOBUF_NAMESPACE_ID::uint8* Host::_InternalSerialize(
+::PROTOBUF_NAMESPACE_ID::uint8* HostInfo::_InternalSerialize(
     ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const {
-  // @@protoc_insertion_point(serialize_to_array_start:romabuf.Host)
+  // @@protoc_insertion_point(serialize_to_array_start:romabuf.HostInfo)
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
@@ -641,7 +667,7 @@ failure:
     ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
       this->_internal_address().data(), static_cast<int>(this->_internal_address().length()),
       ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
-      "romabuf.Host.address");
+      "romabuf.HostInfo.address");
     target = stream->WriteStringMaybeAliased(
         2, this->_internal_address(), target);
   }
@@ -652,16 +678,26 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteUInt32ToArray(3, this->_internal_port(), target);
   }
 
+  // repeated string resources = 4;
+  for (int i = 0, n = this->_internal_resources_size(); i < n; i++) {
+    const auto& s = this->_internal_resources(i);
+    ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::VerifyUTF8StringNamedField(
+      s.data(), static_cast<int>(s.length()),
+      ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::SERIALIZE,
+      "romabuf.HostInfo.resources");
+    target = stream->WriteString(4, s, target);
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormat::InternalSerializeUnknownFieldsToArray(
         _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance), target, stream);
   }
-  // @@protoc_insertion_point(serialize_to_array_end:romabuf.Host)
+  // @@protoc_insertion_point(serialize_to_array_end:romabuf.HostInfo)
   return target;
 }
 
-size_t Host::RequiredFieldsByteSizeFallback() const {
-// @@protoc_insertion_point(required_fields_byte_size_fallback_start:romabuf.Host)
+size_t HostInfo::RequiredFieldsByteSizeFallback() const {
+// @@protoc_insertion_point(required_fields_byte_size_fallback_start:romabuf.HostInfo)
   size_t total_size = 0;
 
   if (_internal_has_address()) {
@@ -687,8 +723,8 @@ size_t Host::RequiredFieldsByteSizeFallback() const {
 
   return total_size;
 }
-size_t Host::ByteSizeLong() const {
-// @@protoc_insertion_point(message_byte_size_start:romabuf.Host)
+size_t HostInfo::ByteSizeLong() const {
+// @@protoc_insertion_point(message_byte_size_start:romabuf.HostInfo)
   size_t total_size = 0;
 
   if (((_has_bits_[0] & 0x00000007) ^ 0x00000007) == 0) {  // All required fields are present.
@@ -714,6 +750,14 @@ size_t Host::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
+  // repeated string resources = 4;
+  total_size += 1 *
+      ::PROTOBUF_NAMESPACE_ID::internal::FromIntSize(resources_.size());
+  for (int i = 0, n = resources_.size(); i < n; i++) {
+    total_size += ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::StringSize(
+      resources_.Get(i));
+  }
+
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
     return ::PROTOBUF_NAMESPACE_ID::internal::ComputeUnknownFieldsSize(
         _internal_metadata_, total_size, &_cached_size_);
@@ -723,28 +767,29 @@ size_t Host::ByteSizeLong() const {
   return total_size;
 }
 
-void Host::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_merge_from_start:romabuf.Host)
+void HostInfo::MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_merge_from_start:romabuf.HostInfo)
   GOOGLE_DCHECK_NE(&from, this);
-  const Host* source =
-      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<Host>(
+  const HostInfo* source =
+      ::PROTOBUF_NAMESPACE_ID::DynamicCastToGenerated<HostInfo>(
           &from);
   if (source == nullptr) {
-  // @@protoc_insertion_point(generalized_merge_from_cast_fail:romabuf.Host)
+  // @@protoc_insertion_point(generalized_merge_from_cast_fail:romabuf.HostInfo)
     ::PROTOBUF_NAMESPACE_ID::internal::ReflectionOps::Merge(from, this);
   } else {
-  // @@protoc_insertion_point(generalized_merge_from_cast_success:romabuf.Host)
+  // @@protoc_insertion_point(generalized_merge_from_cast_success:romabuf.HostInfo)
     MergeFrom(*source);
   }
 }
 
-void Host::MergeFrom(const Host& from) {
-// @@protoc_insertion_point(class_specific_merge_from_start:romabuf.Host)
+void HostInfo::MergeFrom(const HostInfo& from) {
+// @@protoc_insertion_point(class_specific_merge_from_start:romabuf.HostInfo)
   GOOGLE_DCHECK_NE(&from, this);
   _internal_metadata_.MergeFrom<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(from._internal_metadata_);
   ::PROTOBUF_NAMESPACE_ID::uint32 cached_has_bits = 0;
   (void) cached_has_bits;
 
+  resources_.MergeFrom(from.resources_);
   cached_has_bits = from._has_bits_[0];
   if (cached_has_bits & 0x00000007u) {
     if (cached_has_bits & 0x00000001u) {
@@ -760,39 +805,40 @@ void Host::MergeFrom(const Host& from) {
   }
 }
 
-void Host::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
-// @@protoc_insertion_point(generalized_copy_from_start:romabuf.Host)
+void HostInfo::CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) {
+// @@protoc_insertion_point(generalized_copy_from_start:romabuf.HostInfo)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-void Host::CopyFrom(const Host& from) {
-// @@protoc_insertion_point(class_specific_copy_from_start:romabuf.Host)
+void HostInfo::CopyFrom(const HostInfo& from) {
+// @@protoc_insertion_point(class_specific_copy_from_start:romabuf.HostInfo)
   if (&from == this) return;
   Clear();
   MergeFrom(from);
 }
 
-bool Host::IsInitialized() const {
+bool HostInfo::IsInitialized() const {
   if (_Internal::MissingRequiredFields(_has_bits_)) return false;
   return true;
 }
 
-void Host::InternalSwap(Host* other) {
+void HostInfo::InternalSwap(HostInfo* other) {
   using std::swap;
   _internal_metadata_.Swap<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(&other->_internal_metadata_);
   swap(_has_bits_[0], other->_has_bits_[0]);
+  resources_.InternalSwap(&other->resources_);
   address_.Swap(&other->address_, &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   ::PROTOBUF_NAMESPACE_ID::internal::memswap<
-      PROTOBUF_FIELD_OFFSET(Host, port_)
-      + sizeof(Host::port_)
-      - PROTOBUF_FIELD_OFFSET(Host, node_id_)>(
+      PROTOBUF_FIELD_OFFSET(HostInfo, port_)
+      + sizeof(HostInfo::port_)
+      - PROTOBUF_FIELD_OFFSET(HostInfo, node_id_)>(
           reinterpret_cast<char*>(&node_id_),
           reinterpret_cast<char*>(&other->node_id_));
 }
 
-::PROTOBUF_NAMESPACE_ID::Metadata Host::GetMetadata() const {
+::PROTOBUF_NAMESPACE_ID::Metadata HostInfo::GetMetadata() const {
   return GetMetadataStatic();
 }
 
@@ -1955,12 +2001,15 @@ void PleromaMessage::InitAsDefaultInstance() {
       ::romabuf::AnnouncePeer::internal_default_instance());
   ::romabuf::_PleromaMessage_default_instance_.assign_cluster_info_ = const_cast< ::romabuf::AssignClusterInfo*>(
       ::romabuf::AssignClusterInfo::internal_default_instance());
+  ::romabuf::_PleromaMessage_default_instance_.host_info_ = const_cast< ::romabuf::HostInfo*>(
+      ::romabuf::HostInfo::internal_default_instance());
 }
 class PleromaMessage::_Internal {
  public:
   static const ::romabuf::Call& call(const PleromaMessage* msg);
   static const ::romabuf::AnnouncePeer& announce_peer(const PleromaMessage* msg);
   static const ::romabuf::AssignClusterInfo& assign_cluster_info(const PleromaMessage* msg);
+  static const ::romabuf::HostInfo& host_info(const PleromaMessage* msg);
 };
 
 const ::romabuf::Call&
@@ -1974,6 +2023,10 @@ PleromaMessage::_Internal::announce_peer(const PleromaMessage* msg) {
 const ::romabuf::AssignClusterInfo&
 PleromaMessage::_Internal::assign_cluster_info(const PleromaMessage* msg) {
   return *msg->msg_.assign_cluster_info_;
+}
+const ::romabuf::HostInfo&
+PleromaMessage::_Internal::host_info(const PleromaMessage* msg) {
+  return *msg->msg_.host_info_;
 }
 void PleromaMessage::set_allocated_call(::romabuf::Call* call) {
   ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
@@ -2020,6 +2073,21 @@ void PleromaMessage::set_allocated_assign_cluster_info(::romabuf::AssignClusterI
   }
   // @@protoc_insertion_point(field_set_allocated:romabuf.PleromaMessage.assign_cluster_info)
 }
+void PleromaMessage::set_allocated_host_info(::romabuf::HostInfo* host_info) {
+  ::PROTOBUF_NAMESPACE_ID::Arena* message_arena = GetArena();
+  clear_msg();
+  if (host_info) {
+    ::PROTOBUF_NAMESPACE_ID::Arena* submessage_arena =
+      ::PROTOBUF_NAMESPACE_ID::Arena::GetArena(host_info);
+    if (message_arena != submessage_arena) {
+      host_info = ::PROTOBUF_NAMESPACE_ID::internal::GetOwnedMessage(
+          message_arena, host_info, submessage_arena);
+    }
+    set_has_host_info();
+    msg_.host_info_ = host_info;
+  }
+  // @@protoc_insertion_point(field_set_allocated:romabuf.PleromaMessage.host_info)
+}
 PleromaMessage::PleromaMessage(::PROTOBUF_NAMESPACE_ID::Arena* arena)
   : ::PROTOBUF_NAMESPACE_ID::Message(arena) {
   SharedCtor();
@@ -2041,6 +2109,10 @@ PleromaMessage::PleromaMessage(const PleromaMessage& from)
     }
     case kAssignClusterInfo: {
       _internal_mutable_assign_cluster_info()->::romabuf::AssignClusterInfo::MergeFrom(from._internal_assign_cluster_info());
+      break;
+    }
+    case kHostInfo: {
+      _internal_mutable_host_info()->::romabuf::HostInfo::MergeFrom(from._internal_host_info());
       break;
     }
     case MSG_NOT_SET: {
@@ -2104,6 +2176,12 @@ void PleromaMessage::clear_msg() {
       }
       break;
     }
+    case kHostInfo: {
+      if (GetArena() == nullptr) {
+        delete msg_.host_info_;
+      }
+      break;
+    }
     case MSG_NOT_SET: {
       break;
     }
@@ -2148,6 +2226,13 @@ const char* PleromaMessage::_InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE
       case 3:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 26)) {
           ptr = ctx->ParseMessage(_internal_mutable_assign_cluster_info(), ptr);
+          CHK_(ptr);
+        } else goto handle_unusual;
+        continue;
+      // .romabuf.HostInfo host_info = 4;
+      case 4:
+        if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 34)) {
+          ptr = ctx->ParseMessage(_internal_mutable_host_info(), ptr);
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
@@ -2201,6 +2286,13 @@ failure:
           3, _Internal::assign_cluster_info(this), target, stream);
       break;
     }
+    case kHostInfo: {
+      target = stream->EnsureSpace(target);
+      target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::
+        InternalWriteMessage(
+          4, _Internal::host_info(this), target, stream);
+      break;
+    }
     default: ;
   }
   if (PROTOBUF_PREDICT_FALSE(_internal_metadata_.have_unknown_fields())) {
@@ -2239,6 +2331,13 @@ size_t PleromaMessage::ByteSizeLong() const {
       total_size += 1 +
         ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
           *msg_.assign_cluster_info_);
+      break;
+    }
+    // .romabuf.HostInfo host_info = 4;
+    case kHostInfo: {
+      total_size += 1 +
+        ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::MessageSize(
+          *msg_.host_info_);
       break;
     }
     case MSG_NOT_SET: {
@@ -2289,6 +2388,10 @@ void PleromaMessage::MergeFrom(const PleromaMessage& from) {
       _internal_mutable_assign_cluster_info()->::romabuf::AssignClusterInfo::MergeFrom(from._internal_assign_cluster_info());
       break;
     }
+    case kHostInfo: {
+      _internal_mutable_host_info()->::romabuf::HostInfo::MergeFrom(from._internal_host_info());
+      break;
+    }
     case MSG_NOT_SET: {
       break;
     }
@@ -2326,6 +2429,12 @@ bool PleromaMessage::IsInitialized() const {
     case kAssignClusterInfo: {
       if (has_assign_cluster_info()) {
         if (!this->assign_cluster_info().IsInitialized()) return false;
+      }
+      break;
+    }
+    case kHostInfo: {
+      if (has_host_info()) {
+        if (!this->host_info().IsInitialized()) return false;
       }
       break;
     }
@@ -3372,7 +3481,7 @@ const char* AssignClusterInfo::_InternalParse(const char* ptr, ::PROTOBUF_NAMESP
           CHK_(ptr);
         } else goto handle_unusual;
         continue;
-      // repeated .romabuf.Host nodes = 5;
+      // repeated .romabuf.HostInfo nodes = 5;
       case 5:
         if (PROTOBUF_PREDICT_TRUE(static_cast<::PROTOBUF_NAMESPACE_ID::uint8>(tag) == 42)) {
           ptr -= 1;
@@ -3438,7 +3547,7 @@ failure:
     target = ::PROTOBUF_NAMESPACE_ID::internal::WireFormatLite::WriteInt32ToArray(4, this->_internal_monad_entity_id(), target);
   }
 
-  // repeated .romabuf.Host nodes = 5;
+  // repeated .romabuf.HostInfo nodes = 5;
   for (unsigned int i = 0,
       n = static_cast<unsigned int>(this->_internal_nodes_size()); i < n; i++) {
     target = stream->EnsureSpace(target);
@@ -3520,7 +3629,7 @@ size_t AssignClusterInfo::ByteSizeLong() const {
   // Prevent compiler warnings about cached_has_bits being unused
   (void) cached_has_bits;
 
-  // repeated .romabuf.Host nodes = 5;
+  // repeated .romabuf.HostInfo nodes = 5;
   total_size += 1UL * this->_internal_nodes_size();
   for (const auto& msg : this->nodes_) {
     total_size +=
@@ -4221,8 +4330,8 @@ void LoadProgram::InternalSwap(LoadProgram* other) {
 // @@protoc_insertion_point(namespace_scope)
 }  // namespace romabuf
 PROTOBUF_NAMESPACE_OPEN
-template<> PROTOBUF_NOINLINE ::romabuf::Host* Arena::CreateMaybeMessage< ::romabuf::Host >(Arena* arena) {
-  return Arena::CreateMessageInternal< ::romabuf::Host >(arena);
+template<> PROTOBUF_NOINLINE ::romabuf::HostInfo* Arena::CreateMaybeMessage< ::romabuf::HostInfo >(Arena* arena) {
+  return Arena::CreateMessageInternal< ::romabuf::HostInfo >(arena);
 }
 template<> PROTOBUF_NOINLINE ::romabuf::NumVal* Arena::CreateMaybeMessage< ::romabuf::NumVal >(Arena* arena) {
   return Arena::CreateMessageInternal< ::romabuf::NumVal >(arena);

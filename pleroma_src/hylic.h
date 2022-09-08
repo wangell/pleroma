@@ -10,7 +10,7 @@
 #include "hylic_eval.h"
 #include "hylic_parse.h"
 
-HylicModule *load_file(std::string path);
+HylicModule *load_file(std::string program_name, std::string path);
 std::map<std::string, AstNode *> parse(TokenStream stream);
 bool typecheck(std::map<std::string, AstNode *>);
 AstNode *eval(AstNode *obj, Scope *scope);

@@ -11,15 +11,46 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <algorithm>
+#include <mutex>
 
 std::map<SystemModule, std::map<std::string, AstNode *>> kernel_map;
 
 std::map<std::string, Entity*> system_entities;
 
-std::vector<PleromaNode> nodes;
+std::map<std::string, HylicModule*> programs;
+
+std::mutex node_mtx;
+std::vector<PleromaNode*> nodes;
 
 // Always 1, because we count the Monad
 int n_running_programs = 1;
+
+void load_software() {
+  programs["helloworld"] = load_file("helloworld", "examples/helloworld.po");
+}
+
+void add_new_pnode(PleromaNode* node) {
+  node_mtx.lock();
+  nodes.push_back(node);
+  node_mtx.unlock();
+}
+
+// Tries to schedule a vat on the current node set, returns true if it was possible
+PleromaNode* try_preschedule(EntityDef* edef) {
+
+  for (auto &k : nodes) {
+    bool satisfied = true;
+    for (auto &rq : edef->preamble) {
+      if (std::find(k->resources.begin(), k->resources.end(), rq) == k->resources.end()) {
+        satisfied = false;
+      }
+    }
+    if (satisfied) return k;
+  }
+
+  return nullptr;
+}
 
 EntityRefNode* get_entity_ref(Entity* e) {
   return (EntityRefNode*)make_entity_ref(e->address.node_id, e->address.vat_id, e->address.entity_id);
@@ -47,11 +78,23 @@ EntityRefNode* get_system_entity_ref(CType ctype) {
 
 AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
 
-  EntityDef* edef = (EntityDef*)args[0];
-  auto io_ent = create_entity(context, edef, false);
-  io_ent->module_scope = io_ent->entity_def->module;
+  std::string program_name = ((StringNode *)args[0])->value;
+  std::string ent_name = ((StringNode *)args[1])->value;
 
-  return get_entity_ref(io_ent);
+  EntityDef* edef = (EntityDef*)programs[program_name]->entity_defs[ent_name];
+
+  if (try_preschedule(edef)) {
+    printf("Sending create-vat\n");
+    //FIXME hardcoded nodeman
+    eval_message_node(context, (EntityRefNode *)make_entity_ref(1, 0, 0), CommMode::Async, "create-vat", args);
+
+    // FIXME hardcoded, should resolve the promise then return the ent ref
+    return make_entity_ref(1, 1, 0);
+  }
+
+  // Handle failed schedule with an error
+  printf("Failed to satisfy preamble!\n");
+  assert(false);
 }
 
 AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> args) {
@@ -68,11 +111,16 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
 
 AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
 
-  auto eref = (EntityRefNode*)args[0];
+  std::string program_name = ((StringNode*)args[0])->value;;
+  std::string ent_name = ((StringNode *)args[1])->value;
 
   n_running_programs += 1;
   //printf("Incremented programs: %d\n", n_running_programs);
   //printf("Called eref %d %d %d\n", eref->node_id, eref->vat_id, eref->entity_id);
+
+  auto eref = (EntityRefNode*)monad_new_vat(context, args);
+  // FIXME: hardcoded NodeMan address
+
   eval_message_node(context, eref, CommMode::Async, "main", {make_number(0)});
 
   return make_number(0);
@@ -91,6 +139,24 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
+}
+
+AstNode *nodeman_create(EvalContext *context, std::vector<AstNode *> args) {
+  return make_number(0);
+}
+
+AstNode *nodeman_create_vat(EvalContext *context, std::vector<AstNode *> args) {
+  printf("Nodeman received create vat!\n");
+  std::string program_name = ((StringNode *)args[0])->value;
+  std::string ent_name = ((StringNode *)args[1])->value;
+
+  EntityDef *edef = (EntityDef *)programs[program_name]->entity_defs[ent_name];
+
+  auto io_ent = create_entity(context, edef, true);
+  io_ent->module_scope = io_ent->entity_def->module;
+
+  printf("Nodeman created vat with address %d %d %d\n", io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
+  return get_entity_ref(io_ent);
 }
 
 void load_kernel() {
@@ -116,13 +182,23 @@ void load_kernel() {
   c4->subtype = c2;
   c4->dtype = DType::Local;
 
-  functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"eref"}, {c2}, lu8());
+  CType *c_str = new CType;
+  c_str->basetype = PType::str;
+  c_str->dtype = DType::Local;
+
+  functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"programname", "entname"}, {c_str, c_str}, lu8());
   functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
   functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {}, {}, *c3);
-  functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"entdef"}, {c2}, *c4);
+  functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"entdef"}, {c_str}, *c4);
+
+  std::map<std::string, FuncStmt *> node_man_functions;
+
+  node_man_functions["create"] = setup_direct_call(nodeman_create, "create", {}, {}, lu8());
+  node_man_functions["create-vat"] = setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
 
   kernel_map[SystemModule::Monad] = {
-    {"Monad", make_actor(nullptr, "Monad", functions, {}, {})}
+      {"Monad", make_actor(nullptr, "Monad", functions, {}, {}, {}, {})},
+      {"NodeMan", make_actor(nullptr, "NodeMan", node_man_functions, {}, {}, {}, {})}
   };
 
   kernel_map[SystemModule::Io] = load_io();

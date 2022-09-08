@@ -73,9 +73,9 @@ extern GreetingDefaultTypeInternal _Greeting_default_instance_;
 class GreetingAck;
 class GreetingAckDefaultTypeInternal;
 extern GreetingAckDefaultTypeInternal _GreetingAck_default_instance_;
-class Host;
-class HostDefaultTypeInternal;
-extern HostDefaultTypeInternal _Host_default_instance_;
+class HostInfo;
+class HostInfoDefaultTypeInternal;
+extern HostInfoDefaultTypeInternal _HostInfo_default_instance_;
 class LoadProgram;
 class LoadProgramDefaultTypeInternal;
 extern LoadProgramDefaultTypeInternal _LoadProgram_default_instance_;
@@ -99,7 +99,7 @@ template<> ::romabuf::Call* Arena::CreateMaybeMessage<::romabuf::Call>(Arena*);
 template<> ::romabuf::ERefVal* Arena::CreateMaybeMessage<::romabuf::ERefVal>(Arena*);
 template<> ::romabuf::Greeting* Arena::CreateMaybeMessage<::romabuf::Greeting>(Arena*);
 template<> ::romabuf::GreetingAck* Arena::CreateMaybeMessage<::romabuf::GreetingAck>(Arena*);
-template<> ::romabuf::Host* Arena::CreateMaybeMessage<::romabuf::Host>(Arena*);
+template<> ::romabuf::HostInfo* Arena::CreateMaybeMessage<::romabuf::HostInfo>(Arena*);
 template<> ::romabuf::LoadProgram* Arena::CreateMaybeMessage<::romabuf::LoadProgram>(Arena*);
 template<> ::romabuf::NumVal* Arena::CreateMaybeMessage<::romabuf::NumVal>(Arena*);
 template<> ::romabuf::PValue* Arena::CreateMaybeMessage<::romabuf::PValue>(Arena*);
@@ -110,23 +110,23 @@ namespace romabuf {
 
 // ===================================================================
 
-class Host PROTOBUF_FINAL :
-    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:romabuf.Host) */ {
+class HostInfo PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:romabuf.HostInfo) */ {
  public:
-  inline Host() : Host(nullptr) {};
-  virtual ~Host();
+  inline HostInfo() : HostInfo(nullptr) {};
+  virtual ~HostInfo();
 
-  Host(const Host& from);
-  Host(Host&& from) noexcept
-    : Host() {
+  HostInfo(const HostInfo& from);
+  HostInfo(HostInfo&& from) noexcept
+    : HostInfo() {
     *this = ::std::move(from);
   }
 
-  inline Host& operator=(const Host& from) {
+  inline HostInfo& operator=(const HostInfo& from) {
     CopyFrom(from);
     return *this;
   }
-  inline Host& operator=(Host&& from) noexcept {
+  inline HostInfo& operator=(HostInfo&& from) noexcept {
     if (GetArena() == from.GetArena()) {
       if (this != &from) InternalSwap(&from);
     } else {
@@ -151,20 +151,20 @@ class Host PROTOBUF_FINAL :
   static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
     return GetMetadataStatic().reflection;
   }
-  static const Host& default_instance();
+  static const HostInfo& default_instance();
 
   static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
-  static inline const Host* internal_default_instance() {
-    return reinterpret_cast<const Host*>(
-               &_Host_default_instance_);
+  static inline const HostInfo* internal_default_instance() {
+    return reinterpret_cast<const HostInfo*>(
+               &_HostInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
     0;
 
-  friend void swap(Host& a, Host& b) {
+  friend void swap(HostInfo& a, HostInfo& b) {
     a.Swap(&b);
   }
-  inline void Swap(Host* other) {
+  inline void Swap(HostInfo* other) {
     if (other == this) return;
     if (GetArena() == other->GetArena()) {
       InternalSwap(other);
@@ -172,7 +172,7 @@ class Host PROTOBUF_FINAL :
       ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
     }
   }
-  void UnsafeArenaSwap(Host* other) {
+  void UnsafeArenaSwap(HostInfo* other) {
     if (other == this) return;
     GOOGLE_DCHECK(GetArena() == other->GetArena());
     InternalSwap(other);
@@ -180,17 +180,17 @@ class Host PROTOBUF_FINAL :
 
   // implements Message ----------------------------------------------
 
-  inline Host* New() const final {
-    return CreateMaybeMessage<Host>(nullptr);
+  inline HostInfo* New() const final {
+    return CreateMaybeMessage<HostInfo>(nullptr);
   }
 
-  Host* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
-    return CreateMaybeMessage<Host>(arena);
+  HostInfo* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<HostInfo>(arena);
   }
   void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
   void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
-  void CopyFrom(const Host& from);
-  void MergeFrom(const Host& from);
+  void CopyFrom(const HostInfo& from);
+  void MergeFrom(const HostInfo& from);
   PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
   bool IsInitialized() const final;
 
@@ -204,13 +204,13 @@ class Host PROTOBUF_FINAL :
   inline void SharedCtor();
   inline void SharedDtor();
   void SetCachedSize(int size) const final;
-  void InternalSwap(Host* other);
+  void InternalSwap(HostInfo* other);
   friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
   static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
-    return "romabuf.Host";
+    return "romabuf.HostInfo";
   }
   protected:
-  explicit Host(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  explicit HostInfo(::PROTOBUF_NAMESPACE_ID::Arena* arena);
   private:
   static void ArenaDtor(void* object);
   inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
@@ -230,10 +230,35 @@ class Host PROTOBUF_FINAL :
   // accessors -------------------------------------------------------
 
   enum : int {
+    kResourcesFieldNumber = 4,
     kAddressFieldNumber = 2,
     kNodeIdFieldNumber = 1,
     kPortFieldNumber = 3,
   };
+  // repeated string resources = 4;
+  int resources_size() const;
+  private:
+  int _internal_resources_size() const;
+  public:
+  void clear_resources();
+  const std::string& resources(int index) const;
+  std::string* mutable_resources(int index);
+  void set_resources(int index, const std::string& value);
+  void set_resources(int index, std::string&& value);
+  void set_resources(int index, const char* value);
+  void set_resources(int index, const char* value, size_t size);
+  std::string* add_resources();
+  void add_resources(const std::string& value);
+  void add_resources(std::string&& value);
+  void add_resources(const char* value);
+  void add_resources(const char* value, size_t size);
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>& resources() const;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>* mutable_resources();
+  private:
+  const std::string& _internal_resources(int index) const;
+  std::string* _internal_add_resources();
+  public:
+
   // required string address = 2;
   bool has_address() const;
   private:
@@ -289,7 +314,7 @@ class Host PROTOBUF_FINAL :
   void _internal_set_port(::PROTOBUF_NAMESPACE_ID::uint32 value);
   public:
 
-  // @@protoc_insertion_point(class_scope:romabuf.Host)
+  // @@protoc_insertion_point(class_scope:romabuf.HostInfo)
  private:
   class _Internal;
 
@@ -301,6 +326,7 @@ class Host PROTOBUF_FINAL :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string> resources_;
   ::PROTOBUF_NAMESPACE_ID::internal::ArenaStringPtr address_;
   ::PROTOBUF_NAMESPACE_ID::int32 node_id_;
   ::PROTOBUF_NAMESPACE_ID::uint32 port_;
@@ -1064,6 +1090,7 @@ class PleromaMessage PROTOBUF_FINAL :
     kCall = 1,
     kAnnouncePeer = 2,
     kAssignClusterInfo = 3,
+    kHostInfo = 4,
     MSG_NOT_SET = 0,
   };
 
@@ -1147,6 +1174,7 @@ class PleromaMessage PROTOBUF_FINAL :
     kCallFieldNumber = 1,
     kAnnouncePeerFieldNumber = 2,
     kAssignClusterInfoFieldNumber = 3,
+    kHostInfoFieldNumber = 4,
   };
   // .romabuf.Call call = 1;
   bool has_call() const;
@@ -1202,6 +1230,24 @@ class PleromaMessage PROTOBUF_FINAL :
       ::romabuf::AssignClusterInfo* assign_cluster_info);
   ::romabuf::AssignClusterInfo* unsafe_arena_release_assign_cluster_info();
 
+  // .romabuf.HostInfo host_info = 4;
+  bool has_host_info() const;
+  private:
+  bool _internal_has_host_info() const;
+  public:
+  void clear_host_info();
+  const ::romabuf::HostInfo& host_info() const;
+  ::romabuf::HostInfo* release_host_info();
+  ::romabuf::HostInfo* mutable_host_info();
+  void set_allocated_host_info(::romabuf::HostInfo* host_info);
+  private:
+  const ::romabuf::HostInfo& _internal_host_info() const;
+  ::romabuf::HostInfo* _internal_mutable_host_info();
+  public:
+  void unsafe_arena_set_allocated_host_info(
+      ::romabuf::HostInfo* host_info);
+  ::romabuf::HostInfo* unsafe_arena_release_host_info();
+
   void clear_msg();
   MsgCase msg_case() const;
   // @@protoc_insertion_point(class_scope:romabuf.PleromaMessage)
@@ -1210,6 +1256,7 @@ class PleromaMessage PROTOBUF_FINAL :
   void set_has_call();
   void set_has_announce_peer();
   void set_has_assign_cluster_info();
+  void set_has_host_info();
 
   inline bool has_msg() const;
   inline void clear_has_msg();
@@ -1222,6 +1269,7 @@ class PleromaMessage PROTOBUF_FINAL :
     ::romabuf::Call* call_;
     ::romabuf::AnnouncePeer* announce_peer_;
     ::romabuf::AssignClusterInfo* assign_cluster_info_;
+    ::romabuf::HostInfo* host_info_;
   } msg_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
@@ -1878,22 +1926,22 @@ class AssignClusterInfo PROTOBUF_FINAL :
     kMonadVatIdFieldNumber = 3,
     kMonadEntityIdFieldNumber = 4,
   };
-  // repeated .romabuf.Host nodes = 5;
+  // repeated .romabuf.HostInfo nodes = 5;
   int nodes_size() const;
   private:
   int _internal_nodes_size() const;
   public:
   void clear_nodes();
-  ::romabuf::Host* mutable_nodes(int index);
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::Host >*
+  ::romabuf::HostInfo* mutable_nodes(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::HostInfo >*
       mutable_nodes();
   private:
-  const ::romabuf::Host& _internal_nodes(int index) const;
-  ::romabuf::Host* _internal_add_nodes();
+  const ::romabuf::HostInfo& _internal_nodes(int index) const;
+  ::romabuf::HostInfo* _internal_add_nodes();
   public:
-  const ::romabuf::Host& nodes(int index) const;
-  ::romabuf::Host* add_nodes();
-  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::Host >&
+  const ::romabuf::HostInfo& nodes(int index) const;
+  ::romabuf::HostInfo* add_nodes();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::HostInfo >&
       nodes() const;
 
   // required uint32 node_id = 1;
@@ -1960,7 +2008,7 @@ class AssignClusterInfo PROTOBUF_FINAL :
   typedef void DestructorSkippable_;
   ::PROTOBUF_NAMESPACE_ID::internal::HasBits<1> _has_bits_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
-  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::Host > nodes_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::HostInfo > nodes_;
   ::PROTOBUF_NAMESPACE_ID::uint32 node_id_;
   ::PROTOBUF_NAMESPACE_ID::int32 monad_node_id_;
   ::PROTOBUF_NAMESPACE_ID::int32 monad_vat_id_;
@@ -2421,100 +2469,100 @@ class LoadProgram PROTOBUF_FINAL :
   #pragma GCC diagnostic push
   #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 #endif  // __GNUC__
-// Host
+// HostInfo
 
 // required int32 node_id = 1;
-inline bool Host::_internal_has_node_id() const {
+inline bool HostInfo::_internal_has_node_id() const {
   bool value = (_has_bits_[0] & 0x00000002u) != 0;
   return value;
 }
-inline bool Host::has_node_id() const {
+inline bool HostInfo::has_node_id() const {
   return _internal_has_node_id();
 }
-inline void Host::clear_node_id() {
+inline void HostInfo::clear_node_id() {
   node_id_ = 0;
   _has_bits_[0] &= ~0x00000002u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 Host::_internal_node_id() const {
+inline ::PROTOBUF_NAMESPACE_ID::int32 HostInfo::_internal_node_id() const {
   return node_id_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::int32 Host::node_id() const {
-  // @@protoc_insertion_point(field_get:romabuf.Host.node_id)
+inline ::PROTOBUF_NAMESPACE_ID::int32 HostInfo::node_id() const {
+  // @@protoc_insertion_point(field_get:romabuf.HostInfo.node_id)
   return _internal_node_id();
 }
-inline void Host::_internal_set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
+inline void HostInfo::_internal_set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
   _has_bits_[0] |= 0x00000002u;
   node_id_ = value;
 }
-inline void Host::set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
+inline void HostInfo::set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
   _internal_set_node_id(value);
-  // @@protoc_insertion_point(field_set:romabuf.Host.node_id)
+  // @@protoc_insertion_point(field_set:romabuf.HostInfo.node_id)
 }
 
 // required string address = 2;
-inline bool Host::_internal_has_address() const {
+inline bool HostInfo::_internal_has_address() const {
   bool value = (_has_bits_[0] & 0x00000001u) != 0;
   return value;
 }
-inline bool Host::has_address() const {
+inline bool HostInfo::has_address() const {
   return _internal_has_address();
 }
-inline void Host::clear_address() {
+inline void HostInfo::clear_address() {
   address_.ClearToEmpty(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
   _has_bits_[0] &= ~0x00000001u;
 }
-inline const std::string& Host::address() const {
-  // @@protoc_insertion_point(field_get:romabuf.Host.address)
+inline const std::string& HostInfo::address() const {
+  // @@protoc_insertion_point(field_get:romabuf.HostInfo.address)
   return _internal_address();
 }
-inline void Host::set_address(const std::string& value) {
+inline void HostInfo::set_address(const std::string& value) {
   _internal_set_address(value);
-  // @@protoc_insertion_point(field_set:romabuf.Host.address)
+  // @@protoc_insertion_point(field_set:romabuf.HostInfo.address)
 }
-inline std::string* Host::mutable_address() {
-  // @@protoc_insertion_point(field_mutable:romabuf.Host.address)
+inline std::string* HostInfo::mutable_address() {
+  // @@protoc_insertion_point(field_mutable:romabuf.HostInfo.address)
   return _internal_mutable_address();
 }
-inline const std::string& Host::_internal_address() const {
+inline const std::string& HostInfo::_internal_address() const {
   return address_.Get();
 }
-inline void Host::_internal_set_address(const std::string& value) {
+inline void HostInfo::_internal_set_address(const std::string& value) {
   _has_bits_[0] |= 0x00000001u;
   address_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), value, GetArena());
 }
-inline void Host::set_address(std::string&& value) {
+inline void HostInfo::set_address(std::string&& value) {
   _has_bits_[0] |= 0x00000001u;
   address_.Set(
     &::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::move(value), GetArena());
-  // @@protoc_insertion_point(field_set_rvalue:romabuf.Host.address)
+  // @@protoc_insertion_point(field_set_rvalue:romabuf.HostInfo.address)
 }
-inline void Host::set_address(const char* value) {
+inline void HostInfo::set_address(const char* value) {
   GOOGLE_DCHECK(value != nullptr);
   _has_bits_[0] |= 0x00000001u;
   address_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(value),
               GetArena());
-  // @@protoc_insertion_point(field_set_char:romabuf.Host.address)
+  // @@protoc_insertion_point(field_set_char:romabuf.HostInfo.address)
 }
-inline void Host::set_address(const char* value,
+inline void HostInfo::set_address(const char* value,
     size_t size) {
   _has_bits_[0] |= 0x00000001u;
   address_.Set(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), ::std::string(
       reinterpret_cast<const char*>(value), size), GetArena());
-  // @@protoc_insertion_point(field_set_pointer:romabuf.Host.address)
+  // @@protoc_insertion_point(field_set_pointer:romabuf.HostInfo.address)
 }
-inline std::string* Host::_internal_mutable_address() {
+inline std::string* HostInfo::_internal_mutable_address() {
   _has_bits_[0] |= 0x00000001u;
   return address_.Mutable(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline std::string* Host::release_address() {
-  // @@protoc_insertion_point(field_release:romabuf.Host.address)
+inline std::string* HostInfo::release_address() {
+  // @@protoc_insertion_point(field_release:romabuf.HostInfo.address)
   if (!_internal_has_address()) {
     return nullptr;
   }
   _has_bits_[0] &= ~0x00000001u;
   return address_.ReleaseNonDefault(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), GetArena());
 }
-inline void Host::set_allocated_address(std::string* address) {
+inline void HostInfo::set_allocated_address(std::string* address) {
   if (address != nullptr) {
     _has_bits_[0] |= 0x00000001u;
   } else {
@@ -2522,16 +2570,16 @@ inline void Host::set_allocated_address(std::string* address) {
   }
   address_.SetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(), address,
       GetArena());
-  // @@protoc_insertion_point(field_set_allocated:romabuf.Host.address)
+  // @@protoc_insertion_point(field_set_allocated:romabuf.HostInfo.address)
 }
-inline std::string* Host::unsafe_arena_release_address() {
-  // @@protoc_insertion_point(field_unsafe_arena_release:romabuf.Host.address)
+inline std::string* HostInfo::unsafe_arena_release_address() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:romabuf.HostInfo.address)
   GOOGLE_DCHECK(GetArena() != nullptr);
   _has_bits_[0] &= ~0x00000001u;
   return address_.UnsafeArenaRelease(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       GetArena());
 }
-inline void Host::unsafe_arena_set_allocated_address(
+inline void HostInfo::unsafe_arena_set_allocated_address(
     std::string* address) {
   GOOGLE_DCHECK(GetArena() != nullptr);
   if (address != nullptr) {
@@ -2541,35 +2589,109 @@ inline void Host::unsafe_arena_set_allocated_address(
   }
   address_.UnsafeArenaSetAllocated(&::PROTOBUF_NAMESPACE_ID::internal::GetEmptyStringAlreadyInited(),
       address, GetArena());
-  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:romabuf.Host.address)
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:romabuf.HostInfo.address)
 }
 
 // required uint32 port = 3;
-inline bool Host::_internal_has_port() const {
+inline bool HostInfo::_internal_has_port() const {
   bool value = (_has_bits_[0] & 0x00000004u) != 0;
   return value;
 }
-inline bool Host::has_port() const {
+inline bool HostInfo::has_port() const {
   return _internal_has_port();
 }
-inline void Host::clear_port() {
+inline void HostInfo::clear_port() {
   port_ = 0u;
   _has_bits_[0] &= ~0x00000004u;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Host::_internal_port() const {
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HostInfo::_internal_port() const {
   return port_;
 }
-inline ::PROTOBUF_NAMESPACE_ID::uint32 Host::port() const {
-  // @@protoc_insertion_point(field_get:romabuf.Host.port)
+inline ::PROTOBUF_NAMESPACE_ID::uint32 HostInfo::port() const {
+  // @@protoc_insertion_point(field_get:romabuf.HostInfo.port)
   return _internal_port();
 }
-inline void Host::_internal_set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+inline void HostInfo::_internal_set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   _has_bits_[0] |= 0x00000004u;
   port_ = value;
 }
-inline void Host::set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
+inline void HostInfo::set_port(::PROTOBUF_NAMESPACE_ID::uint32 value) {
   _internal_set_port(value);
-  // @@protoc_insertion_point(field_set:romabuf.Host.port)
+  // @@protoc_insertion_point(field_set:romabuf.HostInfo.port)
+}
+
+// repeated string resources = 4;
+inline int HostInfo::_internal_resources_size() const {
+  return resources_.size();
+}
+inline int HostInfo::resources_size() const {
+  return _internal_resources_size();
+}
+inline void HostInfo::clear_resources() {
+  resources_.Clear();
+}
+inline std::string* HostInfo::add_resources() {
+  // @@protoc_insertion_point(field_add_mutable:romabuf.HostInfo.resources)
+  return _internal_add_resources();
+}
+inline const std::string& HostInfo::_internal_resources(int index) const {
+  return resources_.Get(index);
+}
+inline const std::string& HostInfo::resources(int index) const {
+  // @@protoc_insertion_point(field_get:romabuf.HostInfo.resources)
+  return _internal_resources(index);
+}
+inline std::string* HostInfo::mutable_resources(int index) {
+  // @@protoc_insertion_point(field_mutable:romabuf.HostInfo.resources)
+  return resources_.Mutable(index);
+}
+inline void HostInfo::set_resources(int index, const std::string& value) {
+  // @@protoc_insertion_point(field_set:romabuf.HostInfo.resources)
+  resources_.Mutable(index)->assign(value);
+}
+inline void HostInfo::set_resources(int index, std::string&& value) {
+  // @@protoc_insertion_point(field_set:romabuf.HostInfo.resources)
+  resources_.Mutable(index)->assign(std::move(value));
+}
+inline void HostInfo::set_resources(int index, const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  resources_.Mutable(index)->assign(value);
+  // @@protoc_insertion_point(field_set_char:romabuf.HostInfo.resources)
+}
+inline void HostInfo::set_resources(int index, const char* value, size_t size) {
+  resources_.Mutable(index)->assign(
+    reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_set_pointer:romabuf.HostInfo.resources)
+}
+inline std::string* HostInfo::_internal_add_resources() {
+  return resources_.Add();
+}
+inline void HostInfo::add_resources(const std::string& value) {
+  resources_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add:romabuf.HostInfo.resources)
+}
+inline void HostInfo::add_resources(std::string&& value) {
+  resources_.Add(std::move(value));
+  // @@protoc_insertion_point(field_add:romabuf.HostInfo.resources)
+}
+inline void HostInfo::add_resources(const char* value) {
+  GOOGLE_DCHECK(value != nullptr);
+  resources_.Add()->assign(value);
+  // @@protoc_insertion_point(field_add_char:romabuf.HostInfo.resources)
+}
+inline void HostInfo::add_resources(const char* value, size_t size) {
+  resources_.Add()->assign(reinterpret_cast<const char*>(value), size);
+  // @@protoc_insertion_point(field_add_pointer:romabuf.HostInfo.resources)
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>&
+HostInfo::resources() const {
+  // @@protoc_insertion_point(field_list:romabuf.HostInfo.resources)
+  return resources_;
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField<std::string>*
+HostInfo::mutable_resources() {
+  // @@protoc_insertion_point(field_mutable_list:romabuf.HostInfo.resources)
+  return &resources_;
 }
 
 // -------------------------------------------------------------------
@@ -3242,6 +3364,79 @@ inline ::romabuf::AssignClusterInfo* PleromaMessage::_internal_mutable_assign_cl
 inline ::romabuf::AssignClusterInfo* PleromaMessage::mutable_assign_cluster_info() {
   // @@protoc_insertion_point(field_mutable:romabuf.PleromaMessage.assign_cluster_info)
   return _internal_mutable_assign_cluster_info();
+}
+
+// .romabuf.HostInfo host_info = 4;
+inline bool PleromaMessage::_internal_has_host_info() const {
+  return msg_case() == kHostInfo;
+}
+inline bool PleromaMessage::has_host_info() const {
+  return _internal_has_host_info();
+}
+inline void PleromaMessage::set_has_host_info() {
+  _oneof_case_[0] = kHostInfo;
+}
+inline void PleromaMessage::clear_host_info() {
+  if (_internal_has_host_info()) {
+    if (GetArena() == nullptr) {
+      delete msg_.host_info_;
+    }
+    clear_has_msg();
+  }
+}
+inline ::romabuf::HostInfo* PleromaMessage::release_host_info() {
+  // @@protoc_insertion_point(field_release:romabuf.PleromaMessage.host_info)
+  if (_internal_has_host_info()) {
+    clear_has_msg();
+      ::romabuf::HostInfo* temp = msg_.host_info_;
+    if (GetArena() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    msg_.host_info_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::romabuf::HostInfo& PleromaMessage::_internal_host_info() const {
+  return _internal_has_host_info()
+      ? *msg_.host_info_
+      : *reinterpret_cast< ::romabuf::HostInfo*>(&::romabuf::_HostInfo_default_instance_);
+}
+inline const ::romabuf::HostInfo& PleromaMessage::host_info() const {
+  // @@protoc_insertion_point(field_get:romabuf.PleromaMessage.host_info)
+  return _internal_host_info();
+}
+inline ::romabuf::HostInfo* PleromaMessage::unsafe_arena_release_host_info() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:romabuf.PleromaMessage.host_info)
+  if (_internal_has_host_info()) {
+    clear_has_msg();
+    ::romabuf::HostInfo* temp = msg_.host_info_;
+    msg_.host_info_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void PleromaMessage::unsafe_arena_set_allocated_host_info(::romabuf::HostInfo* host_info) {
+  clear_msg();
+  if (host_info) {
+    set_has_host_info();
+    msg_.host_info_ = host_info;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:romabuf.PleromaMessage.host_info)
+}
+inline ::romabuf::HostInfo* PleromaMessage::_internal_mutable_host_info() {
+  if (!_internal_has_host_info()) {
+    clear_msg();
+    set_has_host_info();
+    msg_.host_info_ = CreateMaybeMessage< ::romabuf::HostInfo >(GetArena());
+  }
+  return msg_.host_info_;
+}
+inline ::romabuf::HostInfo* PleromaMessage::mutable_host_info() {
+  // @@protoc_insertion_point(field_mutable:romabuf.PleromaMessage.host_info)
+  return _internal_mutable_host_info();
 }
 
 inline bool PleromaMessage::has_msg() const {
@@ -3947,7 +4142,7 @@ inline void AssignClusterInfo::set_monad_entity_id(::PROTOBUF_NAMESPACE_ID::int3
   // @@protoc_insertion_point(field_set:romabuf.AssignClusterInfo.monad_entity_id)
 }
 
-// repeated .romabuf.Host nodes = 5;
+// repeated .romabuf.HostInfo nodes = 5;
 inline int AssignClusterInfo::_internal_nodes_size() const {
   return nodes_.size();
 }
@@ -3957,30 +4152,30 @@ inline int AssignClusterInfo::nodes_size() const {
 inline void AssignClusterInfo::clear_nodes() {
   nodes_.Clear();
 }
-inline ::romabuf::Host* AssignClusterInfo::mutable_nodes(int index) {
+inline ::romabuf::HostInfo* AssignClusterInfo::mutable_nodes(int index) {
   // @@protoc_insertion_point(field_mutable:romabuf.AssignClusterInfo.nodes)
   return nodes_.Mutable(index);
 }
-inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::Host >*
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::HostInfo >*
 AssignClusterInfo::mutable_nodes() {
   // @@protoc_insertion_point(field_mutable_list:romabuf.AssignClusterInfo.nodes)
   return &nodes_;
 }
-inline const ::romabuf::Host& AssignClusterInfo::_internal_nodes(int index) const {
+inline const ::romabuf::HostInfo& AssignClusterInfo::_internal_nodes(int index) const {
   return nodes_.Get(index);
 }
-inline const ::romabuf::Host& AssignClusterInfo::nodes(int index) const {
+inline const ::romabuf::HostInfo& AssignClusterInfo::nodes(int index) const {
   // @@protoc_insertion_point(field_get:romabuf.AssignClusterInfo.nodes)
   return _internal_nodes(index);
 }
-inline ::romabuf::Host* AssignClusterInfo::_internal_add_nodes() {
+inline ::romabuf::HostInfo* AssignClusterInfo::_internal_add_nodes() {
   return nodes_.Add();
 }
-inline ::romabuf::Host* AssignClusterInfo::add_nodes() {
+inline ::romabuf::HostInfo* AssignClusterInfo::add_nodes() {
   // @@protoc_insertion_point(field_add:romabuf.AssignClusterInfo.nodes)
   return _internal_add_nodes();
 }
-inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::Host >&
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::HostInfo >&
 AssignClusterInfo::nodes() const {
   // @@protoc_insertion_point(field_list:romabuf.AssignClusterInfo.nodes)
   return nodes_;
