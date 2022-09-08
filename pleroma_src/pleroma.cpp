@@ -78,6 +78,7 @@ void process_vq() {
             if (our_vat->promises.find(m.promise_id) != our_vat->promises.end() && our_vat->promises[m.promise_id].callback) {
               our_vat->promises[m.promise_id].results = m.values;
               eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+              // Get return value here, check if we return a promise node, if we do then we need to connect the two
             }
           } else {
             std::vector<AstNode *> args;

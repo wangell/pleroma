@@ -140,6 +140,7 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
 
     context->vat->promises[pid] = PromiseResult();
     context->vat->promise_id_base++;
+    printf("Inserted promise %d in %s (vat %d)\n", pid, cfs(context).entity->entity_def->name.c_str(), context->vat->id);
 
     return make_promise_node(pid);
   }
@@ -458,6 +459,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     assert(prom_sym->type == AstNodeType::PromiseNode);
     auto prom = (PromiseNode *)prom_sym;
 
+    printf("Resolved promise %d in %s\n", prom->promise_id, cfs(context).entity->entity_def->name.c_str());
     assert(context->vat->promises.find(prom->promise_id) !=
            context->vat->promises.end());
 
@@ -548,8 +550,7 @@ AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def) {
   return eval_message_node(context, monad_ref, CommMode::Async, "new-vat", {make_string(entity_def->abs_mod_path)});
 }
 
-Entity *create_entity(EvalContext *context, EntityDef *entity_def,
-                          bool new_vat) {
+Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat) {
   Entity *e = new Entity;
   Vat *vat;
 
@@ -557,6 +558,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
     vat = new Vat;
     vat->id = context->node->vat_id_base;
     context->node->vat_id_base++;
+    printf("new vat id: %d\n", vat->id);
   } else {
     vat = context->vat;
   }
@@ -574,7 +576,6 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
 
   vat->entities[e->address.entity_id] = e;
 
-
   for (auto &[k, v] : entity_def->data) {
     e->data[k] = v;
   }
@@ -587,8 +588,8 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
       e->data[k.var_name] = monad_ref;
       //} else if (k.ctype->dtype == DType::Local) {
     } else {
-      //auto old_vat = context->vat;
-      //context->vat = vat;
+      auto old_vat = context->vat;
+      context->vat = vat;
 
       std::map<std::string, std::string> fqn_map;
 
@@ -615,7 +616,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def,
       pop_stack_frame(context);
 
       // FIXME: see above
-      //context->vat = old_vat;
+      context->vat = old_vat;
     }
   }
 

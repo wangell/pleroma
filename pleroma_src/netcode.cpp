@@ -398,6 +398,7 @@ void handle_connection(ENetEvent* event) {
         new_node->resources.push_back(k);
       }
 
+      new_node->node_id = this_pleroma_node->node_id + 1;
       new_node->nodeman_addr.node_id = this_pleroma_node->node_id + 1;
       new_node->nodeman_addr.vat_id = message.host_info().nodeman_addr().vat_id();
       new_node->nodeman_addr.entity_id = message.host_info().nodeman_addr().entity_id();

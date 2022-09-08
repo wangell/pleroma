@@ -8,11 +8,12 @@
 #include "../type_util.h"
 #include "../system.h"
 
-#include <iostream>
-#include <string>
-#include <vector>
 #include <algorithm>
+#include <iostream>
 #include <mutex>
+#include <string>
+#include <unistd.h>
+#include <vector>
 
 std::map<SystemModule, std::map<std::string, AstNode *>> kernel_map;
 
@@ -46,7 +47,6 @@ PleromaNode* try_preschedule(EntityDef* edef) {
         satisfied = false;
       }
     }
-    printf("Satisfied for node %d\n", k->node_id);
     if (satisfied) return k;
   }
 
@@ -85,12 +85,20 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
   EntityDef* edef = (EntityDef*)programs[program_name]->entity_defs[ent_name];
 
   if (PleromaNode* sched_node = try_preschedule(edef)) {
-    printf("Sending create-vat to %d\n", sched_node->node_id);
+    printf("Sending create-vat to %d %d %d\n", sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id);
     //FIXME hardcoded nodeman
+
     eval_message_node(context, (EntityRefNode *)make_entity_ref(sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id), CommMode::Async, "create-vat", args);
 
-    // FIXME hardcoded, should resolve the promise then return the ent ref
-    return make_entity_ref(1, 1, 0);
+    //eval(context, make_assignment(make_symbol("nodemanref"), eval_val));
+    //auto eref = (EntityRefNode*)context->vat->promises[eval_val->promise_id].results[0];
+
+    // return eval_val;
+    // context->vat->promises[eval_val->promise_id].callback =
+    // (PromiseResNode*)make_promise_resolution_node("nodemanref",
+    // {make_return(make_symbol("nodemanref"))}); return make_nop();
+    //  FIXME
+    return make_entity_ref(0, 2, 0);
   }
 
   // Handle failed schedule with an error
@@ -121,7 +129,6 @@ AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
 
   auto eref = (EntityRefNode*)monad_new_vat(context, args);
   // FIXME: hardcoded NodeMan address
-
   eval_message_node(context, eref, CommMode::Async, "main", {make_number(0)});
 
   return make_number(0);
