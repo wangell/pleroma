@@ -493,7 +493,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::ModUseNode) {
     auto node = (ModUseNode *)obj;
 
-    auto find_mod = cfs(context).module->imports.find(node->mod_name);
+    auto find_mod = cfs(context).module->imports.find("sys►" + node->mod_name);
 
     assert(find_mod != cfs(context).module->imports.end());
 

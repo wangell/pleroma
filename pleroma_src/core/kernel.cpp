@@ -5,6 +5,7 @@
 #include "net.h"
 #include "fs.h"
 #include "io.h"
+#include "ds.h"
 #include "amoeba.h"
 #include "../type_util.h"
 #include "../system.h"
@@ -220,6 +221,7 @@ void load_kernel() {
   kernel_map[SystemModule::Io] = load_io();
   kernel_map[SystemModule::Net] = load_net();
   kernel_map[SystemModule::Amoeba] = load_amoeba();
+  kernel_map[SystemModule::Ds] = load_ds();
   load_fs();
 
 }

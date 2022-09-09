@@ -1,22 +1,15 @@
-~sys►io
+~sys►ds
 
-ε Pong {ioinst : @far io►Io}
-	δ create() -> void
-		let q : u8 = 0
-
-	δ pong() -> void
-		@ioinst
-			ioinst ! print("pong")
-
-ε UserProgram {ioinst : @far io►Io}
-	- monitor
+ε UserProgram {}
 
 	δ create() -> void
 		let q : u8 = 0
 
 	δ main(env: u8) -> u8
 
-		let q : Pong = Pong()
-		q.pong()
+		let hm : ds►Hashmap = ds►Hashmap()
+		hm.set("hi", "yo")
+
+		let z : str = hm.get("hi")
 
 		↵ 0

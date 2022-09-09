@@ -20,6 +20,7 @@ struct Entity {
 
   std::map<std::string, AstNode *> data;
   HylicModule* module_scope;
+  std::map<std::string, AstNode *> _kdata;
 };
 
 struct Msg {

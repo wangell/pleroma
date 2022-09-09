@@ -6,16 +6,17 @@
 #include "other.h"
 
 std::map<std::string, SystemModule> system_module_imports = {
-    {"sys►monad", SystemModule::Monad}, {"sys►io", SystemModule::Io},
-    {"sys►net", SystemModule::Net},     {"io", SystemModule::Io},
-    {"net", SystemModule::Net},         {"amoeba", SystemModule::Amoeba},
-    {"sys►amoeba", SystemModule::Amoeba},
-};
+    {"sys►monad", SystemModule::Monad},   {"sys►io", SystemModule::Io},
+    {"sys►net", SystemModule::Net},       {"io", SystemModule::Io},
+    {"net", SystemModule::Net},           {"amoeba", SystemModule::Amoeba},
+    {"sys►amoeba", SystemModule::Amoeba}, {"sys►ds", SystemModule::Ds}};
 
 std::map<SystemModule, std::string> system_module_paths = {
     {SystemModule::Monad, "sys/monad.po"},
     {SystemModule::Io, "sys/io.po"},
-    {SystemModule::Net, "sys/net.po"}, {SystemModule::Amoeba, "sys/amoeba.po"}};
+    {SystemModule::Ds, "sys/ds.po"},
+    {SystemModule::Net, "sys/net.po"},
+    {SystemModule::Amoeba, "sys/amoeba.po"}};
 
 bool is_system_module(std::string import_string) {
   return system_module_imports.find(import_string) != system_module_imports.end();

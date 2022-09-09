@@ -2,6 +2,6 @@
 
 	δ create() -> void
 
-	δ set(val : str) -> void
+	δ set(key : str, val : str) -> void
 
-	δ get(val : str) -> str
+	δ get(key : str) -> str
