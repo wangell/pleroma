@@ -60,7 +60,7 @@ EntityRefNode* get_entity_ref(Entity* e) {
 }
 
 void load_system_entity(EvalContext *context, std::string entity_name) {
-  auto io_def = load_system_module(SystemModule::Amoeba);
+  auto io_def = load_system_module(SystemModule::Io);
 
   auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs[entity_name], false);
   io_ent->module_scope = io_ent->entity_def->module;
@@ -113,7 +113,7 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   CType c;
   c.basetype = PType::Entity;
   c.dtype = DType::Far;
-  c.entity_name = "Amoeba";
+  c.entity_name = "Io";
 
   auto io_ent = get_system_entity_ref(c);
   printf("resolved sys amoeba to %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
@@ -146,7 +146,7 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
-  load_system_entity(context, "Amoeba");
+  load_system_entity(context, "Io");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);

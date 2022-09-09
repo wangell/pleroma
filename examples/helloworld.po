@@ -1,15 +1,24 @@
 ~sys►ds
+~sys►io
 
-ε UserProgram {}
+ε UserProgram {ioinst : @far io►Io}
+
+	blahblah : ds►Hashmap
 
 	δ create() -> void
-		let q : u8 = 0
+		blahblah = ds►Hashmap()
 
 	δ main(env: u8) -> u8
 
-		let hm : ds►Hashmap = ds►Hashmap()
-		hm.set("hi", "yo")
+		@ioinst
+			ioinst ! print("blah")
 
-		let z : str = hm.get("hi")
+			let zz : [str] = ["hello", "this", "is", "a", "test"]
+
+			q | zz
+				blahblah.set(q, q)
+
+			q | zz
+				ioinst ! print(blahblah.get(q))
 
 		↵ 0

@@ -93,6 +93,7 @@ void net_loop() {
   ENetEvent event;
   romabuf::PleromaMessage message;
 
+  // Add blocking wait here to reduce CPU
   while (enet_host_service(pnet.server, &event, 0) > 0) {
     switch (event.type) {
     case ENET_EVENT_TYPE_CONNECT:

@@ -2,10 +2,12 @@ FROM ubuntu:22.04
 
 RUN apt-get update
 
-RUN apt-get -y install build-essential ninja-build cmake clang-11 ccache protobuf-compiler libsdl2-dev libenet-dev locales
+RUN apt-get -y install build-essential ninja-build cmake clang-11 ccache protobuf-compiler libsdl2-dev libenet-dev locales git libssl-dev
 RUN locale-gen en_US.UTF-8
 
 RUN ln -s /usr/bin/clang++-11 /usr/bin/clang++
+
+RUN git clone https://github.com/rui314/mold.git && cd mold && git checkout v1.4.2 && make CXX=clang++ && make install
 
 COPY . /pleroma
 

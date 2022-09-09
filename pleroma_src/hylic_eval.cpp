@@ -495,6 +495,10 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     auto find_mod = cfs(context).module->imports.find("sys►" + node->mod_name);
 
+    for (auto &k : cfs(context).module->imports) {
+      printf("mod import %s\n", k.first.c_str());
+    }
+
     assert(find_mod != cfs(context).module->imports.end());
 
     push_stack_frame(context, cfs(context).entity, find_mod->second);
@@ -575,7 +579,11 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   e->address.node_id = context->node->node_id;
   e->module_scope = entity_def->module;
 
-  //printf("Creating entity: %d %d %d\n", e->address.entity_id, e->address.vat_id, e->address.node_id);
+  if (cfs(context).entity) {
+    dbp(log_debug, "Creating entity %s: %d %d %d from (%d %d %d)", entity_def->name.c_str(), e->address.node_id, e->address.vat_id, e->address.entity_id, cfs(context).entity->address.node_id, cfs(context).entity->address.vat_id, cfs(context).entity->address.entity_id);
+  } else {
+    dbp(log_debug, "Creating entity %s: %d %d %d", entity_def->name.c_str(), e->address.node_id, e->address.vat_id, e->address.entity_id);
+  }
 
   vat->entity_id_base++;
 
@@ -625,8 +633,10 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
     }
   }
 
-  // FIXME: see above
+  auto old_vat = context->vat;
+  context->vat = vat;
   eval_func_local(context, e, "create", {});
+  context->vat = old_vat;
 
   if (new_vat) {
     queue.enqueue(vat);
