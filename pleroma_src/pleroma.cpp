@@ -183,7 +183,7 @@ void inoculate_pleroma(HylicModule *ukernel, std::string ent0) {
   og_vat->messages.push(m);
 }
 
-EntityAddress start_nodeman(HylicModule *ukernel, std::string ent0) {
+EntityAddress start_system_program(HylicModule *ukernel, std::string ent0) {
 
   EntityDef *ent0_def = (EntityDef *)ukernel->entity_defs[ent0];
 
@@ -223,10 +223,11 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   load_kernel();
 
+  auto monad_mod = load_system_module(SystemModule::Monad);
+
   if (connect_info.first_contact_ip == "") {
     dbp(log_debug, "Inoculating Pleroma [Monad]...");
-    auto monad = load_system_module(SystemModule::Monad);
-    inoculate_pleroma(monad, "Monad");
+    inoculate_pleroma(monad_mod, "Monad");
     dbp(log_debug, "Successfully inoculated.");
   }
 
@@ -235,7 +236,7 @@ void start_pleroma(ConnectionInfo connect_info) {
   setup_server(connect_info.host_ip, connect_info.host_port);
   dbp(log_debug, "Host initialized");
 
-  auto ent_add = start_nodeman(load_system_module(SystemModule::Monad), "NodeMan");
+  auto ent_add = start_system_program(monad_mod, "NodeMan");
   this_pleroma_node->nodeman_addr = ent_add;
 
   if (connect_info.first_contact_ip != "") {
@@ -243,10 +244,11 @@ void start_pleroma(ConnectionInfo connect_info) {
     connect_to_cluster(mk_netaddr(connect_info.first_contact_ip, connect_info.first_contact_port));
     dbp(log_info, "Successfully connected");
 
-    start_program("helloworld", "UserProgram");
   }
 
   load_software();
+
+  start_program("helloworld", "UserProgram");
 
   std::thread burners[processor_count];
 

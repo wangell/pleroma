@@ -140,7 +140,8 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
 
     context->vat->promises[pid] = PromiseResult();
     context->vat->promise_id_base++;
-    printf("Inserted promise %d in %s (vat %d)\n", pid, cfs(context).entity->entity_def->name.c_str(), context->vat->id);
+    printf("%d\n", entity_ref->vat_id);
+    printf("Inserted promise %d in %s while sending to %d %d %d (vat %d)\n", pid, cfs(context).entity->entity_def->name.c_str(), entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id, context->vat->id);
 
     return make_promise_node(pid);
   }

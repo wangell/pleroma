@@ -8,7 +8,8 @@
 enum SystemModule {
   Monad,
   Net,
-  Io
+  Io,
+  Amoeba
 };
 
 HylicModule* load_system_module(SystemModule mod);

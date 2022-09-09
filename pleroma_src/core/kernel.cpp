@@ -5,6 +5,7 @@
 #include "net.h"
 #include "fs.h"
 #include "io.h"
+#include "amoeba.h"
 #include "../type_util.h"
 #include "../system.h"
 
@@ -58,7 +59,7 @@ EntityRefNode* get_entity_ref(Entity* e) {
 }
 
 void load_system_entity(EvalContext *context, std::string entity_name) {
-  auto io_def = load_system_module(SystemModule::Io);
+  auto io_def = load_system_module(SystemModule::Amoeba);
 
   auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs[entity_name], false);
   io_ent->module_scope = io_ent->entity_def->module;
@@ -111,9 +112,10 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   CType c;
   c.basetype = PType::Entity;
   c.dtype = DType::Far;
-  c.entity_name = "Io";
+  c.entity_name = "Amoeba";
 
   auto io_ent = get_system_entity_ref(c);
+  printf("resolved sys amoeba to %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
 
   return io_ent;
 }
@@ -143,7 +145,7 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
-  load_system_entity(context, "Io");
+  load_system_entity(context, "Amoeba");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
@@ -204,14 +206,20 @@ void load_kernel() {
   node_man_functions["create"] = setup_direct_call(nodeman_create, "create", {}, {}, lu8());
   node_man_functions["create-vat"] = setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
 
+  std::map<std::string, FuncStmt *> clogger_functions;
+
+  clogger_functions["create"] = setup_direct_call(nodeman_create, "create", {}, {}, lu8());
+  clogger_functions["log"] = setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
+
   kernel_map[SystemModule::Monad] = {
       {"Monad", make_actor(nullptr, "Monad", functions, {}, {}, {}, {})},
-      {"NodeMan", make_actor(nullptr, "NodeMan", node_man_functions, {}, {}, {}, {})}
+      {"NodeMan", make_actor(nullptr, "NodeMan", node_man_functions, {}, {}, {}, {})},
+      {"Clogger", make_actor(nullptr, "Clogger", node_man_functions, {}, {}, {}, {})}
   };
 
   kernel_map[SystemModule::Io] = load_io();
   kernel_map[SystemModule::Net] = load_net();
+  kernel_map[SystemModule::Amoeba] = load_amoeba();
   load_fs();
 
-  //load_amoeba();
 }
