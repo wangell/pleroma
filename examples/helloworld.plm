@@ -11,15 +11,8 @@
 
 	δ main(env: u8) -> u8
 
-		@ioinst
-			ioinst ! print("blah")
+		let zz : str = "Really works!"
 
-			let zz : [str] = ["hello", "this", "is", "a", "test"]
-
-			q | zz
-				blahblah.set(q, q)
-
-			q | zz
-				ioinst ! print(blahblah.get(q))
+		ioinst ! print(zz)
 
 		↵ 0

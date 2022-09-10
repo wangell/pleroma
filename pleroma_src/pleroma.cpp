@@ -80,7 +80,7 @@ void process_vq() {
             // If we didn't setup a promise to resolve, then ignore the result
             if (our_vat->promises.find(m.promise_id) != our_vat->promises.end()) {
               our_vat->promises[m.promise_id].results = m.values;
-              printf("Resolving prom %d\n", m.promise_id);
+              //printf("Resolving prom %d\n", m.promise_id);
               if (our_vat->promises[m.promise_id].callback) {
                 eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
               }

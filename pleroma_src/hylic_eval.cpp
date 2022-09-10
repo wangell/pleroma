@@ -510,6 +510,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::ModUseNode) {
     auto node = (ModUseNode *)obj;
 
+    //FIXME: appending sys here breaks all user modules
     auto find_mod = cfs(context).module->imports.find("sys►" + node->mod_name);
 
     //for (auto &k : cfs(context).module->imports) {

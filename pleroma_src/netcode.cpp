@@ -338,6 +338,7 @@ void connect_to_cluster(ENetAddress address) {
   romabuf::PleromaMessage message;
   auto host_info = message.mutable_host_info();
   host_info->set_port(pnet.src_port);
+  // This should be assigned by cluster
   auto ndadd = host_info->mutable_nodeman_addr();
 
   ndadd->set_node_id(this_pleroma_node->nodeman_addr.node_id);
@@ -401,6 +402,7 @@ void handle_connection(ENetEvent* event) {
         new_node->resources.push_back(k);
       }
 
+      // FIXME
       new_node->node_id = this_pleroma_node->node_id + 1;
       new_node->nodeman_addr.node_id = this_pleroma_node->node_id + 1;
       new_node->nodeman_addr.vat_id = message.host_info().nodeman_addr().vat_id();
