@@ -68,6 +68,8 @@ struct Scope {
 };
 
 struct PleromaNode {
+  std::string node_name;
+
   u32 node_id = 0;
 
   int vat_id_base = 0;
