@@ -20,7 +20,9 @@
 
 std::map<SystemModule, std::map<std::string, AstNode *>> kernel_map;
 
-std::map<std::string, Entity*> system_entities;
+std::map<std::string, std::map<std::string, Entity*>> system_entities;
+
+std::map<std::string, HylicModule*> sys_mods;
 
 std::map<std::string, HylicModule*> programs;
 
@@ -68,22 +70,25 @@ EntityRefNode* get_entity_ref(Entity* e) {
   return (EntityRefNode*)make_entity_ref(e->address.node_id, e->address.vat_id, e->address.entity_id);
 }
 
-void load_system_entity(EvalContext *context, std::string entity_name) {
-  auto io_def = load_system_module(SystemModule::Io);
+void load_system_entity(EvalContext *context, std::string sys_name, std::string entity_name) {
 
-  auto io_ent = create_entity(context, (EntityDef*)io_def->entity_defs[entity_name], false);
+  auto io_def = sys_mods[sys_name]->entity_defs[entity_name];
+
+  auto io_ent = create_entity(context, (EntityDef*)io_def, false);
   io_ent->module_scope = io_ent->entity_def->module;
   assert(io_ent->entity_def->module);
   assert(io_ent->module_scope);
-  system_entities[entity_name] = io_ent;
+  system_entities[sys_name][entity_name] = io_ent;
 }
 
-EntityRefNode* get_system_entity_ref(CType ctype) {
-  assert(ctype.basetype == PType::Entity);
-  assert(ctype.dtype == DType::Far);
+EntityRefNode* get_system_entity_ref(std::string sys_name, std::string ent_name) {
+  auto sys = system_entities.find(sys_name);
 
-  auto ent = system_entities.find(ctype.entity_name);
-  assert(ent != system_entities.end());
+  assert(sys != system_entities.end());
+
+  auto ent = sys->second.find(ent_name);
+
+  assert(ent != sys->second.end());
 
   return get_entity_ref(ent->second);
 }
@@ -123,9 +128,13 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   CType c;
   c.basetype = PType::Entity;
   c.dtype = DType::Far;
-  c.entity_name = "Io";
+  c.entity_name = ((EntityRefNode*)args[0])->ctype.entity_name;
 
-  auto io_ent = get_system_entity_ref(c);
+  printf("Got req far: %s\n", c.entity_name.c_str());
+
+  std::vector<std::string> splimp = split_import(c.entity_name);
+
+  auto io_ent = get_system_entity_ref(splimp[0], splimp[1]);
   printf("resolved sys amoeba to %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
 
   return io_ent;
@@ -159,7 +168,12 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
   monad_log("Hello.");
-  load_system_entity(context, "Io");
+
+  sys_mods["io"] = load_system_module(SystemModule::Io);
+  sys_mods["amoeba"] = load_system_module(SystemModule::Amoeba);
+
+  load_system_entity(context, "io", "Io");
+  load_system_entity(context, "amoeba", "Amoeba");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
@@ -217,7 +231,7 @@ void load_kernel() {
 
   functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"programname", "entname"}, {c_str, c_str}, lu8());
   functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
-  functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {}, {}, *c3);
+  functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {"ent"}, {c2}, *c3);
   functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
 
   std::map<std::string, FuncStmt *> node_man_functions;

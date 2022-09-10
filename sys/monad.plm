@@ -1,12 +1,12 @@
 ε NodeMan {}
 
-	δ create() -> u8
+	δ create() -> void
 
 	δ create-vat(programname: str, entname : str) -> @far Entity
 
 ε Monad {}
 
-	δ create() -> u8
+	δ create() -> void
 
 	δ hello(i : u8) -> u8
 
@@ -14,6 +14,6 @@
 
 	δ n-programs() -> str
 
-	δ request-far-entity() -> far Entity
+	δ request-far-entity(ent : far Entity) -> far Entity
 
 	δ new-vat(programname: str, entname: str) -> @far Entity

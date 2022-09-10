@@ -625,7 +625,11 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
       //if (!monad_ref) {
       //  monad_ref = (EntityRefNode*)make_entity_ref(0, 0, 0);
       //}
-      e->data[k.var_name] = eval_message_node(context, monad_ref, CommMode::Async, "request-far-entity", {});
+
+      auto helper_ref = make_entity_ref(0, 0, 0);
+      helper_ref->ctype = *(k.ctype->subtype);
+      printf("Ctype %s\n", ctype_to_string(&helper_ref->ctype).c_str());
+      e->data[k.var_name] = eval_message_node(context, monad_ref, CommMode::Async, "request-far-entity", {helper_ref});
       pop_stack_frame(context);
 
       // FIXME: see above

@@ -1,7 +1,8 @@
 ~sys►ds
 ~sys►io
+~sys►amoeba
 
-ε UserProgram {ioinst : @far io►Io}
+ε UserProgram {ioinst : @far io►Io, aman : @far amoeba►Amoeba}
 
 	blahblah : ds►Hashmap
 
