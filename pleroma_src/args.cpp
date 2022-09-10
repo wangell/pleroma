@@ -9,6 +9,8 @@ std::vector<std::string> acceptable_opts = {
   "config",
   "local-host",
   "remote-host",
+  "program",
+  "entity"
 };
 
 std::vector<std::string> acceptable_flags = {
@@ -57,6 +59,10 @@ PleromaArgs parse_args(int argc, char** argv) {
           pargs.remote_port = std::stoi(port_string);
         } else if (opt_name == "config") {
           pargs.config_path = opt_val;
+        } else if (opt_name == "program") {
+          pargs.program_path = opt_val;
+        } else if (opt_name == "entity") {
+          pargs.entity_name = opt_val;
         } else {
           throw PleromaException(("Invalid command-line option: " + opt_name).c_str());
         }

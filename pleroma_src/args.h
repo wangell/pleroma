@@ -16,9 +16,11 @@ struct PleromaArgs {
   u32 local_port = 8080;
 
   std::string remote_hostname;
-  u32 remote_port;
+  u32 remote_port = 0;
 
   std::string program_path = "examples/helloworld.plm";
+  // In the future, we should automatically find this
+  std::string entity_name = "UserProgram";
 };
 
 PleromaArgs parse_args(int argc, char** argv);

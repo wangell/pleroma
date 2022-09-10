@@ -5,6 +5,7 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
+#include "other.h"
 #include "pleroma.h"
 #include "general_util.h"
 #include <arpa/inet.h>
@@ -319,18 +320,19 @@ void connect_to_client(ENetAddress address) {
 }
 
 void connect_to_cluster(ENetAddress address) {
-  //dbp(log_debug, "Connecting to %s : %d\n", ip.c_str(), port);
-
-  printf("Doing initial cluster connect\n");
   ENetPeer* peer = pconnect(address);
 
   // Confirm outgoing connection
   if (connection_confirmed()) {
     dbp(log_debug, "Outgoing connection succeeded.");
+  } else {
+    throw PleromaException("Failed to connect to remote cluster.");
   }
 
   if (connection_confirmed()) {
     dbp(log_debug, "Incoming connection succeeded.");
+  } else {
+    throw PleromaException("Remote cluster failed to connect to this local host.");
   }
 
   romabuf::PleromaMessage message;

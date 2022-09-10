@@ -23,7 +23,6 @@ PleromaNode *read_node_config(std::string config_path) {
   json json_config = json::parse(config_file_contents);
 
   std::string test_string = json_config["name"];
-  printf("Test %s\n", test_string.c_str());
 
   for (auto &k : json_config["resources"]) {
     pnode->resources.push_back(k);

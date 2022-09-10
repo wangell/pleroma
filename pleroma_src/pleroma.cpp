@@ -276,6 +276,24 @@ int main(int argc, char **argv) {
 
   PleromaArgs pargs = parse_args(argc, argv);
 
+  std::string debug_pargs = "Using the following options to start Pleroma: \n";
+  debug_pargs += "\tLocal host: " + pargs.local_hostname + "\n";
+  debug_pargs += "\tLocal port: " + std::to_string(pargs.local_port) + "\n";
+
+  if (pargs.remote_hostname == "") {
+    debug_pargs += "\tRemote host: none\n";
+  } else {
+    debug_pargs += "\tRemote host: " + pargs.remote_hostname + "\n";
+    debug_pargs += "\tRemote port: " + std::to_string(pargs.remote_port) + "\n";
+  }
+
+  debug_pargs += "\tConfig path: " + pargs.config_path + "\n";
+
+  debug_pargs += "\tStart program: " + pargs.program_path + "\n";
+  debug_pargs += "\tEntity: " + pargs.entity_name + "\n";
+
+  dbp(log_debug, debug_pargs.c_str());
+
   if (pargs.command == PCommand::Start) {
     start_pleroma(pargs);
   } else if (std::string(argv[1]) == "test") {
