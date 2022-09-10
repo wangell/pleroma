@@ -26,6 +26,10 @@ PleromaArgs parse_args(int argc, char** argv) {
     vargs.push_back(argv[k]);
   }
 
+  if (vargs.size() < 1) {
+    throw PleromaException("Must use command [start, test]");
+  }
+
   if (vargs[0] == "start") {
     pargs.command = PCommand::Start;
   } else if (vargs[0] == "test") {

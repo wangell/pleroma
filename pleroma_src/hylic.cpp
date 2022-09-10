@@ -21,11 +21,12 @@
 #include "hylic_parse.h"
 #include "hylic_tokenizer.h"
 #include "hylic_typesolver.h"
+#include "general_util.h"
 
 EntityRefNode *monad_ref;
 
 HylicModule *load_file(std::string program_name, std::string path) {
-  printf("Loading %s...\n", path.c_str());
+  dbp(log_debug, "Loading %s...", path.c_str());
 
   HylicModule *program;
   TokenStream *stream = tokenize_file(path);

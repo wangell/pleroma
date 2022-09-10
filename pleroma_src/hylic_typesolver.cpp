@@ -57,6 +57,10 @@ bool is_complex(CType a) {
 }
 
 bool exact_match(CType a, CType b) {
+  if (a.basetype == PType::None && b.basetype == PType::None) {
+    return true;
+  }
+
   if (a.basetype != b.basetype || a.dtype != b.dtype) {
     return false;
   }
@@ -410,6 +414,11 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
           printf("Expected: %s, got %s\n", ctype_to_string(&func_node->ctype).c_str(), ctype_to_string(&return_type).c_str());
           throw TypesolverException("nil", 0, 0, "Function return type differs from a body return value.");
         }
+
+        if (func_node->name == "create" && return_type.basetype != PType::None) {
+          throw TypesolverException("nil", 0, 0, "Create function in entity must return void");
+        }
+
       } else {
         typesolve_sub(context, blocknode);
       }

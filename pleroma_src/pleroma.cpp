@@ -204,10 +204,6 @@ EntityAddress start_system_program(HylicModule *ukernel, std::string ent0) {
   return ent->address;
 }
 
-void usage() {
-  printf("Usage: ...\n");
-}
-
 struct ConnectionInfo {
   std::string host_ip;
   int host_port;
@@ -232,7 +228,7 @@ void start_pleroma(PleromaArgs pleroma_args) {
     dbp(log_debug, "Successfully inoculated.");
   }
 
-  dbp(log_debug, "Initializing host [%s : %d]...", pleroma_args.remote_hostname.c_str(), pleroma_args.local_port);
+  dbp(log_debug, "Initializing host [%s : %d]...", pleroma_args.local_hostname.c_str(), pleroma_args.local_port);
   init_network();
   setup_server(pleroma_args.local_hostname, pleroma_args.local_port);
   dbp(log_debug, "Host initialized");
@@ -301,7 +297,6 @@ int main(int argc, char **argv) {
     load_file("test", target_file);
     exit(0);
   } else {
-    usage();
     exit(1);
   }
 
