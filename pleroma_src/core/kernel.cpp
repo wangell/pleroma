@@ -30,7 +30,7 @@ std::vector<PleromaNode*> nodes;
 int n_running_programs = 1;
 
 void load_software() {
-  programs["helloworld"] = load_file("helloworld", "examples/helloworld.po");
+  programs["helloworld"] = load_file("helloworld", "examples/helloworld.plm");
 }
 
 void add_new_pnode(PleromaNode* node) {

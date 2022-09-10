@@ -19,6 +19,7 @@
 #include "core/kernel.h"
 #include "blockingconcurrentqueue.h"
 #include "node_config.h"
+#include "args.h"
 
 #include "other.h"
 #include "system.h"
@@ -62,7 +63,7 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        print_msg(&m);
+        //print_msg(&m);
 
         try {
           auto find_entity = our_vat->entities.find(m.entity_id);
@@ -215,7 +216,7 @@ struct ConnectionInfo {
   int first_contact_port;
 };
 
-void start_pleroma(ConnectionInfo connect_info) {
+void start_pleroma(PleromaArgs pleroma_args) {
   dbp(log_debug, "Reading node config [pleroma.json]...");
 
   this_pleroma_node = read_node_config();
@@ -225,23 +226,23 @@ void start_pleroma(ConnectionInfo connect_info) {
 
   auto monad_mod = load_system_module(SystemModule::Monad);
 
-  if (connect_info.first_contact_ip == "") {
+  if (pleroma_args.remote_hostname == "") {
     dbp(log_debug, "Inoculating Pleroma [Monad]...");
     inoculate_pleroma(monad_mod, "Monad");
     dbp(log_debug, "Successfully inoculated.");
   }
 
-  dbp(log_debug, "Initializing host [%s : %d]...", connect_info.host_ip.c_str(), connect_info.host_port);
+  dbp(log_debug, "Initializing host [%s : %d]...", pleroma_args.remote_hostname.c_str(), pleroma_args.local_port);
   init_network();
-  setup_server(connect_info.host_ip, connect_info.host_port);
+  setup_server(pleroma_args.local_hostname, pleroma_args.local_port);
   dbp(log_debug, "Host initialized");
 
   auto ent_add = start_system_program(monad_mod, "NodeMan");
   this_pleroma_node->nodeman_addr = ent_add;
 
-  if (connect_info.first_contact_ip != "") {
-    dbp(log_info, "Connecting to network [%s : %d]...", connect_info.first_contact_ip.c_str(), connect_info.first_contact_port);
-    connect_to_cluster(mk_netaddr(connect_info.first_contact_ip, connect_info.first_contact_port));
+  if (pleroma_args.remote_hostname != "") {
+    dbp(log_info, "Connecting to network [%s : %d]...", pleroma_args.remote_hostname.c_str(), pleroma_args.remote_port);
+    connect_to_cluster(mk_netaddr(pleroma_args.remote_hostname, pleroma_args.remote_port));
     dbp(log_info, "Successfully connected");
 
   }
@@ -273,30 +274,10 @@ void start_pleroma(ConnectionInfo connect_info) {
 int main(int argc, char **argv) {
   setlocale(LC_ALL, "");
 
-  if (argc < 2) {
-    usage();
-    exit(1);
-  }
+  PleromaArgs pargs = parse_args(argc, argv);
 
-  if (std::string(argv[1]) == "start") {
-
-    ConnectionInfo connect_info;
-    if (argc < 4) {
-      connect_info.host_ip = "0.0.0.0";
-      connect_info.host_port = 8080;
-    } else {
-      connect_info.host_ip = argv[2];
-      connect_info.host_port = std::stoi(argv[3]);
-    }
-
-    //throw PleromaException(
-    //    "Usage: ./pleroma start hostIP hostPort [clientIP clientPort].");
-    if (argc > 4) {
-      connect_info.first_contact_ip = argv[4];
-      connect_info.first_contact_port = std::stoi(argv[5]);
-    }
-
-    start_pleroma(connect_info);
+  if (pargs.command == PCommand::Start) {
+    start_pleroma(pargs);
   } else if (std::string(argv[1]) == "test") {
     std::string target_file = argv[2];
     load_file("test", target_file);

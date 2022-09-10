@@ -12,11 +12,11 @@ std::map<std::string, SystemModule> system_module_imports = {
     {"sys►amoeba", SystemModule::Amoeba}, {"sys►ds", SystemModule::Ds}};
 
 std::map<SystemModule, std::string> system_module_paths = {
-    {SystemModule::Monad, "sys/monad.po"},
-    {SystemModule::Io, "sys/io.po"},
-    {SystemModule::Ds, "sys/ds.po"},
-    {SystemModule::Net, "sys/net.po"},
-    {SystemModule::Amoeba, "sys/amoeba.po"}};
+    {SystemModule::Monad, "sys/monad.plm"},
+    {SystemModule::Io, "sys/io.plm"},
+    {SystemModule::Ds, "sys/ds.plm"},
+    {SystemModule::Net, "sys/net.plm"},
+    {SystemModule::Amoeba, "sys/amoeba.plm"}};
 
 bool is_system_module(std::string import_string) {
   return system_module_imports.find(import_string) != system_module_imports.end();
