@@ -87,7 +87,7 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string funct
   return res;
 }
 
-AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
+AstNode *eval_message_node(EvalContext *context, AstNode *node,
                            CommMode comm_mode, std::string function_name,
                            std::vector<AstNode *> args) {
 
@@ -102,48 +102,64 @@ AstNode *eval_message_node(EvalContext *context, EntityRefNode *entity_ref,
   //printf("Eval msg node : %d %d %d\n", entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
   if (comm_mode == CommMode::Sync) {
+    EntityRefNode *entity_ref = (EntityRefNode*) node;
     Entity *target_entity;
     target_entity = resolve_local_entity(context, entity_ref);
-    printf("%d %d %d\n", target_entity->address.node_id, target_entity->address.vat_id, target_entity->address.entity_id);
-    printf("%s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
+    //printf("%d %d %d\n", target_entity->address.node_id, target_entity->address.vat_id, target_entity->address.entity_id);
+    //printf("%s %s\n", target_entity->entity_def->name.c_str(), function_name.c_str());
     assert(target_entity != nullptr);
     return eval_func_local(context, target_entity, function_name, args);
   } else {
 
     Msg m;
 
-    // We shouldn't have this, replace with self ref
-    if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
-      m.entity_id = cfs(context).entity->address.entity_id;
-      m.vat_id = cfs(context).entity->address.vat_id;
-      m.node_id = cfs(context).entity->address.node_id;
-    } else {
-      m.entity_id = entity_ref->entity_id;
-      m.vat_id = entity_ref->vat_id;
-      m.node_id = entity_ref->node_id;
+    if (node->type == AstNodeType::EntityRefNode) {
+      EntityRefNode *entity_ref = (EntityRefNode *)node;
+
+      // We shouldn't have this, replace with self ref
+      if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
+        m.entity_id = cfs(context).entity->address.entity_id;
+        m.vat_id = cfs(context).entity->address.vat_id;
+        m.node_id = cfs(context).entity->address.node_id;
+      } else {
+        m.entity_id = entity_ref->entity_id;
+        m.vat_id = entity_ref->vat_id;
+        m.node_id = entity_ref->node_id;
+      }
+      m.src_node_id = cfs(context).entity->address.node_id;
+      m.src_vat_id = cfs(context).entity->address.vat_id;
+      m.src_entity_id = cfs(context).entity->address.entity_id;
+      m.function_name = function_name;
+
+      m.response = false;
+
+      for (auto varg : args) {
+        m.values.push_back((ValueNode *)varg);
+      }
+
+      int pid = context->vat->promise_id_base;
+      m.promise_id = pid;
+
+      context->vat->out_messages.push(m);
+
+      context->vat->promises[pid] = PromiseResult();
+      context->vat->promise_id_base++;
+
+      return make_promise_node(pid);
+    } else if (node->type == AstNodeType::PromiseNode) {
+
+      PromiseNode* prom_node = (PromiseNode*) node;
+
+      int pid = prom_node->promise_id;
+      m.promise_id = pid;
+
+      context->vat->promises[pid] = PromiseResult();
+      context->vat->promises[pid].callback = (PromiseResNode*)make_promise_resolution_node("anon",  {
+          make_message_node(make_symbol("anon"), function_name, comm_mode, args)
+      });
+      //context->vat->promise_id_base++;
+      return make_promise_node(pid);
     }
-    m.src_node_id = cfs(context).entity->address.node_id;
-    m.src_vat_id = cfs(context).entity->address.vat_id;
-    m.src_entity_id = cfs(context).entity->address.entity_id;
-    m.function_name = function_name;
-
-    m.response = false;
-
-    for (auto varg : args) {
-      m.values.push_back((ValueNode *)varg);
-    }
-
-    int pid = context->vat->promise_id_base;
-    m.promise_id = pid;
-
-    context->vat->out_messages.push(m);
-
-    context->vat->promises[pid] = PromiseResult();
-    context->vat->promise_id_base++;
-    printf("%d\n", entity_ref->vat_id);
-    printf("Inserted promise %d in %s while sending to %d %d %d (vat %d)\n", pid, cfs(context).entity->entity_def->name.c_str(), entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id, context->vat->id);
-
-    return make_promise_node(pid);
   }
 
   // TODO handle alien
@@ -427,8 +443,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     // if (node->entity_ref != nullptr) {
     //  ref = (EntityRefNode *)eval(context, node->entity_ref);
     //}
+    AstNode* eref_node = eval(context, node->entity_ref);
 
-    return eval_message_node(context, (EntityRefNode *)eval(context, node->entity_ref), node->comm_mode, node->function_name, args);
+    return eval_message_node(context, eref_node, node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
@@ -495,9 +512,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     auto find_mod = cfs(context).module->imports.find("sys►" + node->mod_name);
 
-    for (auto &k : cfs(context).module->imports) {
-      printf("mod import %s\n", k.first.c_str());
-    }
+    //for (auto &k : cfs(context).module->imports) {
+    //  printf("mod import %s\n", k.first.c_str());
+    //}
 
     assert(find_mod != cfs(context).module->imports.end());
 
@@ -567,7 +584,6 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
     vat = new Vat;
     vat->id = context->node->vat_id_base;
     context->node->vat_id_base++;
-    printf("new vat id: %d\n", vat->id);
   } else {
     vat = context->vat;
   }
@@ -628,7 +644,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
 
       auto helper_ref = make_entity_ref(0, 0, 0);
       helper_ref->ctype = *(k.ctype->subtype);
-      printf("Ctype %s\n", ctype_to_string(&helper_ref->ctype).c_str());
+      //printf("Ctype %s\n", ctype_to_string(&helper_ref->ctype).c_str());
       e->data[k.var_name] = eval_message_node(context, monad_ref, CommMode::Async, "request-far-entity", {helper_ref});
       pop_stack_frame(context);
 

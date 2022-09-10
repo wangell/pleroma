@@ -1,9 +1,17 @@
 #include "hylic_ast.h"
+#include "hylic_eval.h"
 #include <cassert>
+#include <string>
 
 AstNode *static_nop;
 AstNode *static_true;
 AstNode *static_false;
+
+std::string entity_ref_str(EntityRefNode *ref) {
+  return "(" + std::to_string(ref->node_id) + ", " +
+         std::to_string(ref->vat_id) + ", " +
+         std::to_string(ref->entity_id) + ")";
+}
 
 std::string ast_type_to_string(AstNodeType t) {
   switch (t) {

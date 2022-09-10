@@ -12,18 +12,15 @@ AstNode *hashmap_readline(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 AstNode *hashmap_create(EvalContext *context, std::vector<AstNode *> args) {
-  printf("created hashmap\n");
   return make_number(0);
 }
 
 AstNode *hashmap_get(EvalContext *context, std::vector<AstNode *> args) {
 
   std::string sarg = ((StringNode *)args[0])->value;
-  printf("Got val: %s\n", sarg.c_str());
 
   std::string retval = ((StringNode*)cfs(context).entity->_kdata[sarg])->value;
 
-  printf("ret val: %s\n", retval.c_str());
 
   return make_string(retval);
 }
@@ -31,7 +28,6 @@ AstNode *hashmap_get(EvalContext *context, std::vector<AstNode *> args) {
 AstNode *hashmap_set(EvalContext *context, std::vector<AstNode *> args) {
 
   std::string sarg = ((StringNode*) args[1])->value;
-  printf("set val %s\n", sarg.c_str());
 
   cfs(context).entity->_kdata[sarg] = args[0];
 

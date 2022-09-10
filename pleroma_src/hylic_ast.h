@@ -336,3 +336,5 @@ CType *clone_ctype(CType * ctype);
 
 void print_ctype(CType * ctype);
 void print_ctype(CType ctype);
+
+std::string entity_ref_str(EntityRefNode *ref);

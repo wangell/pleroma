@@ -71,6 +71,7 @@ EntityRefNode* get_entity_ref(Entity* e) {
 }
 
 void load_system_entity(EvalContext *context, std::string sys_name, std::string entity_name) {
+  monad_log("Initializing " + sys_name + "[" + entity_name + "]...");
 
   auto io_def = sys_mods[sys_name]->entity_defs[entity_name];
 
@@ -105,7 +106,7 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
     printf("Sending create-vat to %d %d %d\n", sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id);
     //FIXME hardcoded nodeman
 
-    eval_message_node(context, (EntityRefNode *)make_entity_ref(sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id), CommMode::Async, "create-vat", args);
+    auto prom = eval_message_node(context, (EntityRefNode *)make_entity_ref(sched_node->nodeman_addr.node_id, sched_node->nodeman_addr.vat_id, sched_node->nodeman_addr.entity_id), CommMode::Async, "create-vat", args);
 
     //eval(context, make_assignment(make_symbol("nodemanref"), eval_val));
     //auto eref = (EntityRefNode*)context->vat->promises[eval_val->promise_id].results[0];
@@ -115,7 +116,9 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
     // (PromiseResNode*)make_promise_resolution_node("nodemanref",
     // {make_return(make_symbol("nodemanref"))}); return make_nop();
     // IMPORTANT FIXME
-    return make_entity_ref(0, 2, 0);
+    //return make_entity_ref(0, 2, 0);
+    printf("inside call %s\n", ast_type_to_string(prom->type).c_str());
+    return prom;
   }
 
   // Handle failed schedule with an error
@@ -130,12 +133,11 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   c.dtype = DType::Far;
   c.entity_name = ((EntityRefNode*)args[0])->ctype.entity_name;
 
-  printf("Got req far: %s\n", c.entity_name.c_str());
 
   std::vector<std::string> splimp = split_import(c.entity_name);
 
   auto io_ent = get_system_entity_ref(splimp[0], splimp[1]);
-  printf("resolved sys amoeba to %d %d %d\n", io_ent->node_id, io_ent->vat_id, io_ent->entity_id);
+  monad_log("Got far request for " + c.entity_name + ", resolved to " + entity_ref_str(io_ent));
 
   return io_ent;
 }
@@ -151,11 +153,11 @@ AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
   //printf("Incremented programs: %d\n", n_running_programs);
   //printf("Called eref %d %d %d\n", eref->node_id, eref->vat_id, eref->entity_id);
 
-  auto eref = (EntityRefNode*)monad_new_vat(context, args);
+  auto eref = monad_new_vat(context, args);
   // FIXME: hardcoded NodeMan address
-  eval_message_node(context, eref, CommMode::Async, "main", {make_number(0)});
 
-  return make_number(0);
+  auto finaly = eval_message_node(context, eref, CommMode::Async, "main", {make_number(0)});
+  return finaly;
 }
 
 AstNode *monad_n_programs(EvalContext *context, std::vector<AstNode *> args) {

@@ -45,6 +45,8 @@ Msg create_response(Msg msg_in, AstNode *return_val) {
   response_m.src_node_id = msg_in.node_id;
   response_m.promise_id = msg_in.promise_id;
 
+  response_m.function_name = msg_in.function_name;
+
   if (return_val->type == AstNodeType::NumberNode || return_val->type == AstNodeType::StringNode || return_val->type == AstNodeType::EntityRefNode) {
     response_m.values.push_back((ValueNode*)return_val);
   }
@@ -76,9 +78,26 @@ void process_vq() {
           // Return vs call
           if (m.response) {
             // If we didn't setup a promise to resolve, then ignore the result
-            if (our_vat->promises.find(m.promise_id) != our_vat->promises.end() && our_vat->promises[m.promise_id].callback) {
+            if (our_vat->promises.find(m.promise_id) != our_vat->promises.end()) {
               our_vat->promises[m.promise_id].results = m.values;
-              eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+              printf("Resolving prom %d\n", m.promise_id);
+              if (our_vat->promises[m.promise_id].callback) {
+                eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+              }
+
+              if (our_vat->promises[m.promise_id].return_msg) {
+                Msg response_m = create_response(our_vat->promises[m.promise_id].msg, our_vat->promises[m.promise_id].results[0]);
+                if (m.function_name != "main") {
+                  printf("Got return message, sending %s!!\n", ast_type_to_string(our_vat->promises[m.promise_id].results[0]->type).c_str());
+                  auto ref_res = our_vat->promises[m.promise_id].results[0];
+                  if (ref_res->type == AstNodeType::EntityRefNode) {
+                    auto et = (EntityRefNode*) ref_res;
+                    printf("Result was %d %d %d\n", et->node_id, et->vat_id, et->entity_id);
+                  }
+                  our_vat->out_messages.push(response_m);
+                }
+              }
+
               // Get return value here, check if we return a promise node, if we do then we need to connect the two
             }
           } else {
@@ -88,16 +107,24 @@ void process_vq() {
               args.push_back(m.values[zz]);
             }
 
+            // If the result is a promise, setup promise with callback being the real return, and don't send message
             auto result = eval_func_local(&context, target_entity, m.function_name, args);
+            //print_msg(&m);
+            //printf("%s\n", ast_type_to_string(result->type).c_str());
+            if (result->type == AstNodeType::PromiseNode) {
+              PromiseNode* prom = (PromiseNode*) result;
+              our_vat->promises[prom->promise_id].return_msg = true;
+              our_vat->promises[prom->promise_id].msg = m;
+            } else {
+              // All return values are singular - we use tuples to represent
+              // multiple return values
+              // FIXME might not work if we handle tuples differently
+              Msg response_m = create_response(m, result);
 
-            // All return values are singular - we use tuples to represent
-            // multiple return values
-            // FIXME might not work if we handle tuples differently
-            Msg response_m = create_response(m, result);
-
-            // Main cannot be called by any function except ours, move this logic into typechecker
-            if (m.function_name != "main") {
-              our_vat->out_messages.push(response_m);
+              // Main cannot be called by any function except ours, move this logic into typechecker
+              if (m.function_name != "main") {
+                our_vat->out_messages.push(response_m);
+              }
             }
           }
         } catch (PleromaException &e) {

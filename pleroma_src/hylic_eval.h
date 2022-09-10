@@ -45,6 +45,10 @@ struct PromiseResult {
   bool resolved = false;
   std::vector<ValueNode *> results;
   PromiseResNode *callback;
+
+  // Return info
+  bool return_msg = false;
+  Msg msg;
 };
 
 struct Vat {
@@ -110,9 +114,7 @@ void pop_stack_frame(EvalContext * context);
 void pop_scope(EvalContext * context);
 void push_scope(EvalContext * context);
 
-AstNode *eval_message_node(EvalContext * context, EntityRefNode * entity_ref,
-                           CommMode comm_mode, std::string function_name,
-                           std::vector<AstNode *> args);
+AstNode *eval_message_node(EvalContext * context, AstNode * entity_ref, CommMode comm_mode, std::string function_name, std::vector<AstNode *> args);
 
 StackFrame &cfs(EvalContext * context);
 Scope &css(EvalContext * context);
