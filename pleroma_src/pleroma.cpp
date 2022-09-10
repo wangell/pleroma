@@ -17,7 +17,7 @@
 #include "hylic_typesolver.h"
 #include "netcode.h"
 #include "core/kernel.h"
-#include "blockingconcurrentqueue.h"
+#include "../other_src/blockingconcurrentqueue.h"
 #include "node_config.h"
 #include "args.h"
 

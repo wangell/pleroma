@@ -1,13 +1,13 @@
 #pragma once
 
 #include "../shared_src/protoloma.pb.h"
-#include "concurrentqueue.h"
+#include "../other_src/concurrentqueue.h"
 #include "hylic_eval.h"
 #include <enet/enet.h>
 #include <queue>
 #include <string>
 
-#include "blockingconcurrentqueue.h"
+#include "../other_src/blockingconcurrentqueue.h"
 
 extern moodycamel::ConcurrentQueue<Msg> net_out_queue;
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;

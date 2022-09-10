@@ -1,6 +1,6 @@
 #include "netcode.h"
 #include "../shared_src/protoloma.pb.h"
-#include "concurrentqueue.h"
+#include "../other_src/concurrentqueue.h"
 #include "core/kernel.h"
 #include "hylic.h"
 #include "hylic_ast.h"

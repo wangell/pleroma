@@ -1,5 +1,5 @@
 #include "hylic_eval.h"
-#include "blockingconcurrentqueue.h"
+#include "../other_src/blockingconcurrentqueue.h"
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "other.h"
