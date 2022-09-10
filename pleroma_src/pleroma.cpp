@@ -219,7 +219,7 @@ struct ConnectionInfo {
 void start_pleroma(PleromaArgs pleroma_args) {
   dbp(log_debug, "Reading node config [pleroma.json]...");
 
-  this_pleroma_node = read_node_config();
+  this_pleroma_node = read_node_config(pleroma_args.config_path);
   add_new_pnode(this_pleroma_node);
 
   load_kernel();

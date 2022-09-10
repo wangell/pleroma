@@ -7,13 +7,13 @@
 
 using json = nlohmann::json;
 
-PleromaNode *read_node_config() {
+PleromaNode *read_node_config(std::string config_path) {
   PleromaNode* pnode = new PleromaNode;
 
   std::string config_file_contents;
   std::ifstream config_file;
 
-  config_file.open("pleroma.json");
+  config_file.open(config_path);
 
   std::stringstream filestream;
   filestream << config_file.rdbuf();
