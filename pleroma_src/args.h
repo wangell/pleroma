@@ -10,7 +10,7 @@ enum class PCommand {
 
 struct PleromaArgs {
   PCommand command;
-  std::string config_path;
+  std::string config_path = "pleroma.json";
 
   std::string local_hostname;
   u32 local_port;
