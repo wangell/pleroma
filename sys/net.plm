@@ -4,3 +4,4 @@
 	δ start(host : str, e : Entity, func : str) -> void
 	δ next() -> void
 	δ stop(host : str, e : Entity, func : str) -> void
+	δ return-http-result(res : str) -> void

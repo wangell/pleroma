@@ -3,6 +3,7 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
+#include <chrono>
 #include <locale>
 #include <map>
 #include <queue>
@@ -25,7 +26,7 @@
 #include "system.h"
 
 //const auto processor_count = std::thread::hardware_concurrency();
-const auto processor_count = 1;
+const auto processor_count = 2;
 const int MAX_STEPS = 3;
 
 PleromaNode *this_pleroma_node;
@@ -65,7 +66,7 @@ void process_vq() {
       while (!our_vat->messages.empty()) {
         Msg m = our_vat->messages.front();
         our_vat->messages.pop();
-        //print_msg(&m);
+        print_msg(&m);
 
         try {
           auto find_entity = our_vat->entities.find(m.entity_id);

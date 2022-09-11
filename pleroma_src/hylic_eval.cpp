@@ -36,6 +36,10 @@ AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
   return make_nop();
 }
 
+void on_promise_do(EvalContext* context, int promise_id, std::vector<AstNode*> body) {
+  context->vat->promises[promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node("anon", body));
+}
+
 Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
   //printf("Resolving local entity: %d %d %d\n", entity_ref->entity_id, entity_ref->vat_id, entity_ref->node_id);
   // FIXME - self fix

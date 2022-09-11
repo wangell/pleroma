@@ -53,6 +53,8 @@ void nodeman_log(std::string log_str) {
 // Tries to schedule a vat on the current node set, returns true if it was possible
 PleromaNode* try_preschedule(EntityDef* edef) {
 
+  PleromaNode* node = nullptr;
+  node_mtx.lock();
   for (auto &k : nodes) {
     bool satisfied = true;
     for (auto &rq : edef->preamble) {
@@ -60,10 +62,13 @@ PleromaNode* try_preschedule(EntityDef* edef) {
         satisfied = false;
       }
     }
-    if (satisfied) return k;
+    if (satisfied) {
+      node = k;
+    }
   }
+  node_mtx.unlock();
 
-  return nullptr;
+  return node;
 }
 
 EntityRefNode* get_entity_ref(Entity* e) {
@@ -75,7 +80,7 @@ void load_system_entity(EvalContext *context, std::string sys_name, std::string 
 
   auto io_def = sys_mods[sys_name]->entity_defs[entity_name];
 
-  auto io_ent = create_entity(context, (EntityDef*)io_def, false);
+  auto io_ent = create_entity(context, (EntityDef*)io_def, true);
   io_ent->module_scope = io_ent->entity_def->module;
   assert(io_ent->entity_def->module);
   assert(io_ent->module_scope);
@@ -173,9 +178,11 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
 
   sys_mods["io"] = load_system_module(SystemModule::Io);
   sys_mods["amoeba"] = load_system_module(SystemModule::Amoeba);
+  sys_mods["net"] = load_system_module(SystemModule::Net);
 
   load_system_entity(context, "io", "Io");
   load_system_entity(context, "amoeba", "Amoeba");
+  load_system_entity(context, "net", "HttpLb");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);

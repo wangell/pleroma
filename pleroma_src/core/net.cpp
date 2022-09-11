@@ -22,7 +22,20 @@ int addrlen = sizeof(address);
 char buffer[1024] = {0};
 
 // Host -> Entity
-std::map<std::string, std::tuple<EntityRefNode*, std::string>> host_entity_lookup;
+std::map<std::string, std::tuple<EntityRefNode *, std::string>> host_entity_lookup;
+
+AstNode *net_return_http_result(EvalContext *context, std::vector<AstNode *> args) {
+  assert(args[0]->type == AstNodeType::StringNode);
+
+  auto res_str = (StringNode *)args[0];
+  printf("calling return result %s\n", res_str->value.c_str());
+  send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
+  close(new_socket);
+
+  eval_message_node(context, (EntityRefNode *)make_entity_ref(-1, -1, -1), CommMode::Async, "next", {});
+
+  return make_nop();
+}
 
 AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
 
@@ -33,8 +46,7 @@ AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
   }
 
   // Forcefully attaching socket to the port 8080
-  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt,
-                 sizeof(opt))) {
+  if (setsockopt(server_fd, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt))) {
     perror("setsockopt");
     exit(EXIT_FAILURE);
   }
@@ -52,19 +64,19 @@ AstNode *net_start(EvalContext *context, std::vector<AstNode *> args) {
     exit(EXIT_FAILURE);
   }
 
-  std::string hostname = ((StringNode*)args[2])->value;
-  auto entity_ref = ((EntityRefNode*)args[1]);
-  std::string callback = ((StringNode*)args[0])->value;
+  std::string hostname = ((StringNode *)args[0])->value;
+  auto entity_ref = ((EntityRefNode *)args[1]);
+  std::string callback = ((StringNode *)args[2])->value;
 
   printf("registered %s\n", hostname.c_str());
-  host_entity_lookup[hostname] = std::make_tuple((EntityRefNode*)make_entity_ref(entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id), callback);
+  host_entity_lookup[hostname] =
+      std::make_tuple((EntityRefNode *)make_entity_ref(entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id), callback);
 
   return make_number(0);
 }
 
 AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
-  if ((new_socket = accept(server_fd, (struct sockaddr *)&address,
-                           (socklen_t *)&addrlen)) < 0) {
+  if ((new_socket = accept(server_fd, (struct sockaddr *)&address, (socklen_t *)&addrlen), SOCK_NONBLOCK) < 0) {
     perror("accept");
     exit(EXIT_FAILURE);
   }
@@ -83,7 +95,7 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   std::string header, header_contents;
   std::string hostname;
 
-  while(iss >> header) {
+  while (iss >> header) {
     iss >> header_contents;
 
     if (header == "Host:") {
@@ -99,25 +111,22 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
     return make_number(0);
   }
   auto host_ref = host_entity_lookup[hostname];
-  //AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test", {make_string(buffer)});
-  AstNode *res = eval_message_node(context, std::get<0>(host_ref), CommMode::Sync, std::get<1>(host_ref), {make_string(verb), make_string(path)});
+  // AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test",
+  // {make_string(buffer)});
+  PromiseNode *res = (PromiseNode *)eval_message_node(context, std::get<0>(host_ref), CommMode::Async, std::get<1>(host_ref),
+                                                      {make_string(verb), make_string(path)});
 
-  auto res_str = (StringNode*) eval(context, res);
+  printf("sending back result\n");
+  context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
+                                                                                                             "anon", {make_message_node(make_self(), "return-http-result", CommMode::Async, {make_symbol("anon")})}));
 
-  //printf("%s\n", res_str->value.c_str());
-
-  //printf("Response %s\n", res_str->value.c_str());
-  send(new_socket, res_str->value.c_str(), strlen(res_str->value.c_str()), 0);
-  close(new_socket);
-
-  eval_message_node(context, (EntityRefNode*)make_entity_ref(-1, -1, -1), CommMode::Async, "next", {});
+  //context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
+  //    "anon", {make_message_node(make_entity_ref(0, 0, 1), "print", CommMode::Async, {make_string("blah")})}));
 
   return make_number(0);
 }
 
-AstNode *net_create(EvalContext *context, std::vector<AstNode *> args) {
-  return make_number(0);
-}
+AstNode *net_create(EvalContext *context, std::vector<AstNode *> args) { return make_number(0); }
 
 std::map<std::string, AstNode *> load_net() {
   std::map<std::string, FuncStmt *> functions;
@@ -135,14 +144,12 @@ std::map<std::string, AstNode *> load_net() {
   CType *blarg = new CType;
   blarg->basetype = PType::str;
 
-  functions["start"] =
-      setup_direct_call(net_start, "start", {"host", "e", "func"}, {blarg, blah, blarg}, none_type);
+  functions["start"] = setup_direct_call(net_start, "start", {"host", "e", "func"}, {blarg, blah, blarg}, none_type);
   functions["next"] = setup_direct_call(net_next, "next", {}, {}, none_type);
   functions["create"] = setup_direct_call(net_create, "create", {}, {}, none_type);
+  functions["return-http-result"] = setup_direct_call(net_return_http_result, "return-http-result", {"res"}, {blarg}, none_type);
 
   kernel_map["HttpLb"] = make_actor(nullptr, "HttpLb", functions, {}, {}, {}, {});
 
-  return {
-    {"HttpLb", make_actor(nullptr, "HttpLb", functions, {}, {}, {}, {})}
-  };
+  return {{"HttpLb", make_actor(nullptr, "HttpLb", functions, {}, {}, {}, {})}};
 }
