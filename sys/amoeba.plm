@@ -1,13 +1,19 @@
-ε Amoeba {}
+ε AmoebaWindow {}
 
 	window-id : u8
 
 	δ create() -> void
 
-	δ init() -> u8
-
-	δ window() -> u8
-
 	δ close() -> u8
 
 	δ write(text : str) -> void
+
+ε Amoeba {}
+
+	δ create() -> void
+
+	δ init() -> u8
+
+	δ window() -> far AmoebaWindow
+
+	δ close() -> u8

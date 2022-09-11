@@ -5,6 +5,7 @@
 #include "other.h"
 #include "pleroma.h"
 #include <cassert>
+#include <string>
 #include <utility>
 #include "core/kernel.h"
 #include "system.h"
@@ -143,6 +144,7 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
     }
 
     if (have_ent_address) {
+      printf("YA %s %d %d %d\n", function_name.c_str(), entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
       // We shouldn't have this, replace with self ref
       if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
@@ -176,6 +178,7 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
       return make_promise_node(pid);
     } else {
 
+      //printf("%s\n", ast_type_to_string(node->type).c_str());
       assert(node->type == AstNodeType::PromiseNode);
 
       PromiseNode* prom_node = (PromiseNode*) node;
@@ -184,9 +187,10 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
 
       assert (context->vat->promises.find(pid) != context->vat->promises.end());
 
-      //printf("HERE!!!! msg func %s %d \n", function_name.c_str(), pid);
-      context->vat->promises[pid].callbacks.push_back((PromiseResNode*)make_promise_resolution_node("anon",  {
-          make_message_node(make_symbol("anon"), function_name, comm_mode, args)
+      // This doesn't promise chain - need to create new promise, insert promise res node
+      printf("HERE!!!! msg func %s %d \n", function_name.c_str(), pid);
+      context->vat->promises[pid].callbacks.push_back((PromiseResNode*)make_promise_resolution_node("anon" + std::to_string(pid),  {
+            make_message_node(make_symbol("anon" + std::to_string(pid)), function_name, comm_mode, args)
       }));
       //printf("n callbacks %d\n", context->vat->promises[pid].callbacks.size());
       return make_promise_node(pid);

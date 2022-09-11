@@ -26,7 +26,7 @@
 #include "system.h"
 
 //const auto processor_count = std::thread::hardware_concurrency();
-const auto processor_count = 2;
+const auto processor_count = 1;
 const int MAX_STEPS = 3;
 
 PleromaNode *this_pleroma_node;

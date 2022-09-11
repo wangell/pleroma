@@ -74,7 +74,13 @@ AstNode *amoeba_window(EvalContext *context, std::vector<AstNode *> args) {
 
   refresh_window(window);
 
-  return make_number(window->window_id);
+  auto env = eval(context, make_create_entity("AmoebaWindow", false));
+  auto ent_ref = (EntityRefNode*)env;
+
+  printf("Returning %d %d %d\n", ent_ref->node_id, ent_ref->vat_id, ent_ref->entity_id);
+
+  //return make_number(window->window_id);
+  return env;
 }
 
 AstNode *amoeba_close(EvalContext *context, std::vector<AstNode *> args) {
@@ -85,6 +91,19 @@ AstNode *amoeba_close(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 AstNode *amoeba_create(EvalContext *context, std::vector<AstNode *> args) {
+  return make_number(0);
+}
+
+AstNode *window_create(EvalContext *context, std::vector<AstNode *> args) {
+  return make_number(0);
+}
+
+AstNode *window_close(EvalContext *context, std::vector<AstNode *> args) { return make_number(0); }
+
+AstNode *window_write(EvalContext *context, std::vector<AstNode *> args) {
+
+  printf("write\n");
+
   return make_number(0);
 }
 
@@ -110,14 +129,26 @@ std::map<std::string, AstNode *> load_amoeba() {
   CType none_type;
   none_type.basetype = PType::None;
   none_type.dtype = DType::Local;
+
+  CType window_type;
+  window_type.basetype = PType::Entity;
+  window_type.entity_name = "AmoebaWindow";
+  window_type.dtype = DType::Far;
+
   functions["create"] = setup_direct_call(amoeba_create, "create", {}, {}, none_type);
 
   functions["init"] = setup_direct_call(amoeba_init, "init", {}, {}, test_type);
-  functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, test_type);
+  functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, window_type);
   functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, test_type);
-  functions["write"] = setup_direct_call(amoeba_write, "write", {"text"}, {str_type}, none_type);
+  //functions["write"] = setup_direct_call(amoeba_write, "write", {"text"}, {str_type}, none_type);
+
+  std::map<std::string, FuncStmt *> window_functions;
+  window_functions["create"] = setup_direct_call(window_create, "window", {}, {}, none_type);
+  window_functions["write"] = setup_direct_call(window_write, "write", {"text"}, {str_type}, none_type);
+  window_functions["close"] = setup_direct_call(window_close, "close", {}, {}, test_type);
 
   return {
-    {"Amoeba", make_actor(nullptr, "Amoeba", functions, {}, {}, {}, {})}}
-  ;
+    {"Amoeba", make_actor(nullptr, "Amoeba", functions, {}, {}, {}, {})},
+    {"AmoebaWindow", make_actor(nullptr, "AmoebaWindow", window_functions, {}, {}, {}, {})}
+  };
 }
