@@ -27,9 +27,9 @@ AstNode *hashmap_get(EvalContext *context, std::vector<AstNode *> args) {
 
 AstNode *hashmap_set(EvalContext *context, std::vector<AstNode *> args) {
 
-  std::string sarg = ((StringNode*) args[1])->value;
+  std::string sarg = ((StringNode*) args[0])->value;
 
-  cfs(context).entity->_kdata[sarg] = args[0];
+  cfs(context).entity->_kdata[sarg] = args[1];
 
   return make_nop();
 }

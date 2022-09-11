@@ -395,11 +395,13 @@ AstNode *parse_expr(ParseContext *context) {
           val_stack.push(ent);
         } else {
           // FIXME Replace with keyword self
+          std::reverse(args.begin(), args.end());
           val_stack.push(make_message_node(make_self(), op.name, mode, args));
         }
       } else {
         auto topstack = val_stack.top();
         val_stack.pop();
+        std::reverse(args.begin(), args.end());
         val_stack.push(make_message_node(topstack, op.name, mode, args));
       }
     }
