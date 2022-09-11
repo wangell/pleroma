@@ -262,15 +262,15 @@ void start_pleroma(PleromaArgs pleroma_args) {
   setup_server(pleroma_args.local_hostname, pleroma_args.local_port);
   dbp(log_debug, "Host initialized");
 
-  auto ent_add = start_system_program(monad_mod, "NodeMan");
-  this_pleroma_node->nodeman_addr = ent_add;
 
   if (pleroma_args.remote_hostname != "") {
     dbp(log_info, "Connecting to network [%s : %d]...", pleroma_args.remote_hostname.c_str(), pleroma_args.remote_port);
     connect_to_cluster(mk_netaddr(pleroma_args.remote_hostname, pleroma_args.remote_port));
     dbp(log_info, "Successfully connected");
-
   }
+
+  auto ent_add = start_system_program(monad_mod, "NodeMan");
+  this_pleroma_node->nodeman_addr = ent_add;
 
   load_software();
 
