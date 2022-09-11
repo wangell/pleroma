@@ -52,12 +52,21 @@ Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
 AstNode *eval_promise_local(EvalContext *context, Entity *entity,
                             PromiseResult *resolve_node) {
 
-  std::vector<std::tuple<std::string, AstNode *>> subs;
-  for (int i = 0; i < resolve_node->results.size(); ++i) {
-    subs.push_back(std::make_tuple(resolve_node->callback->sym, resolve_node->results[i]));
+  AstNode* ret;
+  int iz = 0;
+  //printf("calling %d callbacks\n", resolve_node->callbacks.size());
+  for (auto &cb : resolve_node->callbacks) {
+    std::vector<std::tuple<std::string, AstNode *>> subs;
+    for (int i = 0; i < resolve_node->results.size(); ++i) {
+      subs.push_back(std::make_tuple(cb->sym, resolve_node->results[i]));
+    }
+
+    ret = eval_block(context, cb->body, subs);
+    //printf("did prom %d\n", iz);
+    iz++;
   }
 
-  return eval_block(context, resolve_node->callback->body, subs);
+  return ret;
 }
 
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args) {
@@ -96,9 +105,6 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
   // 3. Insert a row into the Promise stack if we need to.  Yield if we are
   // doing async, otherwise wait for return
 
-  // printf("Eval: message node %s %s\n",
-  // target_entity->entity_def->name.c_str(), function_name.c_str());
-
   //printf("Eval msg node : %d %d %d\n", entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
   if (comm_mode == CommMode::Sync) {
@@ -112,9 +118,27 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
   } else {
 
     Msg m;
+    EntityRefNode *entity_ref;
+    bool have_ent_address = false;
 
     if (node->type == AstNodeType::EntityRefNode) {
-      EntityRefNode *entity_ref = (EntityRefNode *)node;
+      entity_ref = (EntityRefNode *)node;
+      have_ent_address = true;
+    }
+
+    if (node->type == AstNodeType::PromiseNode) {
+      PromiseNode* prom_node = (PromiseNode*) node;
+      auto res = context->vat->promises.find(prom_node->promise_id);
+      assert(res != context->vat->promises.end());
+      if (res->second.resolved) {
+        //printf("found promise!\n");
+        assert(res->second.results[0]->type == AstNodeType::EntityRefNode);
+        entity_ref = (EntityRefNode*)res->second.results[0];
+        have_ent_address = true;
+      }
+    }
+
+    if (have_ent_address) {
 
       // We shouldn't have this, replace with self ref
       if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
@@ -146,18 +170,21 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
       context->vat->promise_id_base++;
 
       return make_promise_node(pid);
-    } else if (node->type == AstNodeType::PromiseNode) {
+    } else {
+
+      assert(node->type == AstNodeType::PromiseNode);
 
       PromiseNode* prom_node = (PromiseNode*) node;
 
       int pid = prom_node->promise_id;
-      m.promise_id = pid;
 
-      context->vat->promises[pid] = PromiseResult();
-      context->vat->promises[pid].callback = (PromiseResNode*)make_promise_resolution_node("anon",  {
+      assert (context->vat->promises.find(pid) != context->vat->promises.end());
+
+      //printf("HERE!!!! msg func %s %d \n", function_name.c_str(), pid);
+      context->vat->promises[pid].callbacks.push_back((PromiseResNode*)make_promise_resolution_node("anon",  {
           make_message_node(make_symbol("anon"), function_name, comm_mode, args)
-      });
-      //context->vat->promise_id_base++;
+      }));
+      //printf("n callbacks %d\n", context->vat->promises[pid].callbacks.size());
       return make_promise_node(pid);
     }
   }
@@ -487,7 +514,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
       assert(false);
       // return eval(context, context->vat->promises[prom->promise_id].result);
     } else {
-      context->vat->promises[prom->promise_id].callback = node;
+      context->vat->promises[prom->promise_id].callbacks.push_back(node);
       return obj;
     }
   }

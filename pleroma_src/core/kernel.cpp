@@ -117,7 +117,7 @@ AstNode *monad_new_vat(EvalContext *context, std::vector<AstNode *> args) {
     // {make_return(make_symbol("nodemanref"))}); return make_nop();
     // IMPORTANT FIXME
     //return make_entity_ref(0, 2, 0);
-    printf("inside call %s\n", ast_type_to_string(prom->type).c_str());
+    //printf("inside call %s\n", ast_type_to_string(prom->type).c_str());
     return prom;
   }
 

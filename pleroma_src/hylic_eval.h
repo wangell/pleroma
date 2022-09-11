@@ -44,7 +44,7 @@ struct Msg {
 struct PromiseResult {
   bool resolved = false;
   std::vector<ValueNode *> results;
-  PromiseResNode *callback;
+  std::vector<PromiseResNode*> callbacks;
 
   // Return info
   bool return_msg = false;

@@ -9,10 +9,14 @@
 	δ create() -> void
 		blahblah = ds►Hashmap()
 
+	δ zig() -> void
+		ioinst ! print ("zig")
+
 	δ main(env: u8) -> u8
 
-		let zz : str = "Really works!"
+		ioinst ! print("yuppi1")
+		ioinst ! print("yuppi2")
 
-		ioinst ! print(zz)
+		! zig()
 
 		↵ 0

@@ -80,19 +80,20 @@ void process_vq() {
             // If we didn't setup a promise to resolve, then ignore the result
             if (our_vat->promises.find(m.promise_id) != our_vat->promises.end()) {
               our_vat->promises[m.promise_id].results = m.values;
-              //printf("Resolving prom %d\n", m.promise_id);
-              if (our_vat->promises[m.promise_id].callback) {
+              our_vat->promises[m.promise_id].resolved = true;
+              //printf("Resolving prom %d with %d callbacks\n", m.promise_id, our_vat->promises[m.promise_id].callbacks.size());
+              if (our_vat->promises[m.promise_id].callbacks.size() > 0) {
                 eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
               }
 
               if (our_vat->promises[m.promise_id].return_msg) {
                 Msg response_m = create_response(our_vat->promises[m.promise_id].msg, our_vat->promises[m.promise_id].results[0]);
                 if (m.function_name != "main") {
-                  printf("Got return message, sending %s!!\n", ast_type_to_string(our_vat->promises[m.promise_id].results[0]->type).c_str());
+                  //printf("Got return message, sending %s!!\n", ast_type_to_string(our_vat->promises[m.promise_id].results[0]->type).c_str());
                   auto ref_res = our_vat->promises[m.promise_id].results[0];
                   if (ref_res->type == AstNodeType::EntityRefNode) {
                     auto et = (EntityRefNode*) ref_res;
-                    printf("Result was %d %d %d\n", et->node_id, et->vat_id, et->entity_id);
+                    //printf("Result was %d %d %d\n", et->node_id, et->vat_id, et->entity_id);
                   }
                   our_vat->out_messages.push(response_m);
                 }
@@ -107,6 +108,7 @@ void process_vq() {
               args.push_back(m.values[zz]);
             }
 
+            //printf("Got message with func %s\n", m.function_name.c_str());
             // If the result is a promise, setup promise with callback being the real return, and don't send message
             auto result = eval_func_local(&context, target_entity, m.function_name, args);
             //print_msg(&m);
