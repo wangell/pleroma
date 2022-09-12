@@ -46,6 +46,8 @@ struct PromiseResult {
   std::vector<ValueNode *> results;
   std::vector<PromiseResNode*> callbacks;
 
+  std::vector<int> dependents;
+
   // Return info
   bool return_msg = false;
   Msg msg;

@@ -64,12 +64,22 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     std::vector<std::tuple<std::string, AstNode *>> subs;
     for (int i = 0; i < resolve_node->results.size(); ++i) {
       subs.push_back(std::make_tuple(cb->sym, resolve_node->results[i]));
+      if (resolve_node->results[i]->type == AstNodeType::EntityRefNode) {
+        printf("sub %s\n", entity_ref_str((EntityRefNode*)resolve_node->results[i]).c_str());
+      }
     }
 
     ret = eval_block(context, cb->body, subs);
-    //printf("did prom %d\n", iz);
+
     iz++;
   }
+
+  //for (auto &k : resolve_node->dependents) {
+  //  auto prom_res = context->vat->promises[k];
+  //  prom_res.results = resolve_node->results;
+  //  prom_res.resolved = true;
+  //  eval_promise_local(context, entity, &prom_res);
+  //}
 
   return ret;
 }
@@ -174,25 +184,31 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
 
       context->vat->promises[pid] = PromiseResult();
       context->vat->promise_id_base++;
+      printf("made promise %d\n", pid);
 
       return make_promise_node(pid);
     } else {
+      // Promise chain
 
       //printf("%s\n", ast_type_to_string(node->type).c_str());
       assert(node->type == AstNodeType::PromiseNode);
 
       PromiseNode* prom_node = (PromiseNode*) node;
 
-      int pid = prom_node->promise_id;
+      int pid = context->vat->promise_id_base;
 
-      assert (context->vat->promises.find(pid) != context->vat->promises.end());
+      printf("attaching promise %d %s to promise %d\n", pid, function_name.c_str(), prom_node->promise_id);
 
-      // This doesn't promise chain - need to create new promise, insert promise res node
-      printf("HERE!!!! msg func %s %d \n", function_name.c_str(), pid);
-      context->vat->promises[pid].callbacks.push_back((PromiseResNode*)make_promise_resolution_node("anon" + std::to_string(pid),  {
+      assert (context->vat->promises.find(prom_node->promise_id) != context->vat->promises.end());
+
+      context->vat->promises[pid] = PromiseResult();
+      context->vat->promises[pid].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
+          "anon" + std::to_string(pid), {
             make_message_node(make_symbol("anon" + std::to_string(pid)), function_name, comm_mode, args)
-      }));
-      //printf("n callbacks %d\n", context->vat->promises[pid].callbacks.size());
+          }));
+
+      //context->vat->promises[prom_node->promise_id].dependents.push_back(pid);
+      context->vat->promise_id_base++;
       return make_promise_node(pid);
     }
   }

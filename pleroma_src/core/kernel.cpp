@@ -1,15 +1,16 @@
 #include "kernel.h"
+#include "../general_util.h"
 #include "../hylic_ast.h"
 #include "../hylic_eval.h"
+#include "../system.h"
+#include "../type_util.h"
+#include "amoeba.h"
+#include "zeno.h"
+#include "ds.h"
 #include "ffi.h"
-#include "net.h"
 #include "fs.h"
 #include "io.h"
-#include "ds.h"
-#include "amoeba.h"
-#include "../type_util.h"
-#include "../system.h"
-#include "../general_util.h"
+#include "net.h"
 
 #include <algorithm>
 #include <iostream>
@@ -179,10 +180,12 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
   sys_mods["io"] = load_system_module(SystemModule::Io);
   sys_mods["amoeba"] = load_system_module(SystemModule::Amoeba);
   sys_mods["net"] = load_system_module(SystemModule::Net);
+  sys_mods["zeno"] = load_system_module(SystemModule::Zeno);
 
   load_system_entity(context, "io", "Io");
   load_system_entity(context, "amoeba", "Amoeba");
   load_system_entity(context, "net", "HttpLb");
+  load_system_entity(context, "zeno", "Zeno");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);
@@ -263,6 +266,7 @@ void load_kernel() {
   kernel_map[SystemModule::Net] = load_net();
   kernel_map[SystemModule::Amoeba] = load_amoeba();
   kernel_map[SystemModule::Ds] = load_ds();
+  kernel_map[SystemModule::Zeno] = load_zeno();
   load_fs();
 
 }

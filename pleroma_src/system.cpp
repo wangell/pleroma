@@ -5,18 +5,25 @@
 #include "core/kernel.h"
 #include "other.h"
 
-std::map<std::string, SystemModule> system_module_imports = {
-    {"sys►monad", SystemModule::Monad},   {"sys►io", SystemModule::Io},
-    {"sys►net", SystemModule::Net},       {"io", SystemModule::Io},
-    {"net", SystemModule::Net},           {"amoeba", SystemModule::Amoeba},
-    {"sys►amoeba", SystemModule::Amoeba}, {"sys►ds", SystemModule::Ds}};
+std::map<std::string, SystemModule> system_module_imports = {{"sys►monad", SystemModule::Monad},
+                                                             {"sys►io", SystemModule::Io},
+                                                             {"sys►net", SystemModule::Net},
+                                                             {"io", SystemModule::Io},
+                                                             {"net", SystemModule::Net},
+                                                             {"amoeba", SystemModule::Amoeba},
+                                                             {"sys►amoeba", SystemModule::Amoeba},
+                                                             {"sys►ds", SystemModule::Ds},
+                                                             {"sys►zeno", SystemModule::Zeno},
+                                                             {"zeno", SystemModule::Zeno}};
 
 std::map<SystemModule, std::string> system_module_paths = {
     {SystemModule::Monad, "sys/monad.plm"},
     {SystemModule::Io, "sys/io.plm"},
     {SystemModule::Ds, "sys/ds.plm"},
     {SystemModule::Net, "sys/net.plm"},
-    {SystemModule::Amoeba, "sys/amoeba.plm"}};
+    {SystemModule::Amoeba, "sys/amoeba.plm"},
+    {SystemModule::Zeno, "sys/zeno.plm"}
+};
 
 bool is_system_module(std::string import_string) {
   return system_module_imports.find(import_string) != system_module_imports.end();

@@ -82,8 +82,8 @@ void process_vq() {
             if (our_vat->promises.find(m.promise_id) != our_vat->promises.end()) {
               our_vat->promises[m.promise_id].results = m.values;
               our_vat->promises[m.promise_id].resolved = true;
-              //printf("Resolving prom %d with %d callbacks\n", m.promise_id, our_vat->promises[m.promise_id].callbacks.size());
-              if (our_vat->promises[m.promise_id].callbacks.size() > 0) {
+              printf("Resolving prom %d with %d callbacks, %d depdendents\n", m.promise_id, our_vat->promises[m.promise_id].callbacks.size(), our_vat->promises[m.promise_id].dependents.size());
+              if (our_vat->promises[m.promise_id].callbacks.size() > 0 || our_vat->promises[m.promise_id].dependents.size() > 0) {
                 eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
               }
 
