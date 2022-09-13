@@ -1,0 +1,21 @@
+~sys►ds
+~sys►io
+~sys►net
+~sys►amoeba
+
+ε UserProgram {ioinst : @far io►Io, man : @far amoeba►Amoeba}
+
+	δ create() -> void
+		let q : u8 = 0
+
+	δ main(env: u8) -> u8
+
+		ioinst ! print("hello")
+
+		man ! init()
+
+		let z : @far AmoebaWindow = man ! window()
+
+		z ! write("test")
+
+		↵ 0
