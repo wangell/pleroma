@@ -127,7 +127,7 @@ AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string funct
     subs.push_back(std::make_tuple(func_def_node->args[i], eval(context, args[i])));
   }
 
-  push_stack_frame(context, entity, entity->entity_def->module);
+  push_stack_frame(context, entity, entity->entity_def->module, function_name);
 
   auto res = eval_block(context, func_def_node->body, subs);
 
@@ -592,7 +592,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     assert(find_mod != cfs(context).module->imports.end());
 
-    push_stack_frame(context, cfs(context).entity, find_mod->second);
+    push_stack_frame(context, cfs(context).entity, find_mod->second, "");
 
     auto res = eval(context, node->accessor);
     pop_stack_frame(context);
@@ -635,9 +635,7 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
     return cfs(context).entity->module_scope->entity_defs.find(sym)->second;
   }
 
-  for (auto &[k, v]: cfs(context).entity->data) {
-    printf("Data %s %s\n", sym.c_str(), k.c_str());
-  }
+  dump_locals(context);
 
   throw PleromaException((std::string("Failed to find symbol: ") + sym).c_str());
 }
@@ -710,7 +708,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
       // Old-method
       //Entity* io_ent = create_entity(context, (EntityDef *)entity_def->module->imports[fqn_map[lib_name]]->entity_defs[base_name], false);
       //e->data[k.var_name] = make_entity_ref(io_ent->address.node_id, io_ent->address.vat_id, io_ent->address.entity_id);
-      push_stack_frame(context, e, e->module_scope);
+      push_stack_frame(context, e, e->module_scope, "");
       assert(monad_ref);
       //if (!monad_ref) {
       //  monad_ref = (EntityRefNode*)make_entity_ref(0, 0, 0);
@@ -791,7 +789,7 @@ void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModul
   context->node = node;
   context->vat = vat;
 
-  push_stack_frame(context, nullptr, module);
+  push_stack_frame(context, nullptr, module, "");
 
   cfs(context).module = module;
   cfs(context).entity = entity;
@@ -810,10 +808,12 @@ void pop_scope(EvalContext *context) {
   cfs(context).scope_stack.pop_back();
 }
 
-void push_stack_frame(EvalContext *context, Entity* e, HylicModule* module) {
+void push_stack_frame(EvalContext *context, Entity* e, HylicModule* module, std::string func_name) {
   context->stack.push_back(StackFrame());
   context->stack.back().entity = e;
   context->stack.back().module = module;
+
+  context->stack.back().mef_name = module->abs_module_path + "::" + e->entity_def->name + "::" + func_name;
 
   push_scope(context);
 }

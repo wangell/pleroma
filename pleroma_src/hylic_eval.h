@@ -95,6 +95,8 @@ struct StackFrame {
   HylicModule *module;
   Entity *entity;
   std::vector<Scope> scope_stack;
+
+  std::string mef_name;
 };
 
 struct EvalContext {
@@ -115,8 +117,7 @@ void print_msg(Msg * m);
 
 void start_context(EvalContext * context, PleromaNode * node, Vat * vat,
                    HylicModule * module, Entity * entity);
-void push_stack_frame(EvalContext * context, Entity * e,
-                      HylicModule * module);
+void push_stack_frame(EvalContext * context, Entity * e, HylicModule * module, std::string func_name);
 void pop_stack_frame(EvalContext * context);
 
 void pop_scope(EvalContext * context);
