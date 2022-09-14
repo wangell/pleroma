@@ -72,6 +72,8 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     iz++;
   }
 
+  dump_locals(context);
+
   for (auto &k : resolve_node->dependents) {
     //printf("Executing dependent %d from %d\n", k, promise_id);
     // Actually, just manually send our own message here without calling eval_message_node.  that way we can control the promise id
@@ -828,4 +830,13 @@ StackFrame& cfs(EvalContext *context) {
 // Current stack scope
 Scope &css(EvalContext *context) {
   return context->stack.back().scope_stack.back();
+}
+
+void dump_locals(EvalContext* context) {
+  printf("Locals:\n");
+  for (auto x = cfs(context).scope_stack.rbegin(); x != cfs(context).scope_stack.rend(); x++) {
+    for (auto &[k, v] : x->table) {
+      printf("\t%s (%s) : %s\n", k.c_str(), ast_type_to_string(v->type).c_str(), stringify_value_node(v).c_str());
+    }
+  }
 }

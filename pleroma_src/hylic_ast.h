@@ -343,6 +343,8 @@ std::string entity_ref_str(EntityRefNode *ref);
 
 std::string extract_string(AstNode* node);
 
+std::string stringify_value_node(AstNode* node);
+
 template <class T>
 T safe_ncast(AstNode* node, AstNodeType node_type) {
   assert(node->type == node_type);

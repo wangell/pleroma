@@ -1,4 +1,5 @@
 #include "hylic_ast.h"
+#include "general_util.h"
 #include "hylic_eval.h"
 #include <cassert>
 #include <string>
@@ -430,4 +431,12 @@ std::string extract_string(AstNode *node) {
   assert(node->type == AstNodeType::StringNode);
 
   return ((StringNode*) node)->value;
+}
+
+std::string stringify_value_node(AstNode *node) {
+  switch(node->type) {
+  case AstNodeType::StringNode: return ((StringNode*)node)->value;
+  }
+
+  return "";
 }

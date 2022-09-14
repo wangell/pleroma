@@ -126,3 +126,5 @@ AstNode *eval_message_node(EvalContext * context, AstNode * entity_ref, CommMode
 
 StackFrame &cfs(EvalContext * context);
 Scope &css(EvalContext * context);
+
+void dump_locals(EvalContext *context);
