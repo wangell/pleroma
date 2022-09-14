@@ -1,4 +1,5 @@
 #include "amoeba.h"
+#include "../type_util.h"
 #include "SDL_video.h"
 #include "ffi.h"
 #include <SDL2/SDL.h>
@@ -118,34 +119,22 @@ AstNode *amoeba_write(EvalContext *context, std::vector<AstNode *> args) {
 std::map<std::string, AstNode *> load_amoeba() {
   std::map<std::string, FuncStmt *> functions;
 
-  CType *str_type = new CType;
-  str_type->basetype = PType::str;
-  str_type->dtype = DType::Local;
-
-  CType test_type;
-  test_type.basetype = PType::u8;
-  test_type.dtype = DType::Local;
-
-  CType none_type;
-  none_type.basetype = PType::None;
-  none_type.dtype = DType::Local;
-
   CType window_type;
   window_type.basetype = PType::Entity;
   window_type.entity_name = "AmoebaWindow";
   window_type.dtype = DType::Far;
 
-  functions["create"] = setup_direct_call(amoeba_create, "create", {}, {}, none_type);
+  functions["create"] = setup_direct_call(amoeba_create, "create", {}, {}, *void_t());
 
-  functions["init"] = setup_direct_call(amoeba_init, "init", {}, {}, test_type);
+  functions["init"] = setup_direct_call(amoeba_init, "init", {}, {}, *lu8());
   functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, window_type);
-  functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, test_type);
+  functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, *lu8());
   //functions["write"] = setup_direct_call(amoeba_write, "write", {"text"}, {str_type}, none_type);
 
   std::map<std::string, FuncStmt *> window_functions;
-  window_functions["create"] = setup_direct_call(window_create, "window", {}, {}, none_type);
-  window_functions["write"] = setup_direct_call(window_write, "write", {"text"}, {str_type}, none_type);
-  window_functions["close"] = setup_direct_call(window_close, "close", {}, {}, test_type);
+  window_functions["create"] = setup_direct_call(window_create, "window", {}, {}, *void_t());
+  window_functions["write"] = setup_direct_call(window_write, "write", {"text"}, {lstr()}, *void_t());
+  window_functions["close"] = setup_direct_call(window_close, "close", {}, {}, *lu8());
 
   return {
     {"Amoeba", make_actor(nullptr, "Amoeba", functions, {}, {}, {}, {})},

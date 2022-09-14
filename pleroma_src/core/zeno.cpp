@@ -30,7 +30,12 @@ AstNode *zeno_checkout(EvalContext *context, std::vector<AstNode *> args) {
   std::string file_id = extract_string(args[0]);
   printf("HERE!\n");
 
+  CType *str_type = new CType;
+  str_type->basetype = PType::str;
+  str_type->dtype = DType::Local;
+
   return make_string(chunk_map[file_id][0][0]);
+  // return make_list({make_string(chunk_map[file_id][0][0])}, str_type);
 }
 
 // ZenoNode
@@ -124,7 +129,7 @@ std::map<std::string, AstNode*> load_zeno() {
   std::map<std::string, FuncStmt *> zmaster_functions = {
       {"create", setup_direct_call(zeno_create, "create", {}, {}, none_type)},
       {"new", setup_direct_call(zeno_new, "new", {}, {}, none_type)},
-      {"checkout", setup_direct_call(zeno_checkout, "checkout", {"filename"}, {str_type}, *chunk_list_type)},
+      {"checkout", setup_direct_call(zeno_checkout, "checkout", {"filename"}, {str_type}, *str_type)},
   };
 
   std::map<std::string, FuncStmt *> zfile_functions = {

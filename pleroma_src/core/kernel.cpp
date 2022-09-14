@@ -214,11 +214,6 @@ AstNode *nodeman_create_vat(EvalContext *context, std::vector<AstNode *> args) {
 
 void load_kernel() {
 
-  std::map<std::string, FuncStmt *> functions;
-
-  CType *c = new CType;
-  *c = lu8();
-
   CType *c2 = new CType;
   c2->basetype = PType::BaseEntity;
   c2->dtype = DType::Far;
@@ -232,37 +227,29 @@ void load_kernel() {
   c4->subtype = c2;
   c4->dtype = DType::Local;
 
-  CType *c_str = new CType;
-  c_str->basetype = PType::str;
-  c_str->dtype = DType::Local;
-
-  CType *c_none = new CType;
-  c_none->basetype = PType::None;
-  c_none->dtype = DType::Local;
-
-  functions["hello"] = setup_direct_call(monad_hello, "hello", {"i"}, {c}, lu8());
-  functions["create"] = setup_direct_call(monad_create, "create", {}, {}, *c_none);
-
-  functions["start-program"] = setup_direct_call(monad_start_program, "start-program", {"programname", "entname"}, {c_str, c_str}, lu8());
-  functions["n-programs"] = setup_direct_call(monad_n_programs, "n-programs", {}, {}, lstr());
-  functions["request-far-entity"] = setup_direct_call(monad_request_far_entity, "request-far-entity", {"ent"}, {c2}, *c3);
-  functions["new-vat"] = setup_direct_call(monad_new_vat, "new-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
-
-  std::map<std::string, FuncStmt *> node_man_functions;
-
-  node_man_functions["create"] = setup_direct_call(nodeman_create, "create", {}, {}, *c_none);
-  node_man_functions["create-vat"] = setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
-
-  std::map<std::string, FuncStmt *> clogger_functions;
-
-  clogger_functions["create"] = setup_direct_call(nodeman_create, "create", {}, {}, *c_none);
-  clogger_functions["log"] = setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {c_str, c_str}, *c4);
-
-  kernel_map[SystemModule::Monad] = {
-      {"Monad", make_actor(nullptr, "Monad", functions, {}, {}, {}, {})},
-      {"NodeMan", make_actor(nullptr, "NodeMan", node_man_functions, {}, {}, {}, {})},
-      {"Clogger", make_actor(nullptr, "Clogger", node_man_functions, {}, {}, {}, {})}
+  std::map<std::string, FuncStmt *> kernel_functions = {
+      {"hello", setup_direct_call(monad_hello, "hello", {"i"}, {lu8()}, *lu8())},
+      {"create", setup_direct_call(monad_create, "create", {}, {}, *void_t())},
+      {"start-program", setup_direct_call(monad_start_program, "start-program", {"programname", "entname"}, {lstr(), lstr()}, *lu8())},
+      {"n-programs", setup_direct_call(monad_n_programs, "n-programs", {}, {}, *lstr())},
+      {"request-far-entity", setup_direct_call(monad_request_far_entity, "request-far-entity", {"ent"}, {c2}, *c3)},
+      {"new-vat", setup_direct_call(monad_new_vat, "new-vat", {"programname", "entname"}, {lstr(), lstr()}, *c4)},
   };
+
+  std::map<std::string, FuncStmt *> node_man_functions = {
+    {"create", setup_direct_call(nodeman_create, "create", {}, {}, *void_t())},
+    {"create-vat", setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {lstr(), lstr()}, *c4)}
+  };
+
+  std::map<std::string, FuncStmt *> clogger_functions = {
+    {"create", setup_direct_call(nodeman_create, "create", {}, {}, *void_t())},
+    {"log", setup_direct_call(nodeman_create_vat, "create-vat", {"programname", "entname"}, {lstr(), lstr()}, *c4)},
+  };
+
+
+  kernel_map[SystemModule::Monad] = {{"Monad", make_actor(nullptr, "Monad", kernel_functions, {}, {}, {}, {})},
+                                     {"NodeMan", make_actor(nullptr, "NodeMan", node_man_functions, {}, {}, {}, {})},
+                                     {"Clogger", make_actor(nullptr, "Clogger", clogger_functions, {}, {}, {}, {})}};
 
   kernel_map[SystemModule::Io] = load_io();
   kernel_map[SystemModule::Net] = load_net();

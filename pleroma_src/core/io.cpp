@@ -45,26 +45,11 @@ AstNode *io_create(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 std::map<std::string, AstNode*> load_io() {
-  std::map<std::string, FuncStmt *> io_functions;
-
-  CType *strl = new CType;
-  strl->basetype = PType::str;
-  strl->dtype = DType::Local;
-
-  io_functions["print"] = setup_direct_call(io_print, "print", {"val"}, {strl}, lu8());
-  CType str_type;
-  str_type.basetype = PType::str;
-  str_type.dtype = DType::Local;
-  io_functions["readline"] = setup_direct_call(io_readline, "readline", {}, {}, str_type);
-
-  io_functions["print"]->ctype.basetype = PType::u8;
-
-  CType none_type;
-  none_type.basetype = PType::None;
-  none_type.dtype = DType::Local;
-  io_functions["create"] = setup_direct_call(io_create, "create", {}, {}, none_type);
-
-  //io_functions["readline"]->ctype.basetype = PType::str;
+  std::map<std::string, FuncStmt *> io_functions = {
+    {"print", setup_direct_call(io_print, "print", {"val"}, {lstr()}, *lu8())},
+    {"readline", setup_direct_call(io_readline, "readline", {}, {}, *lstr())},
+    {"create", setup_direct_call(io_create, "create", {}, {}, *void_t())}
+  };
 
   return {
     {"Io", make_actor(nullptr, "Io", io_functions, {}, {}, {}, {})}
