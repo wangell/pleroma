@@ -223,7 +223,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   case AstNodeType::PromiseResNode: {
     PromiseResNode* res_node = (PromiseResNode*)node;
     for (auto &k : res_node->body) {
-      typesolve_sub(context, k);
+      //typesolve_sub(context, k);
     }
     return node->ctype;
   } break;

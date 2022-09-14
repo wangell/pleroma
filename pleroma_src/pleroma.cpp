@@ -82,20 +82,14 @@ void process_vq() {
             if (our_vat->promises.find(m.promise_id) != our_vat->promises.end()) {
               our_vat->promises[m.promise_id].results = m.values;
               our_vat->promises[m.promise_id].resolved = true;
-              printf("Resolving prom %d with %d callbacks, %d depdendents\n", m.promise_id, our_vat->promises[m.promise_id].callbacks.size(), our_vat->promises[m.promise_id].dependents.size());
               if (our_vat->promises[m.promise_id].callbacks.size() > 0 || our_vat->promises[m.promise_id].dependents.size() > 0) {
-                eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id]);
+                eval_promise_local(&context, our_vat->entities.find(m.entity_id)->second, &our_vat->promises[m.promise_id], m.promise_id);
               }
 
               if (our_vat->promises[m.promise_id].return_msg) {
                 Msg response_m = create_response(our_vat->promises[m.promise_id].msg, our_vat->promises[m.promise_id].results[0]);
                 if (m.function_name != "main") {
-                  //printf("Got return message, sending %s!!\n", ast_type_to_string(our_vat->promises[m.promise_id].results[0]->type).c_str());
                   auto ref_res = our_vat->promises[m.promise_id].results[0];
-                  if (ref_res->type == AstNodeType::EntityRefNode) {
-                    auto et = (EntityRefNode*) ref_res;
-                    //printf("Result was %d %d %d\n", et->node_id, et->vat_id, et->entity_id);
-                  }
                   our_vat->out_messages.push(response_m);
                 }
               }

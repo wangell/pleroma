@@ -425,3 +425,9 @@ void print_ctype(CType *ctype) {
 void print_ctype(CType ctype) {
   printf("%s\n", ctype_to_string(&ctype).c_str());
 }
+
+std::string extract_string(AstNode *node) {
+  assert(node->type == AstNodeType::StringNode);
+
+  return ((StringNode*) node)->value;
+}

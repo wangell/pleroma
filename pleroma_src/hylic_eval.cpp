@@ -55,17 +55,15 @@ Entity *resolve_local_entity(EvalContext *context, EntityRefNode *entity_ref) {
 }
 
 AstNode *eval_promise_local(EvalContext *context, Entity *entity,
-                            PromiseResult *resolve_node) {
+                            PromiseResult *resolve_node, int promise_id) {
 
   AstNode* ret;
   int iz = 0;
-  //printf("calling %d callbacks\n", resolve_node->callbacks.size());
   for (auto &cb : resolve_node->callbacks) {
     std::vector<std::tuple<std::string, AstNode *>> subs;
     for (int i = 0; i < resolve_node->results.size(); ++i) {
       subs.push_back(std::make_tuple(cb->sym, resolve_node->results[i]));
       if (resolve_node->results[i]->type == AstNodeType::EntityRefNode) {
-        printf("sub %s\n", entity_ref_str((EntityRefNode*)resolve_node->results[i]).c_str());
       }
     }
 
@@ -74,12 +72,37 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     iz++;
   }
 
-  //for (auto &k : resolve_node->dependents) {
-  //  auto prom_res = context->vat->promises[k];
-  //  prom_res.results = resolve_node->results;
-  //  prom_res.resolved = true;
-  //  eval_promise_local(context, entity, &prom_res);
-  //}
+  for (auto &k : resolve_node->dependents) {
+    //printf("Executing dependent %d from %d\n", k, promise_id);
+    // Actually, just manually send our own message here without calling eval_message_node.  that way we can control the promise id
+    assert(resolve_node->results[0]->type == AstNodeType::EntityRefNode);
+    EntityRefNode *entity_ref = (EntityRefNode*)resolve_node->results[0];
+    Msg m;
+
+    if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
+      m.entity_id = cfs(context).entity->address.entity_id;
+      m.vat_id = cfs(context).entity->address.vat_id;
+      m.node_id = cfs(context).entity->address.node_id;
+    } else {
+      m.entity_id = entity_ref->entity_id;
+      m.vat_id = entity_ref->vat_id;
+      m.node_id = entity_ref->node_id;
+    }
+    m.src_node_id = cfs(context).entity->address.node_id;
+    m.src_vat_id = cfs(context).entity->address.vat_id;
+    m.src_entity_id = cfs(context).entity->address.entity_id;
+    m.function_name = k.function_name;
+
+    m.response = false;
+
+    for (auto varg : k.args) {
+      m.values.push_back((ValueNode *)varg);
+    }
+
+    m.promise_id = k.promise_id;
+
+    context->vat->out_messages.push(m);
+  }
 
   return ret;
 }
@@ -139,9 +162,7 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
     if (node->type == AstNodeType::EntityRefNode) {
       entity_ref = (EntityRefNode *)node;
       have_ent_address = true;
-    }
-
-    if (node->type == AstNodeType::PromiseNode) {
+    } else if (node->type == AstNodeType::PromiseNode) {
       PromiseNode* prom_node = (PromiseNode*) node;
       auto res = context->vat->promises.find(prom_node->promise_id);
       assert(res != context->vat->promises.end());
@@ -151,6 +172,8 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
         entity_ref = (EntityRefNode*)res->second.results[0];
         have_ent_address = true;
       }
+    } else {
+      assert(false);
     }
 
     if (have_ent_address) {
@@ -184,30 +207,28 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
 
       context->vat->promises[pid] = PromiseResult();
       context->vat->promise_id_base++;
-      printf("made promise %d\n", pid);
 
       return make_promise_node(pid);
     } else {
       // Promise chain
 
-      //printf("%s\n", ast_type_to_string(node->type).c_str());
       assert(node->type == AstNodeType::PromiseNode);
 
       PromiseNode* prom_node = (PromiseNode*) node;
 
       int pid = context->vat->promise_id_base;
 
-      printf("attaching promise %d %s to promise %d\n", pid, function_name.c_str(), prom_node->promise_id);
 
       assert (context->vat->promises.find(prom_node->promise_id) != context->vat->promises.end());
 
       context->vat->promises[pid] = PromiseResult();
-      context->vat->promises[pid].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
-          "anon" + std::to_string(pid), {
-            make_message_node(make_symbol("anon" + std::to_string(pid)), function_name, comm_mode, args)
-          }));
 
-      //context->vat->promises[prom_node->promise_id].dependents.push_back(pid);
+      DependPromFunc dpf;
+      dpf.promise_id = pid;
+      dpf.function_name = function_name;
+      dpf.args = args;
+
+      context->vat->promises[prom_node->promise_id].dependents.push_back(dpf);
       context->vat->promise_id_base++;
       return make_promise_node(pid);
     }
@@ -528,7 +549,6 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     assert(prom_sym->type == AstNodeType::PromiseNode);
     auto prom = (PromiseNode *)prom_sym;
 
-    printf("Resolved promise %d in %s\n", prom->promise_id, cfs(context).entity->entity_def->name.c_str());
     assert(context->vat->promises.find(prom->promise_id) !=
            context->vat->promises.end());
 

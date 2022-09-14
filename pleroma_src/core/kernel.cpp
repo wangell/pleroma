@@ -177,6 +177,8 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
   monad_log("Hello.");
 
+  system_entities["monad"]["Monad"] = cfs(context).entity;
+
   sys_mods["io"] = load_system_module(SystemModule::Io);
   sys_mods["amoeba"] = load_system_module(SystemModule::Amoeba);
   sys_mods["net"] = load_system_module(SystemModule::Net);
@@ -185,7 +187,7 @@ AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
   load_system_entity(context, "io", "Io");
   load_system_entity(context, "amoeba", "Amoeba");
   load_system_entity(context, "net", "HttpLb");
-  load_system_entity(context, "zeno", "Zeno");
+  load_system_entity(context, "zeno", "ZenoMaster");
 
   //eval_message_node(context, eref, CommMode::Sync, "print", {make_string("hi")});
   return make_number(0);

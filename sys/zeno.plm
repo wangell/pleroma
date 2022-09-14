@@ -1,2 +1,14 @@
-ε Zeno {}
+ε ZenoMaster {}
 	δ create() -> void
+
+	δ new() -> void
+
+	δ checkout(filename : str) -> [str]
+
+ε Zfile {zm : @far zeno►ZenoMaster}
+	δ create() -> void
+
+	δ assemble-chunks(chunks : [str]) -> str
+
+	δ test(filename : str) -> str
+		let z : [str] = zm ! checkout(filename)

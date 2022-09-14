@@ -41,12 +41,18 @@ struct Msg {
   std::vector<ValueNode *> values;
 };
 
+struct DependPromFunc {
+  int promise_id;
+  std::string function_name;
+  std::vector<AstNode *> args;
+};
+
 struct PromiseResult {
   bool resolved = false;
   std::vector<ValueNode *> results;
   std::vector<PromiseResNode*> callbacks;
 
-  std::vector<int> dependents;
+  std::vector<DependPromFunc> dependents;
 
   // Return info
   bool return_msg = false;
@@ -102,7 +108,7 @@ std::map<std::string, AstNode *> *find_symbol_table(EvalContext *context, std::s
 AstNode *find_symbol(EvalContext *context, std::string sym);
 Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
-AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node);
+AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node, int promise_id);
 AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def);
 void print_value_node(ValueNode * value_node);
 void print_msg(Msg * m);

@@ -68,8 +68,6 @@ AstNode *amoeba_window(EvalContext *context, std::vector<AstNode *> args) {
   window->sdl_window = SDL_CreateWindow("SDL2 Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 680, 480, 0);
   windows[window->window_id] = window;
 
-  cfs(context).entity->data["window-id"] = make_number(window->window_id);
-
   assert(window->sdl_window);
 
   refresh_window(window);
@@ -77,14 +75,13 @@ AstNode *amoeba_window(EvalContext *context, std::vector<AstNode *> args) {
   auto env = eval(context, make_create_entity("AmoebaWindow", false));
   auto ent_ref = (EntityRefNode*)env;
 
-  printf("Returning %d %d %d\n", ent_ref->node_id, ent_ref->vat_id, ent_ref->entity_id);
+  context->vat->entities[ent_ref->entity_id]->data["window-id"] = make_number(window->window_id);
 
-  //return make_number(window->window_id);
   return env;
 }
 
 AstNode *amoeba_close(EvalContext *context, std::vector<AstNode *> args) {
-  SDL_Delay(2000);
+  SDL_Delay(10000);
   //SDL_DestroyWindow();
   SDL_Quit();
   return make_number(0);
@@ -98,19 +95,22 @@ AstNode *window_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-AstNode *window_close(EvalContext *context, std::vector<AstNode *> args) { return make_number(0); }
+AstNode *window_close(EvalContext *context, std::vector<AstNode *> args) {
+  return make_number(0);
+}
 
 AstNode *window_write(EvalContext *context, std::vector<AstNode *> args) {
 
-  printf("write\n");
+  auto window_id = ((NumberNode*)cfs(context).entity->data["window-id"])->value;
+
+  drawText(windows[window_id], "test", 24, 0, 0, 255, 255, 255, 0, 0, 0);
+
+  refresh_window(windows[window_id]);
 
   return make_number(0);
 }
 
 AstNode *amoeba_write(EvalContext *context, std::vector<AstNode *> args) {
-  auto window_id = ((NumberNode*)cfs(context).entity->data["window-id"])->value;
-
-  drawText(windows[window_id], "test", 24, 0, 0, 255, 255, 255, 1, 1, 1);
 
   return make_number(0);
 }
