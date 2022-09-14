@@ -293,6 +293,7 @@ void start_pleroma(PleromaArgs pleroma_args) {
 
 int main(int argc, char **argv) {
   setlocale(LC_ALL, "");
+  panic("blah");
 
   PleromaArgs pargs = parse_args(argc, argv);
 

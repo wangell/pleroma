@@ -1,6 +1,10 @@
 #pragma once
 
 #include "general_util.h"
+#include <algorithm>
+#include <bits/types/__FILE.h>
+#include <fstream>
+#include <string>
 
 std::vector<std::string> split_import(std::string bstr) {
 
@@ -62,4 +66,28 @@ void dbp(int lvl, const char *format, ...) {
 
   printf("\n");
   va_end(argptr);
+}
+
+void _panic(std::string msg, std::string file_name, int line_no, std::string func_name) {
+  printf("\033[1;31mPANIC\033[0m (%s, line %d, %s) : %s\n", file_name.c_str(),
+         line_no, func_name.c_str(), msg.c_str());
+
+  std::string line;
+  std::ifstream badfile("pleroma_src/" + file_name);
+  std::string file_conts;
+
+  int start_val = std::max(0, line_no - 10);
+  int end_val = line_no + 10;
+  int i = 0;
+  printf("%s:\n", file_name.c_str());
+  while (std::getline(badfile, line)) {
+    if (i >= start_val && i <= end_val) {
+      if (i == line_no - 1) printf("\033[1;31m");
+      printf("\t%s\n", line.c_str());
+      if (i == line_no - 1) printf("\033[0m");
+    }
+    i++;
+  }
+
+  exit(1);
 }

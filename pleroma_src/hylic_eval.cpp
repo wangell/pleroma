@@ -146,7 +146,7 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
   //printf("Eval msg node : %d %d %d\n", entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
   if (comm_mode == CommMode::Sync) {
-    EntityRefNode *entity_ref = (EntityRefNode*) node;
+    EntityRefNode *entity_ref = safe_ncast<EntityRefNode*>(node, AstNodeType::EntityRefNode);
     Entity *target_entity;
     target_entity = resolve_local_entity(context, entity_ref);
     //printf("%d %d %d\n", target_entity->address.node_id, target_entity->address.vat_id, target_entity->address.entity_id);
@@ -163,11 +163,11 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
       entity_ref = (EntityRefNode *)node;
       have_ent_address = true;
     } else if (node->type == AstNodeType::PromiseNode) {
-      PromiseNode* prom_node = (PromiseNode*) node;
+      PromiseNode* prom_node = safe_ncast<PromiseNode*>(node, AstNodeType::PromiseNode);
       auto res = context->vat->promises.find(prom_node->promise_id);
       assert(res != context->vat->promises.end());
+
       if (res->second.resolved) {
-        //printf("found promise!\n");
         assert(res->second.results[0]->type == AstNodeType::EntityRefNode);
         entity_ref = (EntityRefNode*)res->second.results[0];
         have_ent_address = true;

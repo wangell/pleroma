@@ -2,7 +2,9 @@
 
 #include "common.h"
 #include "hylic_tokenizer.h"
+#include <cassert>
 #include <map>
+#include <memory>
 #include <string>
 #include <vector>
 
@@ -340,3 +342,9 @@ void print_ctype(CType ctype);
 std::string entity_ref_str(EntityRefNode *ref);
 
 std::string extract_string(AstNode* node);
+
+template <class T>
+T safe_ncast(AstNode* node, AstNodeType node_type) {
+  assert(node->type == node_type);
+  return static_cast<T>(node);
+}
