@@ -129,3 +129,4 @@ StackFrame &cfs(EvalContext * context);
 Scope &css(EvalContext * context);
 
 void dump_locals(EvalContext *context);
+void dump_local_stack(EvalContext *context);

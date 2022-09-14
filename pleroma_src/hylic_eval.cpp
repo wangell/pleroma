@@ -72,8 +72,6 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     iz++;
   }
 
-  dump_locals(context);
-
   for (auto &k : resolve_node->dependents) {
     //printf("Executing dependent %d from %d\n", k, promise_id);
     // Actually, just manually send our own message here without calling eval_message_node.  that way we can control the promise id
@@ -813,7 +811,9 @@ void push_stack_frame(EvalContext *context, Entity* e, HylicModule* module, std:
   context->stack.back().entity = e;
   context->stack.back().module = module;
 
-  context->stack.back().mef_name = module->abs_module_path + "::" + e->entity_def->name + "::" + func_name;
+  if (module && e) {
+    context->stack.back().mef_name = module->abs_module_path + "::" + e->entity_def->name + "::" + func_name;
+  }
 
   push_scope(context);
 }
@@ -838,5 +838,12 @@ void dump_locals(EvalContext* context) {
     for (auto &[k, v] : x->table) {
       printf("\t%s (%s) : %s\n", k.c_str(), ast_type_to_string(v->type).c_str(), stringify_value_node(v).c_str());
     }
+  }
+}
+
+void dump_local_stack(EvalContext* context) {
+  printf("Stack (local):\n");
+  for (auto x = context->stack.rbegin(); x != context->stack.rend(); x++) {
+    printf("\tFrame: %s\n", x->mef_name.c_str());
   }
 }
