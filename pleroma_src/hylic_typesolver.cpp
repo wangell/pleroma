@@ -185,7 +185,7 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
     }
 
     if(look == nullptr) {
-      printf("Failed to find symbol %s.\n", sym_node->sym.c_str());
+      throw TypesolverException("nil", 0, 0, "Failed to find symbol " + sym_node->sym);
     }
     return *look;
   } break;

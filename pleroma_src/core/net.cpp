@@ -117,8 +117,7 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
                                                       {make_string(verb), make_string(path)});
 
   printf("sending back result\n");
-  context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
-                                                                                                             "anon", {make_message_node(make_self(), "return-http-result", CommMode::Async, {make_symbol("anon")})}));
+  context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node("anon", {make_message_node(make_self(), "return-http-result", CommMode::Async, {make_string("blah")})}));
 
   //context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
   //    "anon", {make_message_node(make_entity_ref(0, 0, 1), "print", CommMode::Async, {make_string("blah")})}));

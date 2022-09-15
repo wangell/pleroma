@@ -175,7 +175,7 @@ AstNode *monad_create(EvalContext *context, std::vector<AstNode *> args) {
 }
 
 AstNode *monad_hello(EvalContext *context, std::vector<AstNode *> args) {
-  monad_log("Hello.");
+  monad_log("Hello");
 
   system_entities["monad"]["Monad"] = cfs(context).entity;
 

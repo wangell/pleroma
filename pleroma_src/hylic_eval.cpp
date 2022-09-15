@@ -62,9 +62,8 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
   for (auto &cb : resolve_node->callbacks) {
     std::vector<std::tuple<std::string, AstNode *>> subs;
     for (int i = 0; i < resolve_node->results.size(); ++i) {
+      printf("HERE %s\n", cb->sym.c_str());
       subs.push_back(std::make_tuple(cb->sym, resolve_node->results[i]));
-      if (resolve_node->results[i]->type == AstNodeType::EntityRefNode) {
-      }
     }
 
     ret = eval_block(context, cb->body, subs);
@@ -173,11 +172,10 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
         have_ent_address = true;
       }
     } else {
-      assert(false);
+      panic("Unhandled target node type for message node");
     }
 
     if (have_ent_address) {
-      printf("YA %s %d %d %d\n", function_name.c_str(), entity_ref->node_id, entity_ref->vat_id, entity_ref->entity_id);
 
       // We shouldn't have this, replace with self ref
       if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
@@ -236,7 +234,7 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
 
   // TODO handle alien
 
-  assert(false);
+  panic("Unhandled message node");
 }
 
 AstNode *eval(EvalContext *context, AstNode *obj) {
@@ -634,6 +632,7 @@ AstNode *find_symbol(EvalContext *context, std::string sym) {
   }
 
   dump_locals(context);
+  dump_local_stack(context);
 
   throw PleromaException((std::string("Failed to find symbol: ") + sym).c_str());
 }
@@ -787,7 +786,7 @@ void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModul
   context->node = node;
   context->vat = vat;
 
-  push_stack_frame(context, nullptr, module, "");
+  push_stack_frame(context, entity, module, "");
 
   cfs(context).module = module;
   cfs(context).entity = entity;
@@ -833,17 +832,19 @@ Scope &css(EvalContext *context) {
 }
 
 void dump_locals(EvalContext* context) {
-  printf("Locals:\n");
+  printf("\nLocals:\n");
   for (auto x = cfs(context).scope_stack.rbegin(); x != cfs(context).scope_stack.rend(); x++) {
     for (auto &[k, v] : x->table) {
       printf("\t%s (%s) : %s\n", k.c_str(), ast_type_to_string(v->type).c_str(), stringify_value_node(v).c_str());
     }
   }
+  printf("\n");
 }
 
 void dump_local_stack(EvalContext* context) {
-  printf("Stack (local):\n");
+  printf("\nStack (local):\n");
   for (auto x = context->stack.rbegin(); x != context->stack.rend(); x++) {
     printf("\tFrame: %s\n", x->mef_name.c_str());
   }
+  printf("\n");
 }
