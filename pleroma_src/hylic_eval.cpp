@@ -10,6 +10,7 @@
 #include "core/kernel.h"
 #include "system.h"
 #include "general_util.h"
+#include "type_util.h"
 
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
 
@@ -338,10 +339,9 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::ListNode) {
     auto table = (ListNode *)obj;
 
-    // FIXME: not sure where we should do this
-    //for (int k = 0; k < table->list.size(); ++k) {
-    //  table->list[k] = eval(context, table->list[k]);
-    //}
+    for (int k = 0; k < table->list.size(); ++k) {
+      table->list[k] = eval(context, table->list[k]);
+    }
 
     return obj;
   }
@@ -386,11 +386,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     IndexNode* ind_node = (IndexNode*)obj;
     assert(obj->type == AstNodeType::IndexNode);
     ListNode* list_node = (ListNode*)eval(context, ind_node->list);
+    safe_ncast<ListNode*>(list_node, AstNodeType::ListNode);
     assert(list_node->type == AstNodeType::ListNode);
 
     auto index = ((NumberNode*)eval(context, ind_node->accessor))->value;
 
     if (index >= list_node->list.size()) {
+      printf("%d\n", index);
       throw PleromaException("Attempted to access array out of bounds.");
     }
     return list_node->list[index];
@@ -470,8 +472,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
             return eval_block(context, std::get<1>(match_case), {});
           }
         } else if (mexpr->type == AstNodeType::BooleanNode) {
-          auto sexpr = (BooleanNode *)mexpr;
-          auto sexpr_match = (BooleanNode *)mca_eval;
+          auto sexpr = safe_ncast<BooleanNode *>(mexpr, AstNodeType::BooleanNode);
+          auto sexpr_match = safe_ncast<BooleanNode *>(mca_eval, AstNodeType::BooleanNode);
           if (sexpr->value == sexpr_match->value) {
             return eval_block(context, std::get<1>(match_case), {});
           }
@@ -497,8 +499,8 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     // HACK
     if (node->function_name == "append") {
-      auto list_node = (ListNode*) args[1];
-      auto val = args[0];
+      auto list_node = (ListNode*) args[0];
+      auto val = args[1];
       list_node->list.push_back(val);
       return make_nop();
     }
@@ -515,11 +517,32 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     //}
     AstNode* eref_node = eval(context, node->entity_ref);
 
+    printf("%s\n", ast_type_to_string(eref_node->type).c_str());
+
     return eval_message_node(context, eref_node, node->comm_mode, node->function_name, args);
   }
 
   if (obj->type == AstNodeType::SymbolNode) {
     return find_symbol(context, ((SymbolNode *)obj)->sym);
+  }
+
+  if (obj->type == AstNodeType::RangeNode) {
+    auto range_node = safe_ncast<RangeNode*>(obj, AstNodeType::RangeNode);
+    auto start_expr = safe_ncast<NumberNode*>(eval(context, range_node->range_start), AstNodeType::NumberNode);
+    auto end_expr = safe_ncast<NumberNode *>(eval(context, range_node->range_end), AstNodeType::NumberNode);
+
+    std::vector<AstNode*> new_list;
+    for (int i = start_expr->value; i < end_expr->value; i++) {
+      new_list.push_back(make_number(i));
+    }
+
+    // FIXME alloc
+    CType *ctype = new CType;
+    ctype->basetype = PType::List;
+    ctype->subtype = lu8();
+    ctype->dtype = DType::Local;
+
+    return eval(context, make_list(new_list, ctype));
   }
 
   if (obj->type == AstNodeType::CreateEntity) {

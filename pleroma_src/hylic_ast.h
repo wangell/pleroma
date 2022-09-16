@@ -7,6 +7,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include "general_util.h"
 
 enum class AstNodeType {
   Stmt,
@@ -55,7 +56,9 @@ enum class AstNodeType {
 
   UndefinedNode,
 
-  CommentNode
+  CommentNode,
+
+  RangeNode
 };
 
 enum class MessageDistance { Local, Far, Alien };
@@ -126,6 +129,11 @@ struct CommentNode : AstNode {
 
 struct ReturnNode : AstNode {
   AstNode *expr;
+};
+
+struct RangeNode : AstNode {
+  AstNode *range_start;
+  AstNode *range_end;
 };
 
 struct ModUseNode: AstNode {
@@ -314,6 +322,7 @@ AstNode *make_function(std::string s, std::vector<std::string> args, std::vector
 AstNode *make_nop();
 AstNode *make_undefined();
 AstNode *make_self();
+AstNode *make_range(AstNode* range_start, AstNode* range_end);
 AstNode *make_comment(std::string comment);
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args);
 AstNode *make_create_entity(std::string entity_name, bool new_vat);
@@ -347,6 +356,8 @@ std::string stringify_value_node(AstNode* node);
 
 template <class T>
 T safe_ncast(AstNode* node, AstNodeType node_type) {
-  assert(node->type == node_type);
+  if (node->type != node_type) {
+    panic("Expected type " + ast_type_to_string(node_type) + ", but got " + ast_type_to_string(node->type));
+  }
   return static_cast<T>(node);
 }

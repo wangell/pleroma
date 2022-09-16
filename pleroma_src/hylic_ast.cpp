@@ -43,6 +43,7 @@ std::string ast_type_to_string(AstNodeType t) {
   case AstNodeType::PromiseResNode: return "PromiseResNode";
   case AstNodeType::SelfNode: return "SelfNode";
   case AstNodeType::CommentNode: return "CommentNode";
+  case AstNodeType::RangeNode: return "RangeNode";
   }
   printf("Failed to convert AstNode type to string: %d\n", t);
   assert(false);
@@ -249,6 +250,15 @@ AstNode *make_undefined() {
   assert(false);
 }
 
+AstNode *make_range(AstNode *range_start, AstNode *range_end) {
+  RangeNode* range_node = new RangeNode;
+  range_node->type = AstNodeType::RangeNode;
+  range_node->range_start = range_start;
+  range_node->range_end = range_end;
+
+  return range_node;
+}
+
 AstNode *make_message_node(AstNode* entity_ref, std::string function_name, CommMode comm_mode, std::vector<AstNode *> args) {
   MessageNode *func_call = new MessageNode;
   func_call->type = AstNodeType::MessageNode;
@@ -415,8 +425,7 @@ std::string ctype_to_string(CType *ctype) {
     break;
   }
 
-  printf("Failed to catch type %d\n", ctype->basetype);
-  assert(false);
+  panic("Failed to catch type " + std::to_string(int(ctype->basetype)));
 }
 
 void print_ctype(CType *ctype) {

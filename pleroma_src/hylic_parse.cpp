@@ -10,11 +10,22 @@
 #include <new>
 #include <tuple>
 #include <cctype>
+#include "general_util.h"
 
 struct ParseRes {
   bool success;
   AstNode *node;
 };
+
+// FIXME generalize to walk nodes func
+int count_expression_tokens(AstNode* node) {
+  switch (node->type) {
+  case AstNodeType::NumberNode: {
+    return 1;
+  } break;
+  }
+  panic("");
+}
 
 void eat_newlines(ParseContext *ctx) {
   while (ctx->ts->accept(TokenType::Newline));
@@ -199,30 +210,39 @@ AstNode *parse_expr(ParseContext *context) {
       }
     } else if (context->ts->check(TokenType::Dot)) {
       context->ts->accept(TokenType::Dot);
-      auto tt = context->ts->accept(TokenType::Symbol);
-      auto expr1 = make_symbol(tt->lexeme);
 
-      context->ts->accept(TokenType::LeftParen);
+      // Range vs local call
+      if (context->ts->accept(TokenType::Dot)) {
+        InfixOp op;
+        op.type = InfixOpType::Range;
+        op_stack.push(op);
+        val_stack.push(parse_expr(context));
+      } else {
+        auto tt = context->ts->accept(TokenType::Symbol);
+        auto expr1 = make_symbol(tt->lexeme);
 
-      int n_args = 0;
-      // While next token does not equal right paren
-      while (!context->ts->check(TokenType::RightParen)) {
-        auto expr = parse_expr(context);
-        val_stack.push(expr);
-        n_args++;
+        context->ts->accept(TokenType::LeftParen);
 
-        if (!context->ts->check(TokenType::RightParen)) {
-          context->ts->expect(TokenType::Comma);
+        int n_args = 0;
+        // While next token does not equal right paren
+        while (!context->ts->check(TokenType::RightParen)) {
+          auto expr = parse_expr(context);
+          val_stack.push(expr);
+          n_args++;
+
+          if (!context->ts->check(TokenType::RightParen)) {
+            context->ts->expect(TokenType::Comma);
+          }
         }
+
+        context->ts->expect(TokenType::RightParen);
+
+        InfixOp op;
+        op.type = InfixOpType::MessageSync;
+        op.n_args = n_args;
+        op.name = tt->lexeme;
+        op_stack.push(op);
       }
-
-      context->ts->expect(TokenType::RightParen);
-
-      InfixOp op;
-      op.type = InfixOpType::MessageSync;
-      op.n_args = n_args;
-      op.name = tt->lexeme;
-      op_stack.push(op);
 
     } else if (context->ts->check(TokenType::Message)) {
       context->ts->accept(TokenType::Message);
@@ -254,6 +274,8 @@ AstNode *parse_expr(ParseContext *context) {
       context->ts->accept(TokenType::IndexStart);
       auto ind_expr = parse_expr(context);
       context->ts->expect(TokenType::IndexEnd);
+      NumberNode* blah = (NumberNode*)ind_expr;
+      printf("%s\n", ast_type_to_string(blah->type).c_str());
       val_stack.push(ind_expr);
       InfixOp op;
       op.type = InfixOpType::Index;
@@ -346,6 +368,16 @@ AstNode *parse_expr(ParseContext *context) {
       val_stack.push(make_operator_expr(OperatorExpr::Plus, expr1, expr2));
     }
 
+    if (op.type == InfixOpType::Range) {
+      auto expr2 = val_stack.top();
+      val_stack.pop();
+
+      auto expr1 = val_stack.top();
+      val_stack.pop();
+
+      val_stack.push(make_range(expr1, expr2));
+    }
+
     if (op.type == InfixOpType::Index) {
       auto expr2 = val_stack.top();
       val_stack.pop();
@@ -353,7 +385,7 @@ AstNode *parse_expr(ParseContext *context) {
       auto expr1 = val_stack.top();
       val_stack.pop();
 
-      val_stack.push(make_index_node(expr1, expr2));
+      val_stack.push(make_index_node(expr2, expr1));
     }
 
     if (op.type == InfixOpType::Namespace) {
@@ -450,12 +482,21 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
     if (context->ts->accept(TokenType::IndexStart)) {
       auto expr = parse_expr(context);
       context->ts->expect(TokenType::IndexEnd);
-      context->ts->expect(TokenType::Equals);
-      AstNode *expr2 = parse_expr(context);
 
-      eat_newlines(context);
+      printf("Here %d!\n", count_expression_tokens(expr));
+      context->ts->go_back(1 + count_expression_tokens(expr) + 1);
 
-      return make_assignment(make_index_node(make_symbol(t->lexeme), expr), expr2);
+        //if (context->ts->accept(TokenType::Message)) {
+        //  // Need to go back all previous tokens start + end + count all inner expr tokens, then go_back(start + end + inner)
+        //  panic("Unhandled");
+        //} else if (context->ts->accept(TokenType::Equals)) {
+        //  AstNode *expr2 = parse_expr(context);
+        //  eat_newlines(context);
+
+        //  return make_assignment(make_index_node(make_symbol(t->lexeme), expr), expr2);
+        //} else {
+        //  panic("Unhandled operator for index statement");
+        //}
     }
 
     if (context->ts->accept(TokenType::Equals)) {
@@ -520,7 +561,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
   } else if (context->ts->accept(TokenType::Newline)) {
     // This shouldn't happen ever
     eat_newlines(context);
-    assert(false);
+    panic("");
     return nullptr;
   } else if (context->ts->accept(TokenType::Match)) {
     auto match_expr = parse_expr(context);
@@ -567,7 +608,7 @@ AstNode *parse_stmt(ParseContext *context, int expected_indent = 0) {
 
   // return parse_expr();
 
-  assert(false);
+  panic("Unhandled parse");
 }
 
 std::vector<AstNode *> parse_block(ParseContext *context,
@@ -666,7 +707,7 @@ AstNode *parse_actor(ParseContext *context) {
         context->ts->accept(TokenType::Comma);
       } else {
         printf("%d\n", context->ts->peek()->type);
-        assert(false);
+        panic("Invalid inocap");
       }
     }
 
@@ -724,7 +765,7 @@ AstNode *parse_actor(ParseContext *context) {
       FuncStmt *func = (FuncStmt *)parse_function(context);
       functions[func->name] = func;
     } else {
-      assert(false);
+      panic("Invalid entity");
     }
 
     eat_newlines(context);
@@ -780,7 +821,7 @@ HylicModule *parse(std::string abs_mod_path, TokenStream *stream) {
       if (is_system_module(mod_name)) {
         imported_mod = load_system_module(system_import_to_enum(mod_name));
       } else {
-        assert(false);
+        panic("NYI");
       }
 
       eat_newlines(&context);
@@ -794,7 +835,7 @@ HylicModule *parse(std::string abs_mod_path, TokenStream *stream) {
       eat_newlines(&context);
     } else {
       printf("Failed on token %s\n", token_type_to_string((*context.ts->current)->type));
-      assert(false);
+      panic("Invalid character in entity def");
     }
   }
 

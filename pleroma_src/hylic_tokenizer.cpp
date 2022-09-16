@@ -4,6 +4,7 @@
 #include <exception>
 #include <string>
 #include <vector>
+#include <cwchar>
 
 Token* TokenStream::peek() { return *(current); }
 
@@ -163,7 +164,7 @@ TokenStream* tokenize_file(std::string filepath) {
   TokenStream *tokenstream = new TokenStream;
   tokenstream->filename = filepath;
 
-  FILE *f = fopen(filepath.c_str(), "r");
+  FILE *f = fopen(filepath.c_str(), "rb");
   if (!f) {
     printf("Error opening module: %s\n", filepath.c_str());
     exit(1);
@@ -316,10 +317,10 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == '/') {
       end_char = char_n;
       tokenstream->add_token(TokenType::Slash, "/", start_char, end_char, line_n);
-    } else if (c == U'⌜') {
+    } else if (c == U'«') {
       end_char = char_n;
       tokenstream->add_token(TokenType::IndexStart, "⌜", start_char, end_char, line_n);
-    } else if (c == U'⌟') {
+    } else if (c == U'»') {
       end_char = char_n;
       tokenstream->add_token(TokenType::IndexEnd, "⌟", start_char, end_char, line_n);
     } else if (c == '(') {

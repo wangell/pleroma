@@ -33,6 +33,8 @@ enum class InfixOpType {
   GreaterThanEqual,
   Equals,
 
+  Range,
+
   Index
 };
 

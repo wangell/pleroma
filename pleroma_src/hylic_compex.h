@@ -18,7 +18,7 @@ public:
     while (std::getline(infile, line)) {
       std::istringstream iss(line);
       i += 1;
-      if (i == line_n) break;
+      if (i == line_n + 1) break;
     }
 
     std::string outmsg = specific_msg + ": " + file + ", line " +
