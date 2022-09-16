@@ -6,7 +6,7 @@
 [![sands](https://github.com/wangell/pleroma-docs/raw/main/desert.png)](#pleroma)
 [![comet](https://github.com/wangell/pleroma-docs/raw/main/comet.png)](#pleroma)
 
-Pleroma is a distributed operating system/VM inspired by the original vision of Smalltalk, the E programming language, and Inferno/Plan9.  See the [guide](https://wangell.github.io/pleroma-docs/) for details.
+Pleroma is a distributed operating system for personal computing inspired by the original vision of Smalltalk, the E programming language, and Inferno/Plan9.  See the [guide](https://wangell.github.io/pleroma-docs/) for details.
 
 
 ```
