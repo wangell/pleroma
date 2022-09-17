@@ -736,9 +736,61 @@ AstNode *parse_record(ParseContext *context) {
 
     eat_newlines(context);
   }
-  printf("HERE!\n");
 
   eat_newlines(context);
+
+  return make_nop();
+}
+
+AstNode *parse_interface(ParseContext *context) {
+  context->ts->accept(TokenType::Symbol);
+
+  eat_newlines(context);
+
+  while (true) {
+    int current_indent = 0;
+
+    while (context->ts->accept(TokenType::Tab))
+      current_indent++;
+
+    if (current_indent > 1) {
+      panic("Invalid record type");
+    }
+
+    if (current_indent == 0) {
+      printf("Breaking!\n");
+      break;
+    }
+
+    // Valid record
+    if (!context->ts->accept(TokenType::Function) && !context->ts->accept(TokenType::Pure)) {
+      panic("Invalid interface.");
+    }
+
+    context->ts->accept(TokenType::Symbol);
+
+    if (context->ts->accept(TokenType::LeftParen)) {
+
+      while(!context->ts->check(TokenType::RightParen)) {
+        context->ts->accept(TokenType::Symbol);
+        context->ts->accept(TokenType::Colon);
+        parse_type(context);
+
+        if (!context->ts->check(TokenType::Comma)) {
+          break;
+        }
+
+        context->ts->accept(TokenType::Comma);
+      }
+
+      context->ts->accept(TokenType::RightParen);
+
+    } else {
+      panic("Invalid record member");
+    }
+
+    eat_newlines(context);
+  }
 
   return make_nop();
 }
@@ -901,6 +953,8 @@ HylicModule *parse(std::string abs_mod_path, TokenStream *stream) {
       //print_ast(actor);
     } else if (context.ts->accept(TokenType::Record)) {
       parse_record(&context);
+    } else if (context.ts->accept(TokenType::Interface)) {
+      parse_interface(&context);
     } else if (context.ts->accept(TokenType::Newline)) {
       eat_newlines(&context);
     } else {
