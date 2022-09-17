@@ -71,7 +71,11 @@ enum class TokenType {
   IndexStart,
   IndexEnd,
   Self,
-  Comment
+  Comment,
+
+  Record,
+  Section,
+  Interface
 };
 
 struct Token {

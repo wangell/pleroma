@@ -358,6 +358,15 @@ TokenStream* tokenize_file(std::string filepath) {
     } else if (c == ',') {
       end_char = char_n;
       tokenstream->add_token(TokenType::Comma, ",", start_char, end_char, line_n);
+    } else if (c == U'†') {
+      end_char = char_n;
+      tokenstream->add_token(TokenType::Interface, "†", start_char, end_char, line_n);
+    } else if (c == U'§') {
+      end_char = char_n;
+      tokenstream->add_token(TokenType::Section, "§", start_char, end_char, line_n);
+    } else if (c == U'ø') {
+      end_char = char_n;
+      tokenstream->add_token(TokenType::Record, "ø", start_char, end_char, line_n);
     } else if (c == '&') {
       // FIXME combine with dot and make it a separate operator in future
       end_char = char_n;

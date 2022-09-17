@@ -675,6 +675,74 @@ AstNode *parse_function(ParseContext *context) {
   return func_stmt;
 }
 
+AstNode *parse_record(ParseContext *context) {
+
+  context->ts->accept(TokenType::Symbol);
+
+  eat_newlines(context);
+
+  while (true) {
+    int current_indent = 0;
+
+    while (context->ts->accept(TokenType::Tab))
+      current_indent++;
+
+    if (current_indent > 1) {
+      panic("Invalid record type");
+    }
+
+    if (current_indent == 0) {
+      printf("Breaking!\n");
+      break;
+    }
+
+    // Valid record
+
+    context->ts->accept(TokenType::Symbol);
+
+    if (context->ts->accept(TokenType::LeftBrace)) {
+      // Named
+
+      while(!context->ts->check(TokenType::RightBrace)) {
+        context->ts->accept(TokenType::Symbol);
+        context->ts->accept(TokenType::Colon);
+        parse_type(context);
+
+        if (!context->ts->check(TokenType::Comma)) {
+          break;
+        }
+
+        context->ts->accept(TokenType::Comma);
+      }
+
+      context->ts->accept(TokenType::RightBrace);
+
+    } else if (context->ts->accept(TokenType::LeftParen)) {
+      // Anonymous
+      while (!context->ts->check(TokenType::RightParen)) {
+        parse_type(context);
+
+        if (!context->ts->check(TokenType::Comma)) {
+          break;
+        }
+
+        context->ts->accept(TokenType::Comma);
+      }
+
+      context->ts->accept(TokenType::RightParen);
+    } else {
+      panic("Invalid record member");
+    }
+
+    eat_newlines(context);
+  }
+  printf("HERE!\n");
+
+  eat_newlines(context);
+
+  return make_nop();
+}
+
 AstNode *parse_actor(ParseContext *context) {
   std::map<std::string, FuncStmt *> functions;
   std::map<std::string, AstNode *> data;
@@ -831,6 +899,8 @@ HylicModule *parse(std::string abs_mod_path, TokenStream *stream) {
       actor->abs_mod_path = abs_mod_path + "►" + actor->name;
       symbol_map[actor->name] = (AstNode *)actor;
       //print_ast(actor);
+    } else if (context.ts->accept(TokenType::Record)) {
+      parse_record(&context);
     } else if (context.ts->accept(TokenType::Newline)) {
       eat_newlines(&context);
     } else {
