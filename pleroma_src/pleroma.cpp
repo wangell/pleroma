@@ -15,6 +15,7 @@
 
 #include <thread>
 
+#include "hylic_compiler.h"
 #include "hylic_typesolver.h"
 #include "netcode.h"
 #include "core/kernel.h"
@@ -293,6 +294,8 @@ void start_pleroma(PleromaArgs pleroma_args) {
 
 int main(int argc, char **argv) {
   setlocale(LC_ALL, "");
+  printf("compiling.\n");
+  compile({});
 
   PleromaArgs pargs = parse_args(argc, argv);
 

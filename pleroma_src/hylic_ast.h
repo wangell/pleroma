@@ -58,7 +58,13 @@ enum class AstNodeType {
 
   CommentNode,
 
-  RangeNode
+  RangeNode,
+
+  InterfaceNode,
+  RecordDefNode,
+  RecordNode,
+  RecordAccessNode,
+
 };
 
 enum class MessageDistance { Local, Far, Alien };
@@ -122,6 +128,12 @@ struct HylicModule {
 };
 
 struct Nop : AstNode {};
+
+struct RecordDefNode : AstNode {
+};
+
+struct RecordNode : AstNode {
+};
 
 struct CommentNode : AstNode {
   std::string comment;

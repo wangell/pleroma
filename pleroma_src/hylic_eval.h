@@ -45,6 +45,8 @@ struct DependPromFunc {
   int promise_id;
   std::string function_name;
   std::vector<AstNode *> args;
+  // Promise ID -> result idx
+  std::map<int, int> depends_on;
 };
 
 struct PromiseResult {
@@ -52,7 +54,7 @@ struct PromiseResult {
   std::vector<ValueNode *> results;
   std::vector<PromiseResNode*> callbacks;
 
-  std::vector<DependPromFunc> dependents;
+  std::vector<DependPromFunc*> dependents;
 
   // Return info
   bool return_msg = false;

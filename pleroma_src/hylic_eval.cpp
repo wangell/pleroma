@@ -91,15 +91,15 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
     m.src_node_id = cfs(context).entity->address.node_id;
     m.src_vat_id = cfs(context).entity->address.vat_id;
     m.src_entity_id = cfs(context).entity->address.entity_id;
-    m.function_name = k.function_name;
+    m.function_name = k->function_name;
 
     m.response = false;
 
-    for (auto varg : k.args) {
+    for (auto varg : k->args) {
       m.values.push_back((ValueNode *)varg);
     }
 
-    m.promise_id = k.promise_id;
+    m.promise_id = k->promise_id;
 
     context->vat->out_messages.push(m);
   }
@@ -222,10 +222,10 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
 
       context->vat->promises[pid] = PromiseResult();
 
-      DependPromFunc dpf;
-      dpf.promise_id = pid;
-      dpf.function_name = function_name;
-      dpf.args = args;
+      DependPromFunc *dpf = new DependPromFunc;
+      dpf->promise_id = pid;
+      dpf->function_name = function_name;
+      dpf->args = args;
 
       context->vat->promises[prom_node->promise_id].dependents.push_back(dpf);
       context->vat->promise_id_base++;
