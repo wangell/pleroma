@@ -49,8 +49,10 @@ Msg create_response(Msg msg_in, AstNode *return_val) {
 
   response_m.function_name = msg_in.function_name;
 
-  if (return_val->type == AstNodeType::NumberNode || return_val->type == AstNodeType::StringNode || return_val->type == AstNodeType::EntityRefNode) {
-    response_m.values.push_back((ValueNode*)return_val);
+  if (in(return_val->type, {AstNodeType::NumberNode, AstNodeType::StringNode, AstNodeType::EntityRefNode, AstNodeType::ListNode})) {
+    response_m.values.push_back((ValueNode *)return_val);
+  } else {
+    panic("Unhandled response value : " + ast_type_to_string(return_val->type));
   }
 
   return response_m;

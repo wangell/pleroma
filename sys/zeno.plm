@@ -5,6 +5,8 @@
 
 	δ checkout(filename : str) -> [str]
 
+	δ upload(local-filename : str, contents : str) -> void
+
 ε Zfile {zm : @far zeno►ZenoMaster}
 	δ create() -> void
 

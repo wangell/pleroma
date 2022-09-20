@@ -1,5 +1,6 @@
 #include "io.h"
 #include "ffi.h"
+#include "zeno.h"
 #include "../type_util.h"
 #include <fstream>
 #include <iostream>
@@ -16,26 +17,39 @@ std::map<std::string, std::map<int, std::vector<std::string>>> chunk_map;
 // ZenoMaster
 AstNode *zeno_create(EvalContext *context, std::vector<AstNode *> args) {
 
-  chunk_map["example.dat"][0].push_back("example-0.dat");
+  chunk_map["example.dat"][0].push_back("hd/example-0.dat");
+  chunk_map["example.dat"][0].push_back("hd/example-1.dat");
 
   return make_number(0);
 }
 
-AstNode *zeno_new(EvalContext *context, std::vector<AstNode *> args) {
+AstNode *zeno_upload(EvalContext *context, std::vector<AstNode *> args) {
+
+  auto filename = safe_ncast<StringNode*>(args[0], AstNodeType::StringNode)->value;
+  auto contents = safe_ncast<StringNode *>(args[1], AstNodeType::StringNode)->value;
+
+  write_file("hd/" + filename + "-0.dat", contents);
+
+  chunk_map[filename][0].push_back("hd/" + filename + "-0.dat");
+
   return make_number(0);
 }
 
 AstNode *zeno_checkout(EvalContext *context, std::vector<AstNode *> args) {
 
   std::string file_id = extract_string(args[0]);
-  printf("HERE!\n");
 
   CType *str_type = new CType;
   str_type->basetype = PType::str;
   str_type->dtype = DType::Local;
 
-  return make_string(chunk_map[file_id][0][0]);
-  // return make_list({make_string(chunk_map[file_id][0][0])}, str_type);
+  std::vector<AstNode*> chunk_locs;
+
+  for (auto &k : chunk_map[file_id][0]) {
+    chunk_locs.push_back(make_string(k));
+  }
+
+  return make_list(chunk_locs,  str_type);
 }
 
 // ZenoNode
@@ -47,30 +61,23 @@ std::string read_local_file(std::string chunk_name) {
 
   std::string f;
 
-  for (int i = 0; i < 4096; i++) {
-    char z;
-    rf.read(&z, 1);
-    f += z;
+  char tbyte;
+  while (rf.get(tbyte)) {
+    f.push_back(tbyte);
   }
 
   return f;
 }
 
-void write_file() {
-  for (int i = 0; i < 5; ++i) {
-    std::ofstream wf("example-" + std::to_string(i) + ".dat", std::ios::out | std::ios::binary);
-    if (!wf) {
-      assert(false);
-    }
-
-    for (int n = 0; n < 4096; ++n) {
-      char *blah = "abcdefgh";
-
-      wf.write(blah + i, 1);
-    }
-    wf.close();
-    printf("DONE\n");
+void write_file(std::string filename, std::string contents) {
+  std::ofstream wf(filename, std::ios::out | std::ios::binary);
+  if (!wf) {
+    assert(false);
   }
+
+  wf.write(contents.c_str(), contents.size());
+
+  wf.close();
 }
 
 AstNode *zfile_create(EvalContext *context, std::vector<AstNode *> args) {
@@ -105,7 +112,6 @@ AstNode *zfile_test(EvalContext *context, std::vector<AstNode *> args) {
 
   auto slist = make_list({make_string("example-0.dat"), make_string("example-1.dat")}, str_type);
   auto m2 = eval_message_node(context, make_entity_ref(-1, -1, -1), CommMode::Sync, "assemble-chunks", {slist});
-  printf("HERE!\n");
 
   return m2;
 }
@@ -114,10 +120,6 @@ std::map<std::string, AstNode*> load_zeno() {
   CType none_type;
   none_type.basetype = PType::None;
   none_type.dtype = DType::Local;
-
-  CType *str_type = new CType;
-  str_type->basetype = PType::str;
-  str_type->dtype = DType::Local;
 
   CType *chunk_list_type = new CType;
   chunk_list_type->basetype = PType::List;
@@ -128,14 +130,14 @@ std::map<std::string, AstNode*> load_zeno() {
 
   std::map<std::string, FuncStmt *> zmaster_functions = {
       {"create", setup_direct_call(zeno_create, "create", {}, {}, none_type)},
-      {"new", setup_direct_call(zeno_new, "new", {}, {}, none_type)},
-      {"checkout", setup_direct_call(zeno_checkout, "checkout", {"filename"}, {str_type}, *str_type)},
+      {"upload", setup_direct_call(zeno_upload, "upload", {"local-filename", "contents"}, {lstr(), lstr()}, none_type)},
+      {"checkout", setup_direct_call(zeno_checkout, "checkout", {"filename"}, {lstr()}, *chunk_list_type)},
   };
 
   std::map<std::string, FuncStmt *> zfile_functions = {
       {"create", setup_direct_call(zfile_create, "create", {}, {}, none_type)},
-      {"test", setup_direct_call(zfile_test, "test", {"filename"}, {str_type}, *str_type)},
-      {"assemble-chunks", setup_direct_call(zfile_assemble_chunks, "assemble-chunks", {"chunks"}, {chunk_list_type}, *str_type)},
+      {"test", setup_direct_call(zfile_test, "test", {"filename"}, {lstr()}, *lstr())},
+      {"assemble-chunks", setup_direct_call(zfile_assemble_chunks, "assemble-chunks", {"chunks"}, {chunk_list_type}, *lstr())},
   };
 
   return {

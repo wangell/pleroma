@@ -261,18 +261,18 @@ void send_node_msg(Msg m) {
       blah->set_node_id(node->node_id);
       blah->set_vat_id(node->vat_id);
       blah->set_entity_id(node->entity_id);
-    }
-    if (k->type == AstNodeType::NumberNode) {
+    } else if (k->type == AstNodeType::NumberNode) {
       NumberNode *node = (NumberNode *)k;
       romabuf::NumVal n;
       auto blah = pval->mutable_num_val();
       blah->set_value(node->value);
-    }
-    if (k->type == AstNodeType::StringNode) {
+    } else if (k->type == AstNodeType::StringNode) {
       StringNode *node = (StringNode *)k;
       romabuf::StrVal n;
       auto blah = pval->mutable_str_val();
       blah->set_value(node->value);
+    } else {
+      panic("Unhandled value in netcode send.");
     }
   }
 

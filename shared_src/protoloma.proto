@@ -19,6 +19,10 @@ message StrVal {
   required string value = 1;
 }
 
+message ListVal {
+  repeated PValue values = 1;
+}
+
 message ERefVal {
   required int32 node_id = 1;
   required int32 vat_id = 2;
@@ -30,6 +34,7 @@ message PValue {
         NumVal num_val = 1;
         StrVal str_val = 2;
         ERefVal eref_val = 3;
+        ListVal list_val = 4;
   }
 }
 

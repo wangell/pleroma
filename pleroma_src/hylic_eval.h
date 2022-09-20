@@ -43,6 +43,10 @@ struct Msg {
 
 struct DependPromFunc {
   int promise_id;
+  EntityAddress target = {-1, -1, -1};
+
+  int target_depends_on = -1;
+
   std::string function_name;
   std::vector<AstNode *> args;
   // Promise ID -> result idx

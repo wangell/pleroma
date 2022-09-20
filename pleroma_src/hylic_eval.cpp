@@ -6,6 +6,7 @@
 #include "pleroma.h"
 #include <cassert>
 #include <string>
+#include <tuple>
 #include <utility>
 #include "core/kernel.h"
 #include "system.h"
@@ -13,6 +14,37 @@
 #include "type_util.h"
 
 extern moodycamel::BlockingConcurrentQueue<Vat *> queue;
+
+void set_msg_src(Msg *m, const EntityRefNode &ref) {
+  m->src_node_id = ref.node_id;
+  m->src_vat_id = ref.vat_id;
+  m->src_entity_id = ref.entity_id;
+}
+
+void set_msg_src(Msg *m, const EntityAddress &addr) {
+  m->src_node_id = addr.node_id;
+  m->src_vat_id = addr.vat_id;
+  m->src_entity_id = addr.entity_id;
+}
+
+void set_msg_target(Msg *m, const EntityRefNode &ref) {
+  m->node_id = ref.node_id;
+  m->vat_id = ref.vat_id;
+  m->entity_id = ref.entity_id;
+}
+
+void set_msg_target(Msg *m, const EntityAddress &addr) {
+  m->node_id = addr.node_id;
+  m->vat_id = addr.vat_id;
+  m->entity_id = addr.entity_id;
+}
+
+int new_promise(EvalContext* context) {
+  int pid = context->vat->promise_id_base;
+  context->vat->promises[pid] = PromiseResult();
+  context->vat->promise_id_base++;
+  return pid;
+}
 
 AstNode *eval_block(EvalContext *context, std::vector<AstNode *> block,
                     std::vector<std::tuple<std::string, AstNode *>> sub_syms) {
@@ -63,7 +95,6 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
   for (auto &cb : resolve_node->callbacks) {
     std::vector<std::tuple<std::string, AstNode *>> subs;
     for (int i = 0; i < resolve_node->results.size(); ++i) {
-      printf("HERE %s\n", cb->sym.c_str());
       subs.push_back(std::make_tuple(cb->sym, resolve_node->results[i]));
     }
 
@@ -75,25 +106,42 @@ AstNode *eval_promise_local(EvalContext *context, Entity *entity,
   for (auto &k : resolve_node->dependents) {
     //printf("Executing dependent %d from %d\n", k, promise_id);
     // Actually, just manually send our own message here without calling eval_message_node.  that way we can control the promise id
-    assert(resolve_node->results[0]->type == AstNodeType::EntityRefNode);
-    EntityRefNode *entity_ref = (EntityRefNode*)resolve_node->results[0];
+    if (k->target_depends_on == promise_id) {
+      assert(resolve_node->results[0]->type == AstNodeType::EntityRefNode);
+      EntityRefNode *entity_ref = (EntityRefNode*)resolve_node->results[0];
+      k->target.node_id = entity_ref->node_id;
+      k->target.vat_id = entity_ref->vat_id;
+      k->target.entity_id = entity_ref->entity_id;
+      printf("Got dependent entity target\n");
+    } else {
+      assert(k->depends_on.find(promise_id) != k->depends_on.end());
+      int arg_ind = k->depends_on[promise_id];
+      printf("Satisfy arg %d with prom id %d (%d, %d)\n", arg_ind, promise_id, k->args.size(), resolve_node->results.size());
+      k->args[arg_ind] = resolve_node->results[0];
+    }
+
+    // Message guard
+    bool message_ready = true;
+    for (auto &zz : k->args) {
+      if (!zz) message_ready = false;
+    }
+    if (k->target.node_id == -1) {
+      message_ready = false;
+    }
+    if (!message_ready) {
+      printf("Message not ready yet\n");
+      continue;
+    }
+    /////////
+
+    printf("Message ready, firing message: %s!\n", k->function_name.c_str());
+
     Msg m;
 
-    if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
-      m.entity_id = cfs(context).entity->address.entity_id;
-      m.vat_id = cfs(context).entity->address.vat_id;
-      m.node_id = cfs(context).entity->address.node_id;
-    } else {
-      m.entity_id = entity_ref->entity_id;
-      m.vat_id = entity_ref->vat_id;
-      m.node_id = entity_ref->node_id;
-    }
-    m.src_node_id = cfs(context).entity->address.node_id;
-    m.src_vat_id = cfs(context).entity->address.vat_id;
-    m.src_entity_id = cfs(context).entity->address.entity_id;
-    m.function_name = k->function_name;
+    set_msg_target(&m, k->target);
+    set_msg_src(&m, cfs(context).entity->address);
 
-    m.response = false;
+    m.function_name = k->function_name;
 
     for (auto varg : k->args) {
       m.values.push_back((ValueNode *)varg);
@@ -155,13 +203,14 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
     return eval_func_local(context, target_entity, function_name, args);
   } else {
 
-    Msg m;
     EntityRefNode *entity_ref;
-    bool have_ent_address = false;
+    bool promise_ent_address = true;
+    bool promise_args = false;
+    int pid = new_promise(context);
 
     if (node->type == AstNodeType::EntityRefNode) {
       entity_ref = (EntityRefNode *)node;
-      have_ent_address = true;
+      promise_ent_address = false;
     } else if (node->type == AstNodeType::PromiseNode) {
       PromiseNode* prom_node = safe_ncast<PromiseNode*>(node, AstNodeType::PromiseNode);
       auto res = context->vat->promises.find(prom_node->promise_id);
@@ -170,67 +219,66 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
       if (res->second.resolved) {
         assert(res->second.results[0]->type == AstNodeType::EntityRefNode);
         entity_ref = (EntityRefNode*)res->second.results[0];
-        have_ent_address = true;
+        promise_ent_address = false;
       }
     } else {
       panic("Unhandled target node type for message node");
     }
 
-    if (have_ent_address) {
-
-      // We shouldn't have this, replace with self ref
-      if (entity_ref->entity_id == -1 && entity_ref->vat_id == -1 && entity_ref->node_id == -1) {
-        m.entity_id = cfs(context).entity->address.entity_id;
-        m.vat_id = cfs(context).entity->address.vat_id;
-        m.node_id = cfs(context).entity->address.node_id;
-      } else {
-        m.entity_id = entity_ref->entity_id;
-        m.vat_id = entity_ref->vat_id;
-        m.node_id = entity_ref->node_id;
+    for (auto &zrk : args) {
+      if (zrk->type == AstNodeType::PromiseNode) {
+        promise_args = true;
       }
-      m.src_node_id = cfs(context).entity->address.node_id;
-      m.src_vat_id = cfs(context).entity->address.vat_id;
-      m.src_entity_id = cfs(context).entity->address.entity_id;
-      m.function_name = function_name;
+    }
 
-      m.response = false;
+    if (promise_ent_address || promise_args) {
+      DependPromFunc *dpf = new DependPromFunc;
+      dpf->promise_id = pid;
+      dpf->function_name = function_name;
+
+      if (promise_ent_address) {
+        PromiseNode *prom_node = (PromiseNode *)node;
+        assert(context->vat->promises.find(prom_node->promise_id) != context->vat->promises.end());
+        context->vat->promises[prom_node->promise_id].dependents.push_back(dpf);
+        dpf->target.node_id = -1;
+        dpf->target_depends_on = prom_node->promise_id;
+      } else {
+        dpf->target.node_id = entity_ref->node_id;
+        dpf->target.vat_id = entity_ref->vat_id;
+        dpf->target.entity_id = entity_ref->entity_id;
+      }
+
+      // Copy in args we have, stick promises for ones we don't
+      for (int i = 0; i < args.size(); ++i) {
+        if (args[i]->type != AstNodeType::PromiseNode) {
+          dpf->args.push_back(args[i]);
+        } else {
+          auto argument_pid = ((PromiseNode *)args[i])->promise_id;
+          context->vat->promises[argument_pid].dependents.push_back(dpf);
+          dpf->args.push_back(nullptr);
+          dpf->depends_on[argument_pid] = i;
+          printf("Argument %d depends on %d", argument_pid, i);
+        }
+      }
+
+    } else {
+      Msg m;
+
+      set_msg_target(&m, *entity_ref);
+      set_msg_src(&m, cfs(context).entity->address);
+
+      m.function_name = function_name;
+      m.promise_id = pid;
 
       for (auto varg : args) {
         m.values.push_back((ValueNode *)varg);
       }
 
-      int pid = context->vat->promise_id_base;
-      m.promise_id = pid;
-
       context->vat->out_messages.push(m);
-
-      context->vat->promises[pid] = PromiseResult();
-      context->vat->promise_id_base++;
-
-      return make_promise_node(pid);
-    } else {
-      // Promise chain
-
-      assert(node->type == AstNodeType::PromiseNode);
-
-      PromiseNode* prom_node = (PromiseNode*) node;
-
-      int pid = context->vat->promise_id_base;
-
-
-      assert (context->vat->promises.find(prom_node->promise_id) != context->vat->promises.end());
-
-      context->vat->promises[pid] = PromiseResult();
-
-      DependPromFunc *dpf = new DependPromFunc;
-      dpf->promise_id = pid;
-      dpf->function_name = function_name;
-      dpf->args = args;
-
-      context->vat->promises[prom_node->promise_id].dependents.push_back(dpf);
-      context->vat->promise_id_base++;
-      return make_promise_node(pid);
     }
+
+    return make_promise_node(pid);
+
   }
 
   // TODO handle alien
@@ -550,7 +598,13 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     auto creation_ast = cfs(context).module->entity_defs.find(node->entity_def_name);
 
-    assert(creation_ast != cfs(context).module->entity_defs.end());
+    if (creation_ast == cfs(context).module->entity_defs.end()) {
+      for (auto &[zz, _] : cfs(context).module->entity_defs) {
+        printf("%s\n", zz.c_str());
+      }
+      panic("Failed to find " + node->entity_def_name);
+    }
+
     if (node->new_vat) {
       return promise_new_vat(context, (EntityDef *)creation_ast->second);
     } else {
@@ -608,6 +662,7 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
     //for (auto &k : cfs(context).module->imports) {
     //  printf("mod import %s\n", k.first.c_str());
     //}
+    printf("Inside mod %s\n", node->mod_name.c_str());
 
     assert(find_mod != cfs(context).module->imports.end());
 
@@ -816,7 +871,12 @@ void start_context(EvalContext *context, PleromaNode *node, Vat *vat, HylicModul
 
   if (entity) {
     css(context).table = entity->module_scope->entity_defs;
-    css(context).table["self"] = make_entity_ref(-1, -1, -1);
+    if (entity) {
+      css(context).table["self"] = make_entity_ref(entity->address.node_id, entity->address.vat_id, entity->address.entity_id);
+    } else {
+      // FIXME we should not have this
+      css(context).table["self"] = make_entity_ref(-1, -1, -1);
+    }
   }
 }
 
