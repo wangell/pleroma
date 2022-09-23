@@ -16,4 +16,8 @@
 
 	δ request-far-entity(ent : far Entity) -> far Entity
 
+	δ irq-handler(id : u8, data : u8) -> void
+
+	δ subscribe-irq(id : u8) -> u8
+
 	δ new-vat(programname: str, entname: str) -> @far Entity

@@ -27,6 +27,8 @@ std::map<std::string, HylicModule*> sys_mods;
 
 std::map<std::string, HylicModule*> programs;
 
+std::map<int, std::vector<EntityRefNode*>> irq_subscriptions;
+
 std::mutex node_mtx;
 std::vector<PleromaNode*> nodes;
 
@@ -139,13 +141,33 @@ AstNode *monad_request_far_entity(EvalContext *context, std::vector<AstNode*> ar
   c.dtype = DType::Far;
   c.entity_name = ((EntityRefNode*)args[0])->ctype.entity_name;
 
-
   std::vector<std::string> splimp = split_import(c.entity_name);
 
   auto io_ent = get_system_entity_ref(splimp[0], splimp[1]);
   monad_log("Got far request for " + c.entity_name + ", resolved to " + entity_ref_str(io_ent));
 
   return io_ent;
+}
+
+AstNode *monad_irq_handler(EvalContext *context, std::vector<AstNode*> args) {
+  monad_log("got IRQ, sending out IRQ to subscribers");
+  NumberNode *irq_num = safe_ncast<NumberNode *>(args[0], AstNodeType::NumberNode);
+  NumberNode *irq_data = safe_ncast<NumberNode *>(args[1], AstNodeType::NumberNode);
+
+  for (auto &k : irq_subscriptions[irq_num->value]) {
+    printf("Sending to \n");
+    eval_message_node(context, k, CommMode::Async, "handle-input", {make_number(irq_data->value)});
+    printf("SEnt to \n");
+  }
+  return make_number(0);
+}
+
+AstNode *monad_subscribe_irq(EvalContext *context, std::vector<AstNode *> args) {
+  NumberNode* irq_num = safe_ncast<NumberNode*>(args[0], AstNodeType::NumberNode);
+  printf("Registered number %d\n", irq_num->value);
+  // FIXME
+  irq_subscriptions[irq_num->value].push_back((EntityRefNode*)make_entity_ref(0, 3, 0));
+  return make_number(0);
 }
 
 AstNode *monad_start_program(EvalContext *context, std::vector<AstNode*> args) {
@@ -234,6 +256,8 @@ void load_kernel() {
       {"n-programs", setup_direct_call(monad_n_programs, "n-programs", {}, {}, *lstr())},
       {"request-far-entity", setup_direct_call(monad_request_far_entity, "request-far-entity", {"ent"}, {c2}, *c3)},
       {"new-vat", setup_direct_call(monad_new_vat, "new-vat", {"programname", "entname"}, {lstr(), lstr()}, *c4)},
+      {"irq-handler", setup_direct_call(monad_irq_handler, "irq-handler", {"id", "data"}, {lu8(), lu8()}, *void_t())},
+      {"subscribe-irq", setup_direct_call(monad_subscribe_irq, "subscribe-irq", {"id"}, {lu8()}, *lu8())},
   };
 
   std::map<std::string, FuncStmt *> node_man_functions = {

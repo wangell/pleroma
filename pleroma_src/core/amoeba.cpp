@@ -1,31 +1,46 @@
 #include "amoeba.h"
 #include "../type_util.h"
+#include "SDL_keycode.h"
+#include "SDL_render.h"
+#include "SDL_stdinc.h"
 #include "SDL_video.h"
 #include "ffi.h"
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_ttf.h>
 
-struct AmoebaWindow {
-  u32 window_id = 0;
+SDL_Renderer *renderer;
+std::string command_text;
 
-  SDL_Window* sdl_window;
+// Base
+struct MouseState {
+  int x, y;
 };
 
 u32 base_window_id = 0;
 std::map<u32, AmoebaWindow*> windows;
 
+std::vector<AmoebaComponent> components;
+
 void refresh_window(AmoebaWindow* window) {
   SDL_UpdateWindowSurface(window->sdl_window);
 }
 
-void drawText
-(AmoebaWindow *window, std::string string,
-int size, int x, int y,
-unsigned char fR, unsigned char fG, unsigned char fB,
-unsigned char bR, unsigned char bG, unsigned char bB)
-{
+void render_window() {
+}
 
-  TTF_Font* font = TTF_OpenFont("Arial.ttf", size);
+MouseState mouse_xy() {
+   int x, y;
+   Uint32 buttons = SDL_GetMouseState(&x, &y);
+   return {
+     x, y
+   };
+}
+
+// Hylic API
+
+void drawText(AmoebaWindow *window, std::string string, int size, int x, int y, unsigned char fR, unsigned char fG, unsigned char fB, unsigned char bR, unsigned char bG, unsigned char bB) {
+
+  TTF_Font* font = TTF_OpenFont("noto.ttf", size);
 
   if (!font) {
     assert(false);
@@ -51,18 +66,76 @@ unsigned char bR, unsigned char bG, unsigned char bB)
   refresh_window(window);
 }
 
-AstNode *amoeba_init(EvalContext *context, std::vector<AstNode *> args) {
-  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-    printf("didn't work\n");
-    exit(1);
+void draw_text(SDL_Renderer* renderer, std::string text, int x, int y) {
+  TTF_Font *font = TTF_OpenFont("noto.ttf", 20);
+
+  if (!font) {
+    assert(false);
   }
 
-  TTF_Init();
+  SDL_Color foregroundColor = {0, 0, 0, 255};
+  SDL_Color backgroundColor = {0, 0, 0, 0};
 
-  return make_nop();
+  SDL_Surface *textSurface = TTF_RenderText_Blended_Wrapped(font, text.c_str(), foregroundColor, 100);
+
+  SDL_Rect textLocation = {x, y, textSurface->w, textSurface->h};
+
+  SDL_Texture* tex = SDL_CreateTextureFromSurface(renderer, textSurface);
+  //SDL_SetTextureAlphaMod(tex, backgroundColor.a);
+
+  SDL_RenderCopy(renderer, tex, NULL, &textLocation);
+
+  SDL_FreeSurface(textSurface);
+  SDL_DestroyTexture(tex);
+
+  TTF_CloseFont(font);
 }
 
-AstNode *amoeba_window(EvalContext *context, std::vector<AstNode *> args) {
+void render_commandbox(SDL_Renderer* renderer) {
+  SDL_Rect r = {int(1920.0 / 2.0f - 200), 1200 - 100, 400, 50};
+  SDL_SetRenderDrawColor(renderer, 0, 0, 150, 50);
+  SDL_RenderFillRect(renderer, &r);
+  if (!command_text.empty()) {
+    draw_text(renderer, command_text, int(1920.0 / 2.0f), (1200 - 100));
+  }
+}
+
+void render() {
+  SDL_SetRenderDrawColor(renderer, 234, 245, 253, 255);
+  SDL_RenderClear(renderer);
+
+  draw_text(renderer, "Pleroma", 0, 0);
+
+  render_commandbox(renderer);
+
+  SDL_RenderPresent(renderer);
+}
+
+AstNode *amoeba_init(EvalContext *context, std::vector<AstNode *> args) {
+  if (SDL_Init(SDL_INIT_VIDEO) < 0) {
+    panic("Failed to initialize video system.");
+  }
+
+  if (TTF_Init() < 0) {
+    panic("Failed to initialize TTF system.");
+  }
+
+  EntityRefNode* rfn = (EntityRefNode*)cfs(context).entity->data["mnd"];
+  eval_message_node(context, rfn, CommMode::Async, "subscribe-irq", {make_number(1)});
+
+  auto window = SDL_CreateWindow("SDL2 Window", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 680, 480, SDL_WINDOW_FULLSCREEN_DESKTOP);
+  renderer = SDL_CreateRenderer(window, -1, 0);
+
+  SDL_SetRenderDrawBlendMode(renderer, SDL_BLENDMODE_BLEND);
+
+  command_text = "test";
+
+  render();
+
+  return make_number(0);
+}
+
+AstNode *amoeba_super_window(EvalContext *context, std::vector<AstNode *> args) {
   AmoebaWindow *window = new AmoebaWindow;
   window->window_id = base_window_id;
   base_window_id++;
@@ -92,15 +165,15 @@ AstNode *amoeba_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-AstNode *window_create(EvalContext *context, std::vector<AstNode *> args) {
+AstNode *super_window_create(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-AstNode *window_close(EvalContext *context, std::vector<AstNode *> args) {
+AstNode *super_window_close(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-AstNode *window_write(EvalContext *context, std::vector<AstNode *> args) {
+AstNode *super_window_write(EvalContext *context, std::vector<AstNode *> args) {
 
   auto window_id = ((NumberNode*)cfs(context).entity->data["window-id"])->value;
 
@@ -116,28 +189,53 @@ AstNode *amoeba_write(EvalContext *context, std::vector<AstNode *> args) {
   return make_number(0);
 }
 
-std::map<std::string, AstNode *> load_amoeba() {
-  std::map<std::string, FuncStmt *> functions;
+AstNode *amoeba_handle_input(EvalContext *context, std::vector<AstNode *> args) {
+  auto key_val = ((NumberNode*)args[0])->value;
 
+  printf("got key %ld\n", key_val);
+
+  if (key_val == SDLK_ESCAPE) {
+    SDL_Quit();
+  }
+
+  if (key_val >= SDLK_a && key_val <= SDLK_z) {
+    command_text.push_back('a' + (key_val - SDLK_a));
+  }
+
+  if (key_val == SDLK_RETURN) {
+    printf("Running command %s\n", command_text.c_str());
+    command_text.clear();
+  }
+
+  render();
+
+  return make_number(0);
+}
+
+std::map<std::string, AstNode *> load_amoeba() {
   CType window_type;
   window_type.basetype = PType::Entity;
   window_type.entity_name = "AmoebaWindow";
   window_type.dtype = DType::Far;
 
-  functions["create"] = setup_direct_call(amoeba_create, "create", {}, {}, *void_t());
+  std::map<std::string, FuncStmt *> functions = {
+    {"create", setup_direct_call(amoeba_create, "create", {}, {}, *void_t())},
+    {"handle-input", setup_direct_call(amoeba_handle_input, "handle-input", {"data"}, {lu8()}, *void_t())}
+  };
 
   functions["init"] = setup_direct_call(amoeba_init, "init", {}, {}, *lu8());
-  functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, window_type);
+  //functions["window"] = setup_direct_call(amoeba_window, "window", {}, {}, window_type);
+  //functions["super-window"] = setup_direct_call(amoeba_super_window, "window", {}, {}, window_type);
   functions["close"] = setup_direct_call(amoeba_close, "close", {}, {}, *lu8());
   //functions["write"] = setup_direct_call(amoeba_write, "write", {"text"}, {str_type}, none_type);
 
-  std::map<std::string, FuncStmt *> window_functions;
-  window_functions["create"] = setup_direct_call(window_create, "window", {}, {}, *void_t());
-  window_functions["write"] = setup_direct_call(window_write, "write", {"text"}, {lstr()}, *void_t());
-  window_functions["close"] = setup_direct_call(window_close, "close", {}, {}, *lu8());
+  //std::map<std::string, FuncStmt *> window_functions;
+  //window_functions["create"] = setup_direct_call(window_create, "window", {}, {}, *void_t());
+  //window_functions["write"] = setup_direct_call(window_write, "write", {"text"}, {lstr()}, *void_t());
+  //window_functions["close"] = setup_direct_call(window_close, "close", {}, {}, *lu8());
 
   return {
     {"Amoeba", make_actor(nullptr, "Amoeba", functions, {}, {}, {}, {})},
-    {"AmoebaWindow", make_actor(nullptr, "AmoebaWindow", window_functions, {}, {}, {}, {})}
+    //{"AmoebaWindow", make_actor(nullptr, "AmoebaWindow", window_functions, {}, {}, {}, {})}
   };
 }

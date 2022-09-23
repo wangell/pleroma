@@ -23,6 +23,8 @@
 #include "node_config.h"
 #include "args.h"
 
+#include "hosted_irq.h"
+
 #include "other.h"
 #include "system.h"
 
@@ -280,6 +282,8 @@ void start_pleroma(PleromaArgs pleroma_args) {
   for (int k = 0; k < processor_count; ++k) {
     burners[k] = std::thread(process_vq);
   }
+
+  std::thread hosted_irq(loop_keyboard);
 
   dbp(log_debug, "Starting net loop...");
   while (true) {

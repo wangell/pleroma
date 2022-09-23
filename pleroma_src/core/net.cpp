@@ -113,11 +113,12 @@ AstNode *net_next(EvalContext *context, std::vector<AstNode *> args) {
   auto host_ref = host_entity_lookup[hostname];
   // AstNode* res = eval_message_node(context, (EntityRefNode*)make_entity_ref(0, 0, 2), MessageDistance::Local, CommMode::Sync, "test",
   // {make_string(buffer)});
-  PromiseNode *res = (PromiseNode *)eval_message_node(context, std::get<0>(host_ref), CommMode::Async, std::get<1>(host_ref),
-                                                      {make_string(verb), make_string(path)});
+  PromiseNode *res = (PromiseNode *)eval_message_node(context, std::get<0>(host_ref), CommMode::Async, std::get<1>(host_ref), {make_string(verb), make_string(path)});
 
-  printf("sending back result\n");
-  context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node("anon", {make_message_node(make_self(), "return-http-result", CommMode::Async, {make_string("blah")})}));
+  eval_message_node(context, make_self(), CommMode::Async, "return-http-result", {res});
+  //{make_message_node(make_self(), "return-http-result", CommMode::Async, {res})}));
+  // context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node("anon",
+  // {make_message_node(make_self(), "return-http-result", CommMode::Async, {res})}));
 
   //context->vat->promises[res->promise_id].callbacks.push_back((PromiseResNode *)make_promise_resolution_node(
   //    "anon", {make_message_node(make_entity_ref(0, 0, 1), "print", CommMode::Async, {make_string("blah")})}));

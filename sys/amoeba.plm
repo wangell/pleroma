@@ -1,19 +1,11 @@
-ε AmoebaWindow {}
+~sys►monad
 
-	window-id : u8
-
-	δ create() -> void
-
-	δ close() -> u8
-
-	δ write(text : str) -> void
-
-ε Amoeba {}
+ε Amoeba {mnd : @far monad►Monad}
 
 	δ create() -> void
 
 	δ init() -> u8
 
-	δ window() -> far AmoebaWindow
-
 	δ close() -> u8
+
+	δ handle-input(data : u8) -> void
