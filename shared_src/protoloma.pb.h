@@ -47,7 +47,7 @@ struct TableStruct_protoloma_2eproto {
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::AuxillaryParseTableField aux[]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
-  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[12]
+  static const ::PROTOBUF_NAMESPACE_ID::internal::ParseTable schema[13]
     PROTOBUF_SECTION_VARIABLE(protodesc_cold);
   static const ::PROTOBUF_NAMESPACE_ID::internal::FieldMetadata field_metadata[];
   static const ::PROTOBUF_NAMESPACE_ID::internal::SerializationTable serialization_table[];
@@ -76,6 +76,9 @@ extern GreetingAckDefaultTypeInternal _GreetingAck_default_instance_;
 class HostInfo;
 class HostInfoDefaultTypeInternal;
 extern HostInfoDefaultTypeInternal _HostInfo_default_instance_;
+class ListVal;
+class ListValDefaultTypeInternal;
+extern ListValDefaultTypeInternal _ListVal_default_instance_;
 class LoadProgram;
 class LoadProgramDefaultTypeInternal;
 extern LoadProgramDefaultTypeInternal _LoadProgram_default_instance_;
@@ -100,6 +103,7 @@ template<> ::romabuf::ERefVal* Arena::CreateMaybeMessage<::romabuf::ERefVal>(Are
 template<> ::romabuf::Greeting* Arena::CreateMaybeMessage<::romabuf::Greeting>(Arena*);
 template<> ::romabuf::GreetingAck* Arena::CreateMaybeMessage<::romabuf::GreetingAck>(Arena*);
 template<> ::romabuf::HostInfo* Arena::CreateMaybeMessage<::romabuf::HostInfo>(Arena*);
+template<> ::romabuf::ListVal* Arena::CreateMaybeMessage<::romabuf::ListVal>(Arena*);
 template<> ::romabuf::LoadProgram* Arena::CreateMaybeMessage<::romabuf::LoadProgram>(Arena*);
 template<> ::romabuf::NumVal* Arena::CreateMaybeMessage<::romabuf::NumVal>(Arena*);
 template<> ::romabuf::PValue* Arena::CreateMaybeMessage<::romabuf::PValue>(Arena*);
@@ -668,6 +672,159 @@ class StrVal PROTOBUF_FINAL :
 };
 // -------------------------------------------------------------------
 
+class ListVal PROTOBUF_FINAL :
+    public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:romabuf.ListVal) */ {
+ public:
+  inline ListVal() : ListVal(nullptr) {};
+  virtual ~ListVal();
+
+  ListVal(const ListVal& from);
+  ListVal(ListVal&& from) noexcept
+    : ListVal() {
+    *this = ::std::move(from);
+  }
+
+  inline ListVal& operator=(const ListVal& from) {
+    CopyFrom(from);
+    return *this;
+  }
+  inline ListVal& operator=(ListVal&& from) noexcept {
+    if (GetArena() == from.GetArena()) {
+      if (this != &from) InternalSwap(&from);
+    } else {
+      CopyFrom(from);
+    }
+    return *this;
+  }
+
+  inline const ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet& unknown_fields() const {
+    return _internal_metadata_.unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>(::PROTOBUF_NAMESPACE_ID::UnknownFieldSet::default_instance);
+  }
+  inline ::PROTOBUF_NAMESPACE_ID::UnknownFieldSet* mutable_unknown_fields() {
+    return _internal_metadata_.mutable_unknown_fields<::PROTOBUF_NAMESPACE_ID::UnknownFieldSet>();
+  }
+
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* descriptor() {
+    return GetDescriptor();
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Descriptor* GetDescriptor() {
+    return GetMetadataStatic().descriptor;
+  }
+  static const ::PROTOBUF_NAMESPACE_ID::Reflection* GetReflection() {
+    return GetMetadataStatic().reflection;
+  }
+  static const ListVal& default_instance();
+
+  static void InitAsDefaultInstance();  // FOR INTERNAL USE ONLY
+  static inline const ListVal* internal_default_instance() {
+    return reinterpret_cast<const ListVal*>(
+               &_ListVal_default_instance_);
+  }
+  static constexpr int kIndexInFileMessages =
+    3;
+
+  friend void swap(ListVal& a, ListVal& b) {
+    a.Swap(&b);
+  }
+  inline void Swap(ListVal* other) {
+    if (other == this) return;
+    if (GetArena() == other->GetArena()) {
+      InternalSwap(other);
+    } else {
+      ::PROTOBUF_NAMESPACE_ID::internal::GenericSwap(this, other);
+    }
+  }
+  void UnsafeArenaSwap(ListVal* other) {
+    if (other == this) return;
+    GOOGLE_DCHECK(GetArena() == other->GetArena());
+    InternalSwap(other);
+  }
+
+  // implements Message ----------------------------------------------
+
+  inline ListVal* New() const final {
+    return CreateMaybeMessage<ListVal>(nullptr);
+  }
+
+  ListVal* New(::PROTOBUF_NAMESPACE_ID::Arena* arena) const final {
+    return CreateMaybeMessage<ListVal>(arena);
+  }
+  void CopyFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void MergeFrom(const ::PROTOBUF_NAMESPACE_ID::Message& from) final;
+  void CopyFrom(const ListVal& from);
+  void MergeFrom(const ListVal& from);
+  PROTOBUF_ATTRIBUTE_REINITIALIZES void Clear() final;
+  bool IsInitialized() const final;
+
+  size_t ByteSizeLong() const final;
+  const char* _InternalParse(const char* ptr, ::PROTOBUF_NAMESPACE_ID::internal::ParseContext* ctx) final;
+  ::PROTOBUF_NAMESPACE_ID::uint8* _InternalSerialize(
+      ::PROTOBUF_NAMESPACE_ID::uint8* target, ::PROTOBUF_NAMESPACE_ID::io::EpsCopyOutputStream* stream) const final;
+  int GetCachedSize() const final { return _cached_size_.Get(); }
+
+  private:
+  inline void SharedCtor();
+  inline void SharedDtor();
+  void SetCachedSize(int size) const final;
+  void InternalSwap(ListVal* other);
+  friend class ::PROTOBUF_NAMESPACE_ID::internal::AnyMetadata;
+  static ::PROTOBUF_NAMESPACE_ID::StringPiece FullMessageName() {
+    return "romabuf.ListVal";
+  }
+  protected:
+  explicit ListVal(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  private:
+  static void ArenaDtor(void* object);
+  inline void RegisterArenaDtor(::PROTOBUF_NAMESPACE_ID::Arena* arena);
+  public:
+
+  ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadata() const final;
+  private:
+  static ::PROTOBUF_NAMESPACE_ID::Metadata GetMetadataStatic() {
+    ::PROTOBUF_NAMESPACE_ID::internal::AssignDescriptors(&::descriptor_table_protoloma_2eproto);
+    return ::descriptor_table_protoloma_2eproto.file_level_metadata[kIndexInFileMessages];
+  }
+
+  public:
+
+  // nested types ----------------------------------------------------
+
+  // accessors -------------------------------------------------------
+
+  enum : int {
+    kValuesFieldNumber = 1,
+  };
+  // repeated .romabuf.PValue values = 1;
+  int values_size() const;
+  private:
+  int _internal_values_size() const;
+  public:
+  void clear_values();
+  ::romabuf::PValue* mutable_values(int index);
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::PValue >*
+      mutable_values();
+  private:
+  const ::romabuf::PValue& _internal_values(int index) const;
+  ::romabuf::PValue* _internal_add_values();
+  public:
+  const ::romabuf::PValue& values(int index) const;
+  ::romabuf::PValue* add_values();
+  const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::PValue >&
+      values() const;
+
+  // @@protoc_insertion_point(class_scope:romabuf.ListVal)
+ private:
+  class _Internal;
+
+  template <typename T> friend class ::PROTOBUF_NAMESPACE_ID::Arena::InternalHelper;
+  typedef void InternalArenaConstructable_;
+  typedef void DestructorSkippable_;
+  ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::PValue > values_;
+  mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
+  friend struct ::TableStruct_protoloma_2eproto;
+};
+// -------------------------------------------------------------------
+
 class ERefVal PROTOBUF_FINAL :
     public ::PROTOBUF_NAMESPACE_ID::Message /* @@protoc_insertion_point(class_definition:romabuf.ERefVal) */ {
  public:
@@ -717,7 +874,7 @@ class ERefVal PROTOBUF_FINAL :
                &_ERefVal_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    3;
+    4;
 
   friend void swap(ERefVal& a, ERefVal& b) {
     a.Swap(&b);
@@ -897,6 +1054,7 @@ class PValue PROTOBUF_FINAL :
     kNumVal = 1,
     kStrVal = 2,
     kErefVal = 3,
+    kListVal = 4,
     VALUE_NOT_SET = 0,
   };
 
@@ -906,7 +1064,7 @@ class PValue PROTOBUF_FINAL :
                &_PValue_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    4;
+    5;
 
   friend void swap(PValue& a, PValue& b) {
     a.Swap(&b);
@@ -980,6 +1138,7 @@ class PValue PROTOBUF_FINAL :
     kNumValFieldNumber = 1,
     kStrValFieldNumber = 2,
     kErefValFieldNumber = 3,
+    kListValFieldNumber = 4,
   };
   // .romabuf.NumVal num_val = 1;
   bool has_num_val() const;
@@ -1035,6 +1194,24 @@ class PValue PROTOBUF_FINAL :
       ::romabuf::ERefVal* eref_val);
   ::romabuf::ERefVal* unsafe_arena_release_eref_val();
 
+  // .romabuf.ListVal list_val = 4;
+  bool has_list_val() const;
+  private:
+  bool _internal_has_list_val() const;
+  public:
+  void clear_list_val();
+  const ::romabuf::ListVal& list_val() const;
+  ::romabuf::ListVal* release_list_val();
+  ::romabuf::ListVal* mutable_list_val();
+  void set_allocated_list_val(::romabuf::ListVal* list_val);
+  private:
+  const ::romabuf::ListVal& _internal_list_val() const;
+  ::romabuf::ListVal* _internal_mutable_list_val();
+  public:
+  void unsafe_arena_set_allocated_list_val(
+      ::romabuf::ListVal* list_val);
+  ::romabuf::ListVal* unsafe_arena_release_list_val();
+
   void clear_value();
   ValueCase value_case() const;
   // @@protoc_insertion_point(class_scope:romabuf.PValue)
@@ -1043,6 +1220,7 @@ class PValue PROTOBUF_FINAL :
   void set_has_num_val();
   void set_has_str_val();
   void set_has_eref_val();
+  void set_has_list_val();
 
   inline bool has_value() const;
   inline void clear_has_value();
@@ -1055,6 +1233,7 @@ class PValue PROTOBUF_FINAL :
     ::romabuf::NumVal* num_val_;
     ::romabuf::StrVal* str_val_;
     ::romabuf::ERefVal* eref_val_;
+    ::romabuf::ListVal* list_val_;
   } value_;
   mutable ::PROTOBUF_NAMESPACE_ID::internal::CachedSize _cached_size_;
   ::PROTOBUF_NAMESPACE_ID::uint32 _oneof_case_[1];
@@ -1120,7 +1299,7 @@ class PleromaMessage PROTOBUF_FINAL :
                &_PleromaMessage_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    5;
+    6;
 
   friend void swap(PleromaMessage& a, PleromaMessage& b) {
     a.Swap(&b);
@@ -1347,7 +1526,7 @@ class Call PROTOBUF_FINAL :
                &_Call_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    6;
+    7;
 
   friend void swap(Call& a, Call& b) {
     a.Swap(&b);
@@ -1686,7 +1865,7 @@ class AnnouncePeer PROTOBUF_FINAL :
                &_AnnouncePeer_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    7;
+    8;
 
   friend void swap(AnnouncePeer& a, AnnouncePeer& b) {
     a.Swap(&b);
@@ -1869,7 +2048,7 @@ class AssignClusterInfo PROTOBUF_FINAL :
                &_AssignClusterInfo_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    8;
+    9;
 
   friend void swap(AssignClusterInfo& a, AssignClusterInfo& b) {
     a.Swap(&b);
@@ -2086,7 +2265,7 @@ class Greeting PROTOBUF_FINAL :
                &_Greeting_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    9;
+    10;
 
   friend void swap(Greeting& a, Greeting& b) {
     a.Swap(&b);
@@ -2251,7 +2430,7 @@ class GreetingAck PROTOBUF_FINAL :
                &_GreetingAck_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    10;
+    11;
 
   friend void swap(GreetingAck& a, GreetingAck& b) {
     a.Swap(&b);
@@ -2400,7 +2579,7 @@ class LoadProgram PROTOBUF_FINAL :
                &_LoadProgram_default_instance_);
   }
   static constexpr int kIndexInFileMessages =
-    11;
+    12;
 
   friend void swap(LoadProgram& a, LoadProgram& b) {
     a.Swap(&b);
@@ -2926,6 +3105,49 @@ inline void StrVal::unsafe_arena_set_allocated_value(
 
 // -------------------------------------------------------------------
 
+// ListVal
+
+// repeated .romabuf.PValue values = 1;
+inline int ListVal::_internal_values_size() const {
+  return values_.size();
+}
+inline int ListVal::values_size() const {
+  return _internal_values_size();
+}
+inline void ListVal::clear_values() {
+  values_.Clear();
+}
+inline ::romabuf::PValue* ListVal::mutable_values(int index) {
+  // @@protoc_insertion_point(field_mutable:romabuf.ListVal.values)
+  return values_.Mutable(index);
+}
+inline ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::PValue >*
+ListVal::mutable_values() {
+  // @@protoc_insertion_point(field_mutable_list:romabuf.ListVal.values)
+  return &values_;
+}
+inline const ::romabuf::PValue& ListVal::_internal_values(int index) const {
+  return values_.Get(index);
+}
+inline const ::romabuf::PValue& ListVal::values(int index) const {
+  // @@protoc_insertion_point(field_get:romabuf.ListVal.values)
+  return _internal_values(index);
+}
+inline ::romabuf::PValue* ListVal::_internal_add_values() {
+  return values_.Add();
+}
+inline ::romabuf::PValue* ListVal::add_values() {
+  // @@protoc_insertion_point(field_add:romabuf.ListVal.values)
+  return _internal_add_values();
+}
+inline const ::PROTOBUF_NAMESPACE_ID::RepeatedPtrField< ::romabuf::PValue >&
+ListVal::values() const {
+  // @@protoc_insertion_point(field_list:romabuf.ListVal.values)
+  return values_;
+}
+
+// -------------------------------------------------------------------
+
 // ERefVal
 
 // required int32 node_id = 1;
@@ -3233,6 +3455,79 @@ inline ::romabuf::ERefVal* PValue::_internal_mutable_eref_val() {
 inline ::romabuf::ERefVal* PValue::mutable_eref_val() {
   // @@protoc_insertion_point(field_mutable:romabuf.PValue.eref_val)
   return _internal_mutable_eref_val();
+}
+
+// .romabuf.ListVal list_val = 4;
+inline bool PValue::_internal_has_list_val() const {
+  return value_case() == kListVal;
+}
+inline bool PValue::has_list_val() const {
+  return _internal_has_list_val();
+}
+inline void PValue::set_has_list_val() {
+  _oneof_case_[0] = kListVal;
+}
+inline void PValue::clear_list_val() {
+  if (_internal_has_list_val()) {
+    if (GetArena() == nullptr) {
+      delete value_.list_val_;
+    }
+    clear_has_value();
+  }
+}
+inline ::romabuf::ListVal* PValue::release_list_val() {
+  // @@protoc_insertion_point(field_release:romabuf.PValue.list_val)
+  if (_internal_has_list_val()) {
+    clear_has_value();
+      ::romabuf::ListVal* temp = value_.list_val_;
+    if (GetArena() != nullptr) {
+      temp = ::PROTOBUF_NAMESPACE_ID::internal::DuplicateIfNonNull(temp);
+    }
+    value_.list_val_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline const ::romabuf::ListVal& PValue::_internal_list_val() const {
+  return _internal_has_list_val()
+      ? *value_.list_val_
+      : *reinterpret_cast< ::romabuf::ListVal*>(&::romabuf::_ListVal_default_instance_);
+}
+inline const ::romabuf::ListVal& PValue::list_val() const {
+  // @@protoc_insertion_point(field_get:romabuf.PValue.list_val)
+  return _internal_list_val();
+}
+inline ::romabuf::ListVal* PValue::unsafe_arena_release_list_val() {
+  // @@protoc_insertion_point(field_unsafe_arena_release:romabuf.PValue.list_val)
+  if (_internal_has_list_val()) {
+    clear_has_value();
+    ::romabuf::ListVal* temp = value_.list_val_;
+    value_.list_val_ = nullptr;
+    return temp;
+  } else {
+    return nullptr;
+  }
+}
+inline void PValue::unsafe_arena_set_allocated_list_val(::romabuf::ListVal* list_val) {
+  clear_value();
+  if (list_val) {
+    set_has_list_val();
+    value_.list_val_ = list_val;
+  }
+  // @@protoc_insertion_point(field_unsafe_arena_set_allocated:romabuf.PValue.list_val)
+}
+inline ::romabuf::ListVal* PValue::_internal_mutable_list_val() {
+  if (!_internal_has_list_val()) {
+    clear_value();
+    set_has_list_val();
+    value_.list_val_ = CreateMaybeMessage< ::romabuf::ListVal >(GetArena());
+  }
+  return value_.list_val_;
+}
+inline ::romabuf::ListVal* PValue::mutable_list_val() {
+  // @@protoc_insertion_point(field_mutable:romabuf.PValue.list_val)
+  return _internal_mutable_list_val();
 }
 
 inline bool PValue::has_value() const {
@@ -4418,6 +4713,8 @@ inline void GreetingAck::set_node_id(::PROTOBUF_NAMESPACE_ID::int32 value) {
 #ifdef __GNUC__
   #pragma GCC diagnostic pop
 #endif  // __GNUC__
+// -------------------------------------------------------------------
+
 // -------------------------------------------------------------------
 
 // -------------------------------------------------------------------
