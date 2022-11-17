@@ -1,6 +1,7 @@
 #include "hylic_typesolver.h"
 #include "hylic_ast.h"
 #include "general_util.h"
+#include "type_util.h"
 #include <cassert>
 #include <map>
 #include <string>
@@ -217,6 +218,10 @@ CType typesolve_sub(TypeContext* context, AstNode *node) {
   } break;
 
   case AstNodeType::EntityRefNode: {
+    return node->ctype;
+  } break;
+
+  case AstNodeType::RangeNode: {
     return node->ctype;
   } break;
 

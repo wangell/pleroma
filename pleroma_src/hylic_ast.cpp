@@ -1,6 +1,7 @@
 #include "hylic_ast.h"
 #include "general_util.h"
 #include "hylic_eval.h"
+#include "type_util.h"
 #include <cassert>
 #include <string>
 
@@ -255,6 +256,8 @@ AstNode *make_range(AstNode *range_start, AstNode *range_end) {
   range_node->type = AstNodeType::RangeNode;
   range_node->range_start = range_start;
   range_node->range_end = range_end;
+  range_node->ctype.basetype = PType::List;
+  range_node->ctype.subtype = lu8();
 
   return range_node;
 }

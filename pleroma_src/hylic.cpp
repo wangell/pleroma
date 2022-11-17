@@ -33,7 +33,7 @@ HylicModule *load_file(std::string program_name, std::string path) {
 
   program = parse(program_name, stream);
 
-  //typesolve(program);
+  typesolve(program);
 
   return program;
 }
