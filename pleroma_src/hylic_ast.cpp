@@ -186,6 +186,8 @@ AstNode *make_string(std::string s) {
 
 AstNode *make_entity_creation() {}
 
+// Value nodes
+
 AstNode *make_boolean(bool b) {
   if (!static_true || !static_false) {
     BooleanNode *true_node = new BooleanNode;
@@ -350,6 +352,16 @@ AstNode *make_index_node(AstNode *list, AstNode *accessor) {
   index_node->list = list;
   index_node->accessor = accessor;
   return index_node;
+}
+
+void destroy_ast_obj(AstNode *node) {
+  printf("Destroying\n");
+  switch(node->type) {
+    case AstNodeType::StringNode:{
+      auto str_nd = safe_ncast<StringNode*>(node, AstNodeType::StringNode);
+      delete str_nd;
+    } break;
+  }
 }
 
 void print_ast(AstNode *node, int indent_level) {

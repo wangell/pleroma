@@ -30,7 +30,6 @@ void loop_keyboard() {
       m.function_name = "irq-handler";
       m.values.push_back((ValueNode*)make_number(1));
       m.values.push_back((ValueNode *)make_number(event.key.keysym.sym));
-      printf("HERE %d %d %d!\n", m.node_id, m.vat_id, m.entity_id);
       net_out_queue.enqueue(m);
     }
   }

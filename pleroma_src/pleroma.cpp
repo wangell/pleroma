@@ -3,6 +3,7 @@
 #include "hylic.h"
 #include "hylic_ast.h"
 #include "hylic_eval.h"
+#include "gc.h"
 #include <chrono>
 #include <locale>
 #include <map>
@@ -64,6 +65,13 @@ void process_vq() {
   while (true) {
     Vat* our_vat;
     queue.wait_dequeue(our_vat);
+
+    our_vat->cycle_since_gc += 1;
+
+    if (our_vat->cycle_since_gc > 500) {
+      run_gc(our_vat);
+      our_vat->cycle_since_gc = 0;
+    }
 
     // Take a number of steps
     for (int k = 0; k < 1; ++k) {

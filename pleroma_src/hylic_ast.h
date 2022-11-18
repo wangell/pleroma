@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include "general_util.h"
+#include "allocators.h"
 
 enum class AstNodeType {
   Stmt,
@@ -111,6 +112,8 @@ struct AstNode {
   AstNode *parent;
 
   CType ctype;
+
+  bool marked = false;
 
   std::list<Token *>::iterator start;
   std::list<Token *>::iterator end;
@@ -325,9 +328,11 @@ AstNode *make_namespace_access(AstNode* ref, AstNode* field);
 AstNode *make_while(AstNode *generator, std::vector<AstNode *> body);
 AstNode *make_module_stmt(std::string s, bool namespaced, std::map<std::string, AstNode*> symbol_table);
 AstNode *make_table(std::map<std::string, AstNode *> vals);
+
 AstNode *make_number(int64_t v);
 AstNode *make_string(std::string s);
 AstNode *make_boolean(bool b);
+
 AstNode *make_symbol(std::string s);
 AstNode *make_actor(HylicModule* hm, std::string s, std::map<std::string, FuncStmt *> functions, std::map<std::string, AstNode *> data, std::vector<InoCap> inocaps, std::vector<std::string> preamble, std::vector<std::string> postamble);
 AstNode *make_function(std::string s, std::vector<std::string> args, std::vector<AstNode *> body, std::vector<CType *> param_types, bool pure);
@@ -344,10 +349,11 @@ AstNode *make_promise_node(int promise_id);
 AstNode *make_mod_use(std::string mod_name, AstNode * accessor);
 AstNode *make_index_node(AstNode * list, AstNode * accessor);
 // HACK Make this an AstNode and then eval + check in symbol table
-AstNode *make_promise_resolution_node(std::string sym,
-                                      std::vector<AstNode *> body);
-
+AstNode *make_promise_resolution_node(std::string sym, std::vector<AstNode *> body);
 AstNode *make_foreign_func_call(AstNode * (*foreign_func)(EvalContext *, std::vector<AstNode *>), std::vector<AstNode *> args, CType ret_type);
+
+// Destroy
+void destroy_ast_obj(AstNode* node);
 
 std::string ast_type_to_string(AstNodeType t);
 std::string ctype_to_string(CType * ctype);

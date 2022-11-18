@@ -286,6 +286,13 @@ AstNode *eval_message_node(EvalContext *context, AstNode *node,
   panic("Unhandled message node");
 }
 
+void register_gc_obj(EvalContext *context, AstNode* obj) {
+  context->vat->all_objects.push_back(obj);
+}
+
+//void register_gc_ent(EvalContext *context, Entity *ent) {
+//}
+
 AstNode *eval(EvalContext *context, AstNode *obj) {
   if (obj->type == AstNodeType::AssignmentStmt) {
     auto ass_stmt = (AssignmentStmt *)obj;
@@ -330,11 +337,15 @@ AstNode *eval(EvalContext *context, AstNode *obj) {
 
     if (n1->type == AstNodeType::NumberNode && n2->type == AstNodeType::NumberNode) {
       if (op_expr->op == OperatorExpr::Plus) {
-        return make_number(((NumberNode*)n1)->value + ((NumberNode*)n2)->value);
+        auto tmp_nm = make_number(((NumberNode*)n1)->value + ((NumberNode*)n2)->value);
+        register_gc_obj(context, tmp_nm);
+        return tmp_nm;
       }
     } else if (n1->type == AstNodeType::StringNode && n2->type == AstNodeType::StringNode) {
         if (op_expr->op == OperatorExpr::Plus) {
-          return make_string(((StringNode *)n2)->value + ((StringNode *)n1)->value);
+          auto tmp_str = make_string(((StringNode *)n2)->value + ((StringNode *)n1)->value);
+          register_gc_obj(context, tmp_str);
+          return tmp_str;
         }
     } else{
       assert(false);
@@ -753,6 +764,7 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   vat->entities[e->address.entity_id] = e;
 
   for (auto &[k, v] : entity_def->data) {
+    // This just copies the CType
     e->data[k] = v;
   }
 
@@ -812,6 +824,10 @@ Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat)
   //printf("%s (%d, %d, %d)\n", entity_def->name.c_str(), e->address.entity_id, e->address.vat_id, e->address.node_id);
 
   return e;
+}
+
+void destroy_entity(Entity* ent) {
+  printf("Destroying entity\n");
 }
 
 void print_value_node(ValueNode *value_node) {

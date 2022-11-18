@@ -1,5 +1,6 @@
 #pragma once
 
+#include "allocators.h"
 #include "common.h"
 #include "hylic_ast.h"
 #include "hylic_parse.h"
@@ -21,6 +22,8 @@ struct Entity {
   std::map<std::string, AstNode *> data;
   HylicModule* module_scope;
   std::map<std::string, AstNode *> _kdata;
+
+  bool marked = false;
 };
 
 struct Msg {
@@ -79,6 +82,13 @@ struct Vat {
   std::map<int, PromiseResult> promises;
 
   std::map<int, Entity *> entities;
+
+  VatAllocator *allocator;
+
+  std::vector<Entity*> all_entities;
+  std::vector<AstNode*> all_objects;
+
+  int cycle_since_gc = 0;
 };
 
 struct Scope {
@@ -115,6 +125,7 @@ AstNode *eval(EvalContext *context, AstNode *obj);
 std::map<std::string, AstNode *> *find_symbol_table(EvalContext *context, std::string sym);
 AstNode *find_symbol(EvalContext *context, std::string sym);
 Entity *create_entity(EvalContext *context, EntityDef *entity_def, bool new_vat);
+void destroy_entity(Entity* e);
 AstNode *eval_func_local(EvalContext *context, Entity *entity, std::string function_name, std::vector<AstNode *> args);
 AstNode *eval_promise_local(EvalContext *context, Entity *entity, PromiseResult *resolve_node, int promise_id);
 AstNode *promise_new_vat(EvalContext *context, EntityDef *entity_def);
