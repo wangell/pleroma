@@ -1,4 +1,1 @@
-shared_src/protoloma.pb.h
-shared_src/protoloma.pb.cc
-:w
-resources/
+/target

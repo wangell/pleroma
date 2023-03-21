@@ -1,15 +1,12 @@
-all: shared_src/protoloma.pb.h shared_src/protoloma.pb.cc
-	ninja -C build/
+all: run-hosted
 
-shared_src/protoloma.pb.h shared_src/protoloma.pb.cc: shared_src/protoloma.proto
-	protoc -I=shared_src/ --cpp_out=shared_src/ shared_src/protoloma.proto
+.PHONY: build-hosted run-hosted build-native
 
-cmake:
-	rm -r build
-	mkdir build
-	
-	CC=/usr/bin/clang CXX=/usr/bin/clang++ cmake -S . -GNinja -B build -DCMAKE_EXPORT_COMPILE_COMMANDS=1 -DCMAKE_CXX_COMPILER_LAUNCHER=ccache -DCMAKE_C_COMPILER_LAUNCHER=ccache
-	mv build/compile_commands.json .
+build-native:
+	cargo build --features native --target x86_64-unknown-none
 
-test:
-	./run_tests.py
+build-hosted:
+	cargo build --features hosted --target x86_64-unknown-linux-gnu
+
+run-hosted:
+	cargo run --features hosted --target x86_64-unknown-linux-gnu

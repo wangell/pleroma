@@ -1,0 +1,108 @@
+use std::str::FromStr;
+use crate::ast;
+use std::collections::HashMap;
+use crate::ast::{AstNode, BinOp, Distance, PType, CType, Value, EntityDef, Module, Identifier};
+
+grammar;
+
+Comma<T>: Vec<T> = { // (1)
+    <mut v:(<T> ",")*> <e:T?> => match e { // (2)
+        None => v,
+        Some(e) => {
+            v.push(e);
+            v
+        }
+    }
+};
+
+Inoc: (String, CType) = {
+  <s:Symbol> ":" <c:CType> => (s, c)
+}
+
+DataDec: (String, CType) = {
+  <s:Symbol> ":" <c:CType> ";" => (s, c)
+}
+
+InocList: Vec<(String, CType)> = {
+  "{" Comma<Inoc> "}" => (<>).1
+}
+
+TypeSpec: CType = {
+   ":" <c: CType> => c
+}
+
+Statement : Box<AstNode> = {
+   "let" <s:Symbol> <t:TypeSpec?> "=" <e:Expr> ";" => Box::new(AstNode::DefinitionNode(s, Box::new(e))),
+   <s:Symbol> "=" <e:Expr> ";" => Box::new(AstNode::AssignmentNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e))),
+   Expr ";" => Box::new((<>).0),
+   "↵" <e:Expr> ";" => Box::new(AstNode::Return(Box::new(e)))
+}
+
+ExprOp: BinOp = {
+    "+" => BinOp::Add,
+    "-" => BinOp::Sub,
+}
+
+Expr: AstNode = {
+    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Value::Pu8(e2 as u8)))),
+    Num => AstNode::ValueNode(Value::Pu8(<> as u8)),
+    <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, e),
+    <s:EntitySymbol> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
+    PString => <>,
+    Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from("")}),
+    <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
+    "[" <v:Comma<Expr>> "]" => AstNode::ValueNode(Value::List(v)),
+}
+
+PString: AstNode = {
+    "\"" <s:Symbol> "\"" => AstNode::ValueNode(Value::PString(s))
+}
+
+
+Function: (String, Box<AstNode>) = {
+    "δ" <f:Symbol> "(" <p:Comma<Inoc>> ")" "->" <r:CType> "{" <b:Statement*> "}" => (f.clone(), Box::new(AstNode::Function{name: f, parameters: p, body: b, return_type: r}))
+}
+
+pub Import: String = {
+  "~" <s:Symbol> ";" => s
+  //"►"
+}
+
+pub Module: Module = {
+  <ims: Import*> <ed:EntityDef*> => Module {imports: ims, entity_defs: ed.into_iter().collect()}
+}
+
+EntityDef: (String, AstNode) = {
+    "ε" <s:EntitySymbol> <i:InocList> "{" <d:DataDec*> <f:Function*> "}"=> (s.clone(), AstNode::EntityDef(EntityDef{name: s.to_string(), inoculation_list: i, data_declarations: d, functions: f.into_iter().collect(), foreign_functions: HashMap::new()}))
+}
+
+EntitySymbol: String = {
+  r"[A-Z][a-zA-Z]*" => (<>).to_string()
+}
+
+Symbol: String = {
+  r"[a-z][a-zA-Z]*" => (<>).to_string()
+}
+
+PType: PType = {
+  "u32" => PType::Pu32,
+  "[" <c:CType> "]" => PType::List(Box::new(c)),
+  EntitySymbol => PType::Entity
+}
+
+CType: CType = {
+  "far" <base_type:PType> => CType::Loc(<>),
+  "loc" <base_type:PType> => CType::Far(<>),
+  "aln" <base_type:PType> => CType::Alien(<>),
+  <base_type: PType> => CType::Loc(<>),
+  "void" => CType::Void
+}
+
+PDist: Distance = {
+  "far" => Distance::Far,
+  "loc" => Distance::Local
+}
+
+Num: i32 = {
+    r"[0-9]+" => i32::from_str(<>).unwrap()
+};

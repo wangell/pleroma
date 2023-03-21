@@ -1,0 +1,11 @@
+~sys;
+
+ε Nodeman {blah : far u32, yolo : loc u32} {
+
+  δ create() -> loc u32 {
+  }
+
+  δ createblah() -> loc u32 {
+    ↵ 9 + 11 + 2;
+  }
+}
