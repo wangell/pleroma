@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-limine = { path = "./limine", optional = true }
+limine = { path = "./third_party/limine", optional = true }
 spin = { version = "0.9", optional = true }
 x86_64 = { version = "0.14.10", optional = true }
 pic8259 = { version = "0.10.1", optional = true }
