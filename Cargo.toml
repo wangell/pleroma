@@ -22,6 +22,5 @@ features = ["spin_no_std"]
 lalrpop = { version = "0.19", features = ["lexer"], optional = true }
 
 [features]
-default = ["hosted"]
 native = ["limine", "spin", "x86_64", "pic8259", "pc-keyboard"]
 hosted = ["enet", "regex", "lalrpop", "lalrpop-util", "crossbeam"]
