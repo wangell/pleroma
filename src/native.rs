@@ -102,7 +102,6 @@ pub extern "C" fn _start() -> ! {
             bootinfo.version.to_str().unwrap().to_str().unwrap(),
         );
 
-        println!("suck it!!");
     }
 
     init_idt();

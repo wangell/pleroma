@@ -2,6 +2,20 @@
 
 KERNEL=$1
 
+LIMINE_GIT_URL="https://github.com/limine-bootloader/limine.git"
+
+cp $KERNEL conf/limine.cfg target/limine/limine{.sys,-cd.bin,-cd-efi.bin} target/iso_root
+
+if [ ! -d target/limine ]; then
+    git clone $LIMINE_GIT_URL --depth=1 --branch v3.0-branch-binary target/limine
+fi
+
+cd target/limine
+git fetch
+make
+cd -
+
+mkdir -p target/iso_root
 cp $KERNEL conf/limine.cfg target/limine/limine{.sys,-cd.bin,-cd-efi.bin} target/iso_root
 
 xorriso -as mkisofs                                             \
