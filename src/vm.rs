@@ -7,7 +7,6 @@ use crate::pbin::{load_entity_function_table, decode_instruction, read_u8, read_
 
 pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg) {
 
-
     disassemble(&code);
 
     let mut x = 0;

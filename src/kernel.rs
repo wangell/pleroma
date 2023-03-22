@@ -15,6 +15,7 @@ pub struct Program {
     code: Vec<u8>,
 }
 
+#[derive(Debug)]
 pub struct Node {
     pub vats: HashMap<u64, vm_core::Vat>,
     pub code: HashMap<u64, Vec<u8>>

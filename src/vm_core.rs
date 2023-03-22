@@ -1,6 +1,7 @@
 use crate::ast::{AstNode, EntityDef, Value, Module};
 use std::collections::HashMap;
 
+#[derive(Debug, Clone)]
 pub struct EntityAddress {
     pub node_id: u32,
     pub vat_id: u32,
@@ -13,6 +14,7 @@ impl EntityAddress {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Msg {
     pub src_address: EntityAddress,
     pub dst_address: EntityAddress,
@@ -26,20 +28,21 @@ pub struct Msg {
     pub values: Vec<Value>,
 }
 
+#[derive(Debug)]
 pub struct Entity {
     pub def: EntityDef,
     address: EntityAddress,
     data: HashMap<String, Value>,
-    pub code_id: u64
 }
 
+#[derive(Debug)]
 pub struct Vat {
     pub inbox: Vec<Msg>,
-    outbox: Vec<Msg>,
+    pub outbox: Vec<Msg>,
 
     pub entities: HashMap<u32, Entity>,
 
-    vat_id: u32,
+    pub vat_id: u32,
     last_entity_id: u32,
 
     // Execution
@@ -75,7 +78,6 @@ impl Vat {
     pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {
         let entity_id = self.last_entity_id;
         self.entities.insert(entity_id, Entity {
-            code_id: 0,
             def: def.clone(),
             address: EntityAddress {
                 node_id: 0,
