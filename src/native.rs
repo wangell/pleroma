@@ -92,8 +92,9 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(
 static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
 
 #[no_mangle]
-pub extern "C" fn _start() -> ! {
+pub fn boot() -> ! {
     println!("Welcome to Pleroma!");
+    println!("Less is more, and nothing at all is a victory.");
 
     if let Some(bootinfo) = BOOTLOADER_INFO.get_response().get() {
         println!(
