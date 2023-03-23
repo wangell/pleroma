@@ -3,56 +3,44 @@
 #![cfg_attr(feature = "native", feature(abi_x86_interrupt))]
 #![cfg_attr(feature = "native", feature(alloc_error_handler))] // at the top of the file
 
-
-#[macro_use]
-#[cfg(feature = "hosted")]
-extern crate lalrpop_util;
-
-#[macro_use]
 #[cfg(feature = "native")]
+#[macro_use]
 pub mod io;
 
-#[cfg(feature = "native")]
-pub mod interrupts;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "native")] {
+        #[macro_use]
+        extern crate lalrpop_util;
 
-#[cfg(feature = "native")]
-pub mod native;
+        pub mod interrupts;
+        pub mod memory;
+        pub mod palloc;
+        pub mod native_util;
+        pub mod native;
 
-#[cfg(feature = "hosted")]
-pub mod ast;
+    }
+}
 
-#[cfg(feature = "hosted")]
-pub mod codegen;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "hosted")] {
+        #[macro_use]
+        extern crate lalrpop_util;
 
-#[cfg(feature = "hosted")]
-pub mod compile;
+        pub mod codegen;
+        pub mod compile;
+        pub mod kernel;
+        pub mod parser;
+        pub mod pnet;
+        pub mod sem;
+        pub mod hosted;
+    }
+}
 
-#[cfg(feature = "hosted")]
-pub mod kernel;
-
-#[cfg(feature = "hosted")]
-pub mod opcodes;
-
-#[cfg(feature = "hosted")]
-pub mod parser;
-
-#[cfg(feature = "hosted")]
-pub mod pbin;
-
-#[cfg(feature = "hosted")]
-pub mod pnet;
-
-#[cfg(feature = "hosted")]
-pub mod sem;
-
-#[cfg(feature = "hosted")]
-pub mod vm;
-
-#[cfg(feature = "hosted")]
 pub mod vm_core;
-
-#[cfg(feature = "hosted")]
-pub mod hosted;
+pub mod vm;
+pub mod ast;
+pub mod pbin;
+pub mod opcodes;
 
 #[cfg(feature = "hosted")]
 fn main() {

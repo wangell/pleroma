@@ -1,21 +1,38 @@
 //use chrono;
-use std::fs;
-use std::collections::HashMap;
+cfg_if::cfg_if! {
+    if #[cfg(feature = "hosted")] {
+        use std::collections::HashMap as HashMap;
+        use crate::ast::{Value, Module, EntityDef};
+    }
+}
+
+cfg_if::cfg_if! {
+    if #[cfg(feature = "native")] {
+        extern crate alloc;
+
+        use alloc::collections::BTreeMap as HashMap;
+        use alloc::string::String;
+        use alloc::vec::Vec;
+        use alloc::boxed::Box;
+        use crate::ast::{Value, Module, EntityDef};
+    }
+}
 
 use crate::vm_core::{Vat, Msg};
 use crate::pbin::{load_entity_function_table, decode_instruction, read_u8, read_u16, read_u32, read_u64, Inst, disassemble};
 
 pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg) {
 
+    println!("{:?}", code);
     disassemble(&code);
 
-    let mut x = 0;
+    let mut x = 7;
 
-    let mut target_entity = &vat.entities[&msg.dst_address.entity_id];
+    //let mut target_entity = &vat.entities[&msg.dst_address.entity_id];
 
-    let table = load_entity_function_table(&mut x, &code[..]);
+    //let table = load_entity_function_table(&mut x, &code[..]);
 
-    x = table[&0][&msg.function_id].0 as usize;
+    //x = table[&0][&msg.function_id].0 as usize;
 
     loop {
         if x >= code.len() {
@@ -73,9 +90,9 @@ pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg) {
                 x = a0 as usize;
             }
             Inst::ForeignCall(a0) => {
-                println!("{:?}", target_entity.def);
-                let res = target_entity.def.foreign_functions[&a0]();
-                vat.op_stack.push(res);
+                //println!("{:?}", target_entity.def);
+                //let res = target_entity.def.foreign_functions[&a0]();
+                //vat.op_stack.push(res);
             }
             //Inst::CallFunc(n, args) => {
             //    for arg_n in 0..usize::from(n) {

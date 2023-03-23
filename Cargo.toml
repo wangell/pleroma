@@ -9,20 +9,27 @@ spin = { version = "0.9", optional = true }
 x86_64 = { version = "0.14.10", optional = true }
 pic8259 = { version = "0.10.1", optional = true }
 pc-keyboard = { version = "0.5.0", optional = true}
-lalrpop-util = { version = "0.19", features = ["lexer"], optional = true }
+#lalrpop-util = { version = "0.19", features = ["lexer"], optional = true }
 regex = { version = "1", optional = true }
 enet = { version = "0.3.0", optional = true }
 crossbeam = { verison = "0.8.2", optional = true }
 linked_list_allocator = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
+lalrpop-util = { version = "0.19", default-features = false, optional = true }
 
 [dependencies.lazy_static]
 version = "1.0"
 features = ["spin_no_std"]
 
+#[dependencies.crossbeam]
+#version = "0.8.2"
+#default-features = false
+#features = ["alloc"]
+#optional = true
+
 [build-dependencies]
 lalrpop = { version = "0.19", features = ["lexer"], optional = true }
 
 [features]
-native = ["limine", "spin", "x86_64", "pic8259", "pc-keyboard", "linked_list_allocator"]
-hosted = ["enet", "regex", "lalrpop", "lalrpop-util", "crossbeam"]
+native = ["limine", "spin", "x86_64", "pic8259", "pc-keyboard", "linked_list_allocator", "lalrpop", "lalrpop-util"]
+hosted = ["enet", "regex", "lalrpop", "lalrpop-util/lexer", "lalrpop-util/std", "crossbeam"]
