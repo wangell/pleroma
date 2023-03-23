@@ -1,6 +1,8 @@
 #![cfg_attr(feature = "native", no_std)]
 #![cfg_attr(feature = "native", no_main)]
 #![cfg_attr(feature = "native", feature(abi_x86_interrupt))]
+#![cfg_attr(feature = "native", feature(alloc_error_handler))] // at the top of the file
+
 
 #[macro_use]
 #[cfg(feature = "hosted")]

@@ -23,3 +23,7 @@ impl InterruptIndex {
         usize::from(self.as_u8())
     }
 }
+
+pub fn print_interrupt_masks() {
+    unsafe {println!("{:?}", PICS.lock().read_masks())};
+}
