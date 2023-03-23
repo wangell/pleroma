@@ -3,13 +3,13 @@ all: run-hosted
 .PHONY: build-hosted run-hosted build-native
 
 build-native:
-	cargo build --features native --target x86_64-unknown-none
+	cargo build --features native --config .cargo/config.native.toml
 
 run-native:
-	cargo run --features native --target x86_64-unknown-none
+	cargo run --features native --config .cargo/config.native.toml
 
 build-hosted:
-	cargo build --features hosted --target x86_64-unknown-linux-gnu
+	cargo build --features hosted --config .cargo/config.hosted.toml
 
 run-hosted:
-	cargo run --features hosted --target x86_64-unknown-linux-gnu
+	cargo run --features hosted --config .cargo/config.hosted.toml

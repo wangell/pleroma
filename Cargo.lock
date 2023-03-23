@@ -574,6 +574,7 @@ checksum = "db8bcd96cb740d03149cbad5518db9fd87126a10ab519c011893b1754134c468"
 name = "pleroma"
 version = "0.1.0"
 dependencies = [
+ "cfg-if",
  "crossbeam",
  "enet",
  "lalrpop",

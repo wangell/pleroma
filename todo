@@ -1,0 +1,6 @@
+- add debug symbol table, instruction range -> AST, AST includes optional "line"
+- parsing is for chumps
+
+- Attach extra data to an entity for foreign calls, like an external entity.  Maybe make it optional: either external entity FFI or plain function FFI
+
+- First Kernel start.  It performs basic machine setup.  Next the Kernel starts Nodeman.

@@ -14,6 +14,7 @@ regex = { version = "1", optional = true }
 enet = { version = "0.3.0", optional = true }
 crossbeam = { verison = "0.8.2", optional = true }
 linked_list_allocator = { version = "0.9.0", optional = true }
+cfg-if = "1.0.0"
 
 [dependencies.lazy_static]
 version = "1.0"
