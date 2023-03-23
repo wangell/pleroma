@@ -2,7 +2,7 @@ use crate::ast::{AstNode, AstNodeVisitor, Value, BinOp};
 use crate::opcodes::{Op};
 use crate::ast;
 
-use std::collections::HashMap;
+use crate::common::{HashMap, String, Box, Vec};
 
 pub struct GenCode {
     pub header: Vec<u8>,

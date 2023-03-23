@@ -26,21 +26,22 @@ cfg_if::cfg_if! {
         #[macro_use]
         extern crate lalrpop_util;
 
-        pub mod codegen;
-        pub mod compile;
-        pub mod kernel;
-        pub mod parser;
         pub mod pnet;
-        pub mod sem;
         pub mod hosted;
+        pub mod kernel;
+        pub mod compile;
+        pub mod parser;
     }
 }
 
+pub mod sem;
+pub mod codegen;
 pub mod vm_core;
 pub mod vm;
 pub mod ast;
 pub mod pbin;
 pub mod opcodes;
+pub mod common;
 
 #[cfg(feature = "hosted")]
 fn main() {

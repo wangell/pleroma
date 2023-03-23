@@ -3,6 +3,10 @@ use std::{env, error::Error};
 
 #[cfg(feature = "native")]
 fn main() -> Result<(), Box<dyn Error + Send + Sync>> {
+		extern crate lalrpop;
+
+    lalrpop::process_root().unwrap();
+
     // Get the name of the package.
     let kernel_name = env::var("CARGO_PKG_NAME")?;
 

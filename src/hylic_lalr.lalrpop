@@ -1,7 +1,7 @@
-use std::str::FromStr;
 use crate::ast;
-use std::collections::HashMap;
 use crate::ast::{AstNode, BinOp, Distance, PType, CType, Value, EntityDef, Module, Identifier};
+
+use crate::common::{HashMap, String, Box, str, FromStr, Vec};
 
 grammar;
 

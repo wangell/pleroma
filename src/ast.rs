@@ -1,21 +1,4 @@
-cfg_if::cfg_if! {
-    if #[cfg(feature = "hosted")] {
-        use std::collections::HashMap;
-        use std::fmt::{Debug, Error, Formatter};
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "native")] {
-        extern crate alloc;
-
-        use alloc::collections::BTreeMap as HashMap;
-        use alloc::string::String;
-        use alloc::vec::Vec;
-        use alloc::boxed::Box;
-        use alloc::vec;
-    }
-}
+use crate::common::{HashMap, String, Box, Vec, vec};
 
 pub struct Module {
     pub imports: Vec<String>,

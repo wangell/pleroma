@@ -146,6 +146,7 @@ pub fn boot() -> ! {
 
     let program : Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
     //pbin::disassemble(&program);
+
     loop {
         {
             let z = *current_vat.lock();

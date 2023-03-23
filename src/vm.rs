@@ -1,22 +1,4 @@
-//use chrono;
-cfg_if::cfg_if! {
-    if #[cfg(feature = "hosted")] {
-        use std::collections::HashMap as HashMap;
-        use crate::ast::{Value, Module, EntityDef};
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "native")] {
-        extern crate alloc;
-
-        use alloc::collections::BTreeMap as HashMap;
-        use alloc::string::String;
-        use alloc::vec::Vec;
-        use alloc::boxed::Box;
-        use crate::ast::{Value, Module, EntityDef};
-    }
-}
+use crate::common::{HashMap, String, Box, Vec, vec};
 
 use crate::vm_core::{Vat, Msg};
 use crate::pbin::{load_entity_function_table, decode_instruction, read_u8, read_u16, read_u32, read_u64, Inst, disassemble};

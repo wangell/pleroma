@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::ast::{AstNode, Identifier, Module, Value};
-use std::collections::HashMap;
+use crate::common::{HashMap, String, Box, Vec, vec, str};
 
 pub struct ScopeTree {
     pub symbols: HashMap<String, Box<AstNode>>,

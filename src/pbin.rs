@@ -1,24 +1,4 @@
-cfg_if::cfg_if! {
-    if #[cfg(feature = "hosted")] {
-        use std::collections::HashMap as HashMap;
-        use crate::ast::{Value, Module, EntityDef};
-        use std::str;
-    }
-}
-
-cfg_if::cfg_if! {
-    if #[cfg(feature = "native")] {
-        extern crate alloc;
-
-        use alloc::collections::BTreeMap as HashMap;
-        use alloc::string::String;
-        use alloc::vec::Vec;
-        use alloc::boxed::Box;
-        use alloc::str;
-        use crate::ast::{Value, Module, EntityDef};
-    }
-}
-
+use crate::common::{HashMap, String, Box, Vec, vec, str};
 use crate::opcodes::{Op};
 
 #[derive(Debug)]
