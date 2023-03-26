@@ -7,7 +7,7 @@ use x86_64::{PhysAddr, VirtAddr};
 use linked_list_allocator::LockedHeap;
 
 pub const HEAP_START: usize = 0x_4444_4444_0000;
-pub const HEAP_SIZE: usize = 1024 * 1024;
+pub const HEAP_SIZE: usize = 1024 * 1024 * 2;
 
 pub fn init_heap(
     mapper: &mut impl Mapper<Size4KiB>,
