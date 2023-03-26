@@ -107,54 +107,51 @@ pub fn boot() -> ! {
     // Schedule first vat
     {
         let mut sched = multitasking::SCHEDULER.lock();
-        sched
-            .process_queue
-            .push(multitasking::ProcessControlBlock::new(0, proc1 as usize));
-        sched
-            .process_queue
-            .push(multitasking::ProcessControlBlock::new(1, proc2 as usize));
+        sched.new_process(vat_runner as usize);
+        //sched.new_process(vat_runner as usize);
     }
 
-    // Interrupts
-    unsafe { interrupts::PICS.lock().initialize() };
-    x86_64::instructions::interrupts::enable();
-    unsafe { interrupts::PICS.lock().write_masks(0, 0) };
+    {
+        let mut vl = VatList.lock();
+        vl.insert(0, Vat::new());
+        vl.insert(1, Vat::new());
+    }
 
     // Wait for first interrupt to trigger scheduler
     println!("Boot complete: waiting for first scheduled task.");
+
+    unsafe { interrupts::PICS.lock().initialize() };
+    unsafe { interrupts::PICS.lock().write_masks(0, 0) };
+
+    x86_64::instructions::interrupts::enable();
     loop {
         x86_64::instructions::hlt();
     }
 }
 
-fn proc2() {
+fn vat_runner() {
     let program: Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
 
     loop {
         println!("Hello from proc1!");
-        //{
-        //    let z = *current_vat.lock();
-        //    let mut blah = VatList.lock();
-        //    let real_q = &mut blah.get_mut(&z).unwrap();
-        //    let msg = vm_core::Msg {
-        //        src_address: vm_core::EntityAddress::new(0, 0, 0),
-        //        dst_address: vm_core::EntityAddress::new(0, 0, 0),
-        //        promise_id: None,
-        //        is_response: false,
-        //        function_name: String::from("main"),
-        //        values: Vec::new(),
-        //        function_id: 0,
-        //    };
-        //    //vm::run_msg(&program, real_q, &msg);
-        //}
+        {
+            let z = *current_vat.lock();
+            let mut blah = VatList.lock();
+            let real_q = &mut blah.get_mut(&z).unwrap();
+            let msg = vm_core::Msg {
+                src_address: vm_core::EntityAddress::new(0, 0, 0),
+                dst_address: vm_core::EntityAddress::new(0, 0, 0),
+                promise_id: None,
+                is_response: false,
+                function_name: String::from("main"),
+                values: Vec::new(),
+                function_id: 0,
+            };
 
-        x86_64::instructions::hlt();
-    }
-}
+            vm::run_msg(&program, real_q, &msg);
+        }
+        println!("made it heren");
 
-fn proc1() {
-    loop {
-        println!("Hello from proc 0!");
         x86_64::instructions::hlt();
     }
 }
@@ -162,9 +159,5 @@ fn proc1() {
 #[panic_handler]
 fn rust_panic(info: &core::panic::PanicInfo) -> ! {
     println!("{}", info);
-    hcf();
-}
-
-pub fn hcf() -> ! {
-    loop {}
+    native_util::hcf();
 }
