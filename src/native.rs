@@ -1,37 +1,36 @@
+use core::arch::asm;
+extern crate alloc;
+
+use crate::interrupts;
+use crate::memory;
+use crate::multitasking;
+use crate::native_util;
+use crate::palloc;
+use crate::pbin;
+use crate::vm;
+use crate::vm_core;
+use crate::vm_core::{Msg, Vat};
+
 use limine::LimineBootInfoRequest;
 use limine::LimineBootTimeRequest;
 use limine::LimineFramebufferRequest;
 use limine::LimineHhdmRequest;
 
-use core::arch::asm;
-extern crate alloc;
-
-use alloc::vec;
-
-use crate::interrupts;
-use crate::memory;
-use crate::native_util;
-use crate::palloc;
-use crate::vm_core;
-use crate::vm_core::{Vat, Msg};
-use crate::vm;
-use crate::pbin;
-
 use lazy_static::lazy_static;
-
+use x86_64::instructions::port::{PortGeneric, WriteOnlyAccess};
 use x86_64::structures::paging::{OffsetPageTable, PageTable, Translate};
 use x86_64::{PhysAddr, VirtAddr};
-
-static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
-static HH_INFO: LimineHhdmRequest = LimineHhdmRequest::new(0);
-static FB_INFO: LimineFramebufferRequest = LimineFramebufferRequest::new(0);
 
 use alloc::boxed::Box;
 use alloc::collections::BTreeMap;
 use alloc::string::String;
+use alloc::vec;
 use alloc::vec::Vec;
-
 use spin;
+
+static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
+static HH_INFO: LimineHhdmRequest = LimineHhdmRequest::new(0);
+static FB_INFO: LimineFramebufferRequest = LimineFramebufferRequest::new(0);
 
 pub static VatList: spin::Mutex<BTreeMap<u32, Vat>> = spin::Mutex::new(BTreeMap::new());
 pub static current_vat: spin::Mutex<u32> = spin::Mutex::new(0);
@@ -45,29 +44,14 @@ pub fn trigger_timer() {
     }
 }
 
-fn target_function() {
-    println!("JUMPED!");
-}
-
-unsafe fn jmp_to_target_function() {
-    let target_fn_address = target_function as *const ();
-    asm!(
-        "jmp {0}",
-        in(reg) target_fn_address,
-        options(noreturn)
-    );
-}
-
 pub fn shutdown() {
     unsafe {
-        use x86_64::instructions::port::{PortGeneric, WriteOnlyAccess};
         let mut blah: PortGeneric<u16, WriteOnlyAccess> = PortGeneric::new(0x604);
         blah.write(0x2000);
     }
 }
 
 pub fn clear_screen(fb1: &limine::NonNullPtr<limine::LimineFramebuffer>, ya: bool) {
-
     let mut qq = Box::new(Vec::<u8>::new());
     for y in (0..100000) {
         qq.push(0);
@@ -86,7 +70,7 @@ pub fn clear_screen(fb1: &limine::NonNullPtr<limine::LimineFramebuffer>, ya: boo
 
                 if (ya) {
                     let slice: &[u8] = &*qq;
-                    let raw_ptr: *const u8 = slice.as_ptr(); 
+                    let raw_ptr: *const u8 = slice.as_ptr();
                     ptr::copy(raw_ptr, blah, qq.len());
                 } else {
                     *blah.offset(y_offset + base_address + 2) = 0xFF;
@@ -96,7 +80,6 @@ pub fn clear_screen(fb1: &limine::NonNullPtr<limine::LimineFramebuffer>, ya: boo
             }
         }
     }
-
 }
 
 #[no_mangle]
@@ -114,64 +97,64 @@ pub fn boot() -> ! {
 
     interrupts::init_idt();
 
-    // Turn on interrupts + mask
-    unsafe { interrupts::PICS.lock().initialize() };
-    //print!("Enabling interrupts...");
-    x86_64::instructions::interrupts::enable();
-    //println!(" enabled.");
-    unsafe { interrupts::PICS.lock().write_masks(0, 0) };
-
+    // Setup virtual memory + heap
     let mem_offset: u64 = HH_INFO.get_response().get().unwrap().offset;
     let phys_mem_offset = VirtAddr::new(mem_offset);
-
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init() };
-
     palloc::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
+    // Schedule first vat
     {
-        let mut vl = VatList.lock();
-        vl.insert(0, Vat::new());
-        vl.insert(1, Vat::new());
+        let mut sched = multitasking::SCHEDULER.lock();
+        sched
+            .process_queue
+            .push(multitasking::ProcessControlBlock::new(0, proc1 as usize));
+        sched
+            .process_queue
+            .push(multitasking::ProcessControlBlock::new(1, proc2 as usize));
     }
 
-    //let mut x: u64 = 4;
-    //unsafe {
-    //    asm!("jmp ",);
-    //}
-    //println!("{}", x);
+    // Interrupts
+    unsafe { interrupts::PICS.lock().initialize() };
+    x86_64::instructions::interrupts::enable();
+    unsafe { interrupts::PICS.lock().write_masks(0, 0) };
 
-    //native_util::hlt_loop();
-    let mut fb1 = &FB_INFO.get_response().get().unwrap().framebuffers()[0];
+    // Wait for first interrupt to trigger scheduler
+    println!("Boot complete: waiting for first scheduled task.");
+    loop {
+        x86_64::instructions::hlt();
+    }
+}
 
-    let program : Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
-    //pbin::disassemble(&program);
+fn proc2() {
+    let program: Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
 
     loop {
-        {
-            let z = *current_vat.lock();
+        println!("Hello from proc1!");
+        //{
+        //    let z = *current_vat.lock();
+        //    let mut blah = VatList.lock();
+        //    let real_q = &mut blah.get_mut(&z).unwrap();
+        //    let msg = vm_core::Msg {
+        //        src_address: vm_core::EntityAddress::new(0, 0, 0),
+        //        dst_address: vm_core::EntityAddress::new(0, 0, 0),
+        //        promise_id: None,
+        //        is_response: false,
+        //        function_name: String::from("main"),
+        //        values: Vec::new(),
+        //        function_id: 0,
+        //    };
+        //    //vm::run_msg(&program, real_q, &msg);
+        //}
 
-            let mut blah = VatList.lock();
-            let real_q = &mut blah.get_mut(&z).unwrap();
-            ////println!("{}", real_q.vat_id);
-            let msg = vm_core::Msg {
-                src_address: vm_core::EntityAddress::new(0, 0, 0),
-                dst_address: vm_core::EntityAddress::new(0, 0, 0),
-                promise_id: None,
-                is_response: false,
-                function_name: String::from("main"),
-                values: Vec::new(),
-                function_id: 0,
-            };
+        x86_64::instructions::hlt();
+    }
+}
 
-            vm::run_msg(&program, real_q, &msg);
-
-            //unsafe {
-            //    jmp_to_target_function();
-            //}
-        }
-        //clear_screen(fb1, true);
-        //clear_screen(fb1, false);
+fn proc1() {
+    loop {
+        println!("Hello from proc 0!");
         x86_64::instructions::hlt();
     }
 }

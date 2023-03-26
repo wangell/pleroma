@@ -28,3 +28,4 @@ xorriso -as mkisofs                                             \
 target/limine/limine-deploy $KERNEL.iso
 
 qemu-system-x86_64 -D target/log.txt $KERNEL.iso
+#qemu-system-x86_64 -D target/log.txt -s -S $KERNEL.iso

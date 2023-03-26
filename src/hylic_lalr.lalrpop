@@ -41,6 +41,8 @@ Statement : Box<AstNode> = {
 ExprOp: BinOp = {
     "+" => BinOp::Add,
     "-" => BinOp::Sub,
+    "*" => BinOp::Mul,
+    "/" => BinOp::Div,
 }
 
 Expr: AstNode = {
