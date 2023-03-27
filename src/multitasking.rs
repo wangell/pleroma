@@ -57,6 +57,7 @@ impl ProcessControlBlock {
             ip,
             code_segment: 0,
             stack_segment: 0,
+            // 0x0200 = interrupts enabled
             cpu_flags: 0x0200,
             stack: allocate_stack(stack_size),
             rsp: 0,
