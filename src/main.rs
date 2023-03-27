@@ -23,6 +23,8 @@ cfg_if::cfg_if! {
         pub mod native;
 
         pub mod multitasking;
+        pub mod fat;
+        pub mod bin_helpers;
     }
 }
 

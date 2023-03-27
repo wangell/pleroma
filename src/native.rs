@@ -10,11 +10,13 @@ use crate::pbin;
 use crate::vm;
 use crate::vm_core;
 use crate::vm_core::{Msg, Vat};
+use crate::fat;
 
 use limine::LimineBootInfoRequest;
 use limine::LimineBootTimeRequest;
 use limine::LimineFramebufferRequest;
 use limine::LimineHhdmRequest;
+use limine::LimineModuleRequest;
 
 use lazy_static::lazy_static;
 use x86_64::instructions::port::{PortGeneric, WriteOnlyAccess};
@@ -32,53 +34,15 @@ static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
 static HH_INFO: LimineHhdmRequest = LimineHhdmRequest::new(0);
 static FB_INFO: LimineFramebufferRequest = LimineFramebufferRequest::new(0);
 
+static INITRD: LimineModuleRequest = LimineModuleRequest::new(0);
+
 pub static VatList: spin::Mutex<BTreeMap<u32, Vat>> = spin::Mutex::new(BTreeMap::new());
 pub static current_vat: spin::Mutex<u32> = spin::Mutex::new(0);
-
-pub fn trigger_timer() {
-    let mut cv = current_vat.lock();
-    *cv += 1;
-    let ll = VatList.lock().len() as u32;
-    if (ll > 0) {
-        *cv = *cv % ll;
-    }
-}
 
 pub fn shutdown() {
     unsafe {
         let mut blah: PortGeneric<u16, WriteOnlyAccess> = PortGeneric::new(0x604);
         blah.write(0x2000);
-    }
-}
-
-pub fn clear_screen(fb1: &limine::NonNullPtr<limine::LimineFramebuffer>, ya: bool) {
-    let mut qq = Box::new(Vec::<u8>::new());
-    for y in (0..100000) {
-        qq.push(0);
-    }
-    println!("here");
-
-    for y in (0..fb1.height) {
-        for x in (0..fb1.width * 4).step_by(4) {
-            unsafe {
-                let blah: *mut u8 = fb1.address.as_ptr().unwrap() as *mut u8;
-                let base_address = x as isize;
-                let y_offset = (y * fb1.pitch) as isize;
-                //*blah.offset(x as isize * (fb1.bpp / 8) as isize) = 0xFF;
-
-                use core::ptr;
-
-                if (ya) {
-                    let slice: &[u8] = &*qq;
-                    let raw_ptr: *const u8 = slice.as_ptr();
-                    ptr::copy(raw_ptr, blah, qq.len());
-                } else {
-                    *blah.offset(y_offset + base_address + 2) = 0xFF;
-                    *blah.offset(y_offset + base_address + 1) = 0xFF;
-                    *blah.offset(y_offset + base_address) = 0xFF;
-                }
-            }
-        }
     }
 }
 
@@ -104,11 +68,35 @@ pub fn boot() -> ! {
     let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init() };
     palloc::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
 
+    let modules = INITRD.get_response().get().unwrap().modules();
+
+    println!("Initrd modules:");
+    for module in modules {
+        if let Some(path) = module.path.to_str() {
+            println!("\t{:?}", path);
+
+            if let Some(base_addr) = module.base.as_ptr() {
+                use core::slice::{from_raw_parts, from_raw_parts_mut};
+                let safe_slice;
+                unsafe {
+                    safe_slice = from_raw_parts_mut(base_addr, module.length as usize);
+                }
+                let fat_fs = fat::FatFs::new(safe_slice, fat::FatType::Fat16);
+                let entries = fat_fs.list_root_dir();
+
+                println!("Root dir {}:", path.to_str().unwrap());
+                for i in entries {
+                    println!("\t{}", i.filename());
+                }
+            }
+        }
+    }
+
     // Schedule first vat
     {
         let mut sched = multitasking::SCHEDULER.lock();
         sched.new_process(vat_runner as usize);
-        //sched.new_process(vat_runner as usize);
+        sched.new_process(vat_runner as usize);
     }
 
     {
@@ -150,7 +138,6 @@ fn vat_runner() {
 
             vm::run_msg(&program, real_q, &msg);
         }
-        println!("made it heren");
 
         x86_64::instructions::hlt();
     }
