@@ -64,7 +64,7 @@ impl ProcessControlBlock {
         };
 
         unsafe {
-            pcb.rsp = pcb.stack.as_ptr().offset(1000000) as usize;
+            pcb.rsp = pcb.stack.as_ptr().offset(stack_size.try_into().unwrap()) as usize;
         }
 
         pcb
