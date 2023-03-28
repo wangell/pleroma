@@ -1,7 +1,8 @@
 use crate::ast;
+use crate::lexer;
 use crate::ast::{AstNode, BinOp, Distance, PType, CType, Value, EntityDef, Module, Identifier};
 
-use crate::common::{HashMap, String, Box, str, FromStr, Vec};
+use crate::common::{HashMap, String, Box, str, FromStr, Vec, ToString};
 
 grammar;
 
@@ -49,7 +50,7 @@ Expr: AstNode = {
     <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Value::Pu8(e2 as u8)))),
     Num => AstNode::ValueNode(Value::Pu8(<> as u8)),
     <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, e),
-    <s:EntitySymbol> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
+    <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
     PString => <>,
     Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from("")}),
     <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
@@ -62,7 +63,7 @@ PString: AstNode = {
 
 
 Function: (String, Box<AstNode>) = {
-    "δ" <f:Symbol> "(" <p:Comma<Inoc>> ")" "->" <r:CType> "{" <b:Statement*> "}" => (f.clone(), Box::new(AstNode::Function{name: f, parameters: p, body: b, return_type: r}))
+    "δ" <f:Symbol> "(" <p:Comma<Inoc>> ")" <nn:ReturnType> <r:CType> "{" <b:Statement*> "}" => (f.clone(), Box::new(AstNode::Function{name: f, parameters: p, body: b, return_type: r}))
 }
 
 pub Import: String = {
@@ -75,21 +76,13 @@ pub Module: Module = {
 }
 
 EntityDef: (String, AstNode) = {
-    "ε" <s:EntitySymbol> <i:InocList> "{" <d:DataDec*> <f:Function*> "}"=> (s.clone(), AstNode::EntityDef(EntityDef{name: s.to_string(), inoculation_list: i, data_declarations: d, functions: f.into_iter().collect(), foreign_functions: HashMap::new()}))
-}
-
-EntitySymbol: String = {
-  r"[A-Z][a-zA-Z]*" => (<>).to_string()
-}
-
-Symbol: String = {
-  r"[a-z][a-zA-Z]*" => (<>).to_string()
+    "ε" <s:Symbol> <i:InocList> "{" <d:DataDec*> <f:Function*> "}"=> (s.clone(), AstNode::EntityDef(EntityDef{name: String::from("hi"), inoculation_list: i, data_declarations: d, functions: f.into_iter().collect(), foreign_functions: HashMap::new()}))
 }
 
 PType: PType = {
   "u32" => PType::Pu32,
   "[" <c:CType> "]" => PType::List(Box::new(c)),
-  EntitySymbol => PType::Entity
+  <s:EntityIdentifier> => PType::Entity
 }
 
 CType: CType = {
@@ -105,6 +98,61 @@ PDist: Distance = {
   "loc" => Distance::Local
 }
 
-Num: i32 = {
-    r"[0-9]+" => i32::from_str(<>).unwrap()
+Num: u8 = {
+    <Pu8> => <>
 };
+
+extern {
+    type Location = usize;
+    type Error = lexer::LexicalError;
+
+    enum lexer::Tok {
+        " " => lexer::Tok::Space,
+        ":" => lexer::Tok::Colon,
+        ";" => lexer::Tok::Semicolon,
+        "{" => lexer::Tok::LeftBracket,
+        "}" => lexer::Tok::RightBracket,
+        "let" => lexer::Tok::Let,
+        "=" => lexer::Tok::Equals,
+
+        "↵" => lexer::Tok::ReturnKeyword,
+        "+" => lexer::Tok::Plus,
+        "-" => lexer::Tok::Minus,
+        "*" => lexer::Tok::Times,
+        "/" => lexer::Tok::Divide,
+
+        "(" => lexer::Tok::LeftParen,
+        ")" => lexer::Tok::RightParen,
+
+        "⌜" => lexer::Tok::IndexLeft,
+        "⌟" => lexer::Tok::IndexRight,
+
+        "[" => lexer::Tok::LeftSquareBracket,
+        "]" => lexer::Tok::RightSquareBracket,
+        "\"" => lexer::Tok::QuotationMark,
+
+        "ε" => lexer::Tok::Entity,
+        "δ" => lexer::Tok::Function,
+        ReturnType => lexer::Tok::ReturnType,
+        "~" => lexer::Tok::Import,
+        "," => lexer::Tok::Comma,
+
+        "\t" => lexer::Tok::Tab,
+        "\n" => lexer::Tok::Linefeed,
+        EntityIdentifier => lexer::Tok::EntityIdentifier { value: <String> },
+        Symbol => lexer::Tok::Symbol { value: <String> },
+        "[a-z][a-zA-Z]*" => lexer::Tok::StringToken { value: <String> },
+        "[0-9]+" => lexer::Tok::Number,
+
+        "u32" => lexer::Tok::Pu32,
+
+        "far" => lexer::Tok::Far,
+
+        "loc" => lexer::Tok::Loc,
+
+        "aln" => lexer::Tok::Aln,
+
+        "void" => lexer::Tok::Void,
+        Pu8 => lexer::Tok::Pu8 {value : <u8> },
+    }
+}

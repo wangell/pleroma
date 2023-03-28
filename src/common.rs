@@ -9,6 +9,7 @@ cfg_if::cfg_if! {
         pub use std::vec;
         pub use std::str;
         pub use std::str::FromStr;
+        pub use std::string::ToString;
     }
 }
 
@@ -23,5 +24,6 @@ cfg_if::cfg_if! {
         pub use alloc::vec;
         pub use alloc::str;
         pub use alloc::str::FromStr;
+        pub use alloc::string::ToString;
     }
 }

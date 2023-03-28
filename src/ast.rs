@@ -1,5 +1,6 @@
 use crate::common::{HashMap, String, Box, Vec, vec};
 
+#[derive(Debug)]
 pub struct Module {
     pub imports: Vec<String>,
     pub entity_defs: HashMap<String, AstNode>,

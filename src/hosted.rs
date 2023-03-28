@@ -69,6 +69,10 @@ fn main_loop(
     sleeping_vats: &mut Vec<vm_core::Vat>,
     vat_inboxes: &mut HashMap<u32, Vec<vm_core::Msg>>,
 ) {
+
+    // TODO: Make sure that we check that the vat references don't get moved when a vector grows
+    //panic!();
+
     // Main loop: one vat queue in, one box for sleeping vats
     // Pick vats off of the in-queue, grab all outbox messages and put them in inbox, delete vat if flagged (need to decide order), put box in sleep
     // Go through inbox and check if any of the messages are for a sleeping vat - this is slow, need good way to handle this.  One way is to create an inbox per vat at the mainloop level.  Then you just iterate over which ones are not empty.  If so, take vat out of sleep box, put messages into the inbox, and put it into the hotplate queue

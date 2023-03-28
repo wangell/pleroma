@@ -3,6 +3,7 @@
 #![cfg_attr(feature = "native", feature(abi_x86_interrupt))]
 #![cfg_attr(feature = "native", feature(alloc_error_handler))] // at the top of the file
 #![feature(naked_functions)]
+#![feature(iter_advance_by)]
 #![allow(warnings)]
 
 #[cfg(feature = "native")]
@@ -23,8 +24,12 @@ cfg_if::cfg_if! {
         pub mod native;
 
         pub mod multitasking;
-        pub mod fat;
+        pub mod zeno;
+        pub mod metanoid;
         pub mod bin_helpers;
+        pub mod filesys;
+
+        pub mod pci;
     }
 }
 
@@ -37,10 +42,11 @@ cfg_if::cfg_if! {
         pub mod hosted;
         pub mod kernel;
         pub mod compile;
-        pub mod parser;
     }
 }
 
+pub mod lexer;
+pub mod parser;
 pub mod sem;
 pub mod codegen;
 pub mod vm_core;

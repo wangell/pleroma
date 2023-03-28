@@ -16,6 +16,7 @@ crossbeam = { verison = "0.8.2", optional = true }
 linked_list_allocator = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
 lalrpop-util = { version = "0.19", default-features = false, optional = true }
+#lalrpop-util = { path = "./third_party/lalrpop-util", version = "0.19", optional = true, default-features = false }
 
 [dependencies.lazy_static]
 version = "1.0"
@@ -32,4 +33,4 @@ lalrpop = { version = "0.19", features = ["lexer"], optional = true }
 
 [features]
 native = ["limine", "spin", "x86_64", "pic8259", "pc-keyboard", "linked_list_allocator", "lalrpop", "lalrpop-util"]
-hosted = ["enet", "regex", "lalrpop", "lalrpop-util/lexer", "lalrpop-util/std", "crossbeam"]
+hosted = ["enet", "regex", "lalrpop", "lalrpop-util/std", "lalrpop-util/lexer", "crossbeam"]

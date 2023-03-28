@@ -1,6 +1,7 @@
 use core::arch::asm;
 extern crate alloc;
 
+use crate::filesys::fat;
 use crate::interrupts;
 use crate::memory;
 use crate::multitasking;
@@ -10,7 +11,6 @@ use crate::pbin;
 use crate::vm;
 use crate::vm_core;
 use crate::vm_core::{Msg, Vat};
-use crate::fat;
 
 use limine::LimineBootInfoRequest;
 use limine::LimineBootTimeRequest;
@@ -33,11 +33,10 @@ use spin;
 static BOOTLOADER_INFO: LimineBootInfoRequest = LimineBootInfoRequest::new(0);
 static HH_INFO: LimineHhdmRequest = LimineHhdmRequest::new(0);
 static FB_INFO: LimineFramebufferRequest = LimineFramebufferRequest::new(0);
-
 static INITRD: LimineModuleRequest = LimineModuleRequest::new(0);
 
-pub static VatList: spin::Mutex<BTreeMap<u32, Vat>> = spin::Mutex::new(BTreeMap::new());
-pub static current_vat: spin::Mutex<u32> = spin::Mutex::new(0);
+pub static vat_list: spin::Mutex<BTreeMap<u32, Vat>> = spin::Mutex::new(BTreeMap::new());
+pub static available_vats: spin::Mutex<Vec<u32>> = spin::Mutex::new(Vec::new());
 
 pub fn shutdown() {
     unsafe {
@@ -50,6 +49,7 @@ pub fn shutdown() {
 pub fn boot() -> ! {
     println!("Welcome to Pleroma!");
     println!("Less is more, and nothing at all is a victory.");
+
 
     if let Some(bootinfo) = BOOTLOADER_INFO.get_response().get() {
         println!(
@@ -67,6 +67,20 @@ pub fn boot() -> ! {
     let mut mapper = unsafe { memory::init(phys_mem_offset) };
     let mut frame_allocator = unsafe { memory::BootInfoFrameAllocator::init() };
     palloc::init_heap(&mut mapper, &mut frame_allocator).expect("heap initialization failed");
+
+    use crate::parser;
+    println!("{:?}", parser::parse("~sys;
+
+ε Nodeman {blah : far u32, yolo : loc u32} {
+
+  δ create() → loc u32 {
+  }
+
+  δ createblah() → loc u32 {
+    ↵ 9 + 11 + 2;
+  }
+}
+"));
 
     let modules = INITRD.get_response().get().unwrap().modules();
 
@@ -100,9 +114,12 @@ pub fn boot() -> ! {
     }
 
     {
-        let mut vl = VatList.lock();
+        let mut vl = vat_list.lock();
         vl.insert(0, Vat::new());
         vl.insert(1, Vat::new());
+        let mut avail = available_vats.lock();
+        avail.push(0);
+        avail.push(1);
     }
 
     // Wait for first interrupt to trigger scheduler
@@ -122,22 +139,39 @@ fn vat_runner() {
 
     loop {
         println!("Hello from proc1!");
-        {
-            let z = *current_vat.lock();
-            let mut blah = VatList.lock();
-            let real_q = &mut blah.get_mut(&z).unwrap();
-            let msg = vm_core::Msg {
-                src_address: vm_core::EntityAddress::new(0, 0, 0),
-                dst_address: vm_core::EntityAddress::new(0, 0, 0),
-                promise_id: None,
-                is_response: false,
-                function_name: String::from("main"),
-                values: Vec::new(),
-                function_id: 0,
-            };
+        //let mut try_vat: Option<u32> = None;
+        //let mut real_q: Option<&mut Vat> = None;
 
-            vm::run_msg(&program, real_q, &msg);
-        }
+        //{
+        //    let mut av = available_vats.lock();
+        //    try_vat = av.pop();
+        //}
+
+        //if let Some(z) = try_vat {
+        //    {
+        //        let mut tt = vat_list.lock();
+        //        real_q = tt.get_mut(&z);
+        //    }
+
+        //    if let Some(q) = real_q {
+        //        let msg = vm_core::Msg {
+        //            src_address: vm_core::EntityAddress::new(0, 0, 0),
+        //            dst_address: vm_core::EntityAddress::new(0, 0, 0),
+        //            promise_id: None,
+        //            is_response: false,
+        //            function_name: String::from("main"),
+        //            values: Vec::new(),
+        //            function_id: 0,
+        //        };
+
+        //        vm::run_msg(&program, q, &msg);
+        //    }
+        //}
+
+        //if let Some(z) = try_vat {
+        //    let mut av = available_vats.lock();
+        //    av.push(z);
+        //}
 
         x86_64::instructions::hlt();
     }
