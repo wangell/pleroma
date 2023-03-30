@@ -9,6 +9,7 @@ use x86_64::{PhysAddr, VirtAddr};
 use crate::multitasking;
 use crate::native;
 use crate::native_util;
+use crate::architecture;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -57,6 +58,7 @@ lazy_static! {
         idt.page_fault.set_handler_fn(page_fault_handler);
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
+        idt[11 + 32].set_handler_fn(network_interrupt_handler);
 
         idt
     };
@@ -173,6 +175,11 @@ extern "x86-interrupt" fn timer_interrupt_handler(mut _stack_frame: InterruptSta
     }
 }
 
+extern "x86-interrupt" fn network_interrupt_handler(_stack_frame: InterruptStackFrame) {
+    println!("Network thing!");
+    println!("EXCEPTION: {:#?}", _stack_frame);
+}
+
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {
     use pc_keyboard::{layouts, DecodedKey, HandleControl, Keyboard, ScancodeSet1};
     use spin::Mutex;
@@ -190,7 +197,7 @@ extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStac
     let scancode: u8 = unsafe { port.read() };
     if scancode == 1 {
         println!("Escape");
-        native::shutdown();
+        architecture::x86_64::cpu::shutdown();
     }
     if let Ok(Some(key_event)) = keyboard.add_byte(scancode) {
         if let Some(key) = keyboard.process_keyevent(key_event) {

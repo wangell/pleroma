@@ -30,6 +30,9 @@ cfg_if::cfg_if! {
         pub mod filesys;
 
         pub mod pci;
+        pub mod architecture;
+        pub mod initrd;
+        pub mod drivers;
     }
 }
 

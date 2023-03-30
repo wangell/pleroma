@@ -27,6 +27,10 @@ xorriso -as mkisofs                                             \
 
 target/limine/limine-deploy $KERNEL.iso
 
-qemu-system-x86_64 -D target/log.txt $KERNEL.iso
+#qemu-system-x86_64 -D target/log.txt $KERNEL.iso -netdev user,id=vmnic -device virtio-net,netdev=vmnic -drive file=my_disk_image.qcow2,if=none,id=my_drive -device virtio-blk-pci,id=blk0,drive=my_drive
+#qemu-system-x86_64 -D target/log.txt $KERNEL.iso -netdev user,id=vmnic -device virtio-net,netdev=vmnic
+#qemu-system-x86_64 -D target/log.txt $KERNEL.iso -drive file=my_disk_image.qcow2,if=none,id=my_drive -device virtio-blk-pci,id=blk0,drive=my_drive
+qemu-system-x86_64 -D target/log.txt $KERNEL.iso -drive file=blah.img,if=none,id=my_drive,format=raw -device virtio-blk-pci,id=blk0,drive=my_drive
+￼
 #qemu-system-x86_64 -hda hd.img -D target/log.txt $KERNEL.iso
 #qemu-system-x86_64 -D target/log.txt -s -S $KERNEL.iso
