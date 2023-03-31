@@ -104,6 +104,7 @@ pub fn boot() -> ! {
         let mut sched = multitasking::SCHEDULER.lock();
         sched.new_process(vat_runner as usize);
         sched.new_process(vat_runner as usize);
+        sched.new_process(halt_proc as usize);
     }
 
     {
@@ -138,11 +139,28 @@ pub fn boot() -> ! {
     }
 }
 
+fn halt_proc() {
+    loop {
+        x86_64::instructions::hlt();
+    }
+}
+
+fn sleep() {
+    let mut sched = multitasking::SCHEDULER.lock();
+    let cpd = sched.current_pid as usize;
+    sched.process_queue[cpd].status = multitasking::ProcStatus::Sleeping;
+    sched.process_queue[cpd].sleep_timer = 5000.0;
+}
+
 fn vat_runner() {
     let program: Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
 
     loop {
-        //println!("Hello from proc1!");
+        println!("Hello from proc1!");
+
+        sleep();
+        println!("After 5 seconds!");
+
         //let mut try_vat: Option<u32> = None;
         //let mut real_q: Option<&mut Vat> = None;
 

@@ -137,22 +137,61 @@ extern "x86-interrupt" fn double_fault_handler(
     panic!();
 }
 
+static mut xxx: f64 = 0.0;
+// FIXME: manually do this so there is a common interface to the scheduler code
 extern "x86-interrupt" fn timer_interrupt_handler(mut _stack_frame: InterruptStackFrame) {
     x86_64::instructions::interrupts::without_interrupts(|| {
         unsafe {
             let mut frame = _stack_frame.as_mut();
             let mut vol_frame = frame.read();
             let mut sched = multitasking::SCHEDULER.lock();
+
+            for proc in sched.process_queue.iter_mut() {
+                if proc.status == multitasking::ProcStatus::Sleeping {
+                    // 8259 Timer = 54.9259 ms
+                    proc.sleep_timer -= 54.9254;
+                }
+
+                if proc.sleep_timer < 0.0 {
+                    proc.sleep_timer = 0.0;
+                    proc.status = multitasking::ProcStatus::Awake;
+                }
+            }
+            //unsafe {
+            //    if xxx > 1000.0 {
+            //        println!("{}", xxx);
+            //        xxx = 0.0;
+            //    }
+            //    xxx += 54.9254;
+            //}
+
             if sched.process_queue.len() > 0 {
                 let cpd = sched.current_pid as usize;
 
-                // We don't restore anything for the very first task
+                // We don't store anything for the very first task
                 if (sched.first_time) {
                     sched.first_time = false;
                 } else {
                     sched.process_queue[cpd].ip = vol_frame.instruction_pointer.as_u64() as usize;
                     sched.process_queue[cpd].rsp = vol_frame.stack_pointer.as_u64() as usize;
                     sched.process_queue[cpd].cpu_flags = vol_frame.cpu_flags;
+                }
+
+                // Find the next task that is awake
+                let start_pid = sched.current_pid;
+                let mut next_pid = (sched.current_pid + 1) % sched.process_queue.len() as u64;
+
+                loop {
+                    // If we looped around and couldn't find something to schedule, just let the current process run
+                    if next_pid == start_pid {
+                        break;
+                    }
+
+                    if sched.process_queue[next_pid as usize].status == multitasking::ProcStatus::Awake {
+                        break;
+                    }
+
+                    next_pid = (next_pid + 1) % sched.process_queue.len() as u64;
                 }
 
                 // Set new PID + restore instruction pointer + stack pointer
