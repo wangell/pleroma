@@ -36,6 +36,12 @@ lazy_static! {
     pub static ref SCHEDULER: Mutex<Scheduler> = Mutex::new(Scheduler::new());
 }
 
+#[derive(PartialEq, Debug)]
+pub enum ProcStatus {
+    Awake,
+    Sleeping
+}
+
 #[derive(Debug)]
 pub struct ProcessControlBlock {
     pub pid: u64,
@@ -46,6 +52,10 @@ pub struct ProcessControlBlock {
     pub cpu_flags: u64,
     pub code_segment: u64,
     pub stack_segment: u64,
+
+    pub sleep_timer: f64,
+
+    pub status: ProcStatus
 }
 
 impl ProcessControlBlock {
@@ -61,6 +71,8 @@ impl ProcessControlBlock {
             cpu_flags: 0x0200,
             stack: allocate_stack(stack_size),
             rsp: 0,
+            sleep_timer: 0.0,
+            status: ProcStatus::Awake
         };
 
         unsafe {
@@ -74,4 +86,7 @@ impl ProcessControlBlock {
 pub fn allocate_stack(size: usize) -> Vec<u8> {
     let stack = vec![0; size];
     stack
+}
+
+pub fn run_scheduler() {
 }

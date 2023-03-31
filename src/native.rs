@@ -102,7 +102,7 @@ pub fn boot() -> ! {
     // Schedule first vat
     {
         let mut sched = multitasking::SCHEDULER.lock();
-        sched.new_process(vat_runner as usize);
+        //sched.new_process(vat_runner as usize);
         sched.new_process(vat_runner as usize);
         sched.new_process(halt_proc as usize);
     }
@@ -145,11 +145,23 @@ fn halt_proc() {
     }
 }
 
-fn sleep() {
-    let mut sched = multitasking::SCHEDULER.lock();
-    let cpd = sched.current_pid as usize;
-    sched.process_queue[cpd].status = multitasking::ProcStatus::Sleeping;
-    sched.process_queue[cpd].sleep_timer = 5000.0;
+fn ksleep(ms: u32) {
+    {
+        let mut sched = multitasking::SCHEDULER.lock();
+        let cpd = sched.current_pid as usize;
+        sched.process_queue[cpd].status = multitasking::ProcStatus::Sleeping;
+        sched.process_queue[cpd].sleep_timer = ms.into();
+    }
+    unsafe {
+        asm!(
+            "int 32"
+        );
+    }
+}
+
+fn call_other_func(a: u32, b: u32) -> u32{
+    ksleep(2000);
+    a+b
 }
 
 fn vat_runner() {
@@ -158,9 +170,11 @@ fn vat_runner() {
     loop {
         println!("Hello from proc1!");
 
-        sleep();
+        ksleep(2000);
         println!("After 5 seconds!");
 
+        call_other_func(1, 2);
+        println!("did func");
         //let mut try_vat: Option<u32> = None;
         //let mut real_q: Option<&mut Vat> = None;
 

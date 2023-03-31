@@ -6,10 +6,10 @@ use spin;
 use x86_64::structures::idt::{InterruptDescriptorTable, InterruptStackFrame, PageFaultErrorCode};
 use x86_64::{PhysAddr, VirtAddr};
 
+use crate::architecture;
 use crate::multitasking;
 use crate::native;
 use crate::native_util;
-use crate::architecture;
 
 pub const PIC_1_OFFSET: u8 = 32;
 pub const PIC_2_OFFSET: u8 = PIC_1_OFFSET + 8;
@@ -150,61 +150,52 @@ extern "x86-interrupt" fn timer_interrupt_handler(mut _stack_frame: InterruptSta
                 if proc.status == multitasking::ProcStatus::Sleeping {
                     // 8259 Timer = 54.9259 ms
                     proc.sleep_timer -= 54.9254;
-                }
 
-                if proc.sleep_timer < 0.0 {
-                    proc.sleep_timer = 0.0;
-                    proc.status = multitasking::ProcStatus::Awake;
+                    if proc.sleep_timer < 0.0 {
+                        proc.sleep_timer = 0.0;
+                        proc.status = multitasking::ProcStatus::Awake;
+                    }
                 }
             }
-            //unsafe {
-            //    if xxx > 1000.0 {
-            //        println!("{}", xxx);
-            //        xxx = 0.0;
-            //    }
-            //    xxx += 54.9254;
-            //}
 
-            if sched.process_queue.len() > 0 {
-                let cpd = sched.current_pid as usize;
+            let cpd = sched.current_pid as usize;
 
-                // We don't store anything for the very first task
-                if (sched.first_time) {
-                    sched.first_time = false;
-                } else {
-                    sched.process_queue[cpd].ip = vol_frame.instruction_pointer.as_u64() as usize;
-                    sched.process_queue[cpd].rsp = vol_frame.stack_pointer.as_u64() as usize;
-                    sched.process_queue[cpd].cpu_flags = vol_frame.cpu_flags;
-                }
-
-                // Find the next task that is awake
-                let start_pid = sched.current_pid;
-                let mut next_pid = (sched.current_pid + 1) % sched.process_queue.len() as u64;
-
-                loop {
-                    // If we looped around and couldn't find something to schedule, just let the current process run
-                    if next_pid == start_pid {
-                        break;
-                    }
-
-                    if sched.process_queue[next_pid as usize].status == multitasking::ProcStatus::Awake {
-                        break;
-                    }
-
-                    next_pid = (next_pid + 1) % sched.process_queue.len() as u64;
-                }
-
-                // Set new PID + restore instruction pointer + stack pointer
-                let next_pid = ((sched.current_pid + 1) % sched.process_queue.len() as u64) as u64;
-                sched.current_pid = next_pid;
-                vol_frame.instruction_pointer =
-                    VirtAddr::new(sched.process_queue[sched.current_pid as usize].ip as u64);
-                vol_frame.stack_pointer =
-                    VirtAddr::new(sched.process_queue[sched.current_pid as usize].rsp as u64);
-                vol_frame.cpu_flags = sched.process_queue[sched.current_pid as usize].cpu_flags;
-
-                frame.write(vol_frame);
+            // We don't store anything for the very first task
+            if (sched.first_time) {
+                sched.first_time = false;
+            } else {
+                sched.process_queue[cpd].ip = vol_frame.instruction_pointer.as_u64() as usize;
+                sched.process_queue[cpd].rsp = vol_frame.stack_pointer.as_u64() as usize;
+                sched.process_queue[cpd].cpu_flags = vol_frame.cpu_flags;
             }
+
+            // Find the next task that is awake
+            let start_pid = sched.current_pid;
+            let mut next_pid = (sched.current_pid + 1) % sched.process_queue.len() as u64;
+
+            loop {
+                // If we looped around and couldn't find something to schedule, just let the current process run
+                if next_pid == start_pid {
+                    break;
+                }
+
+                if sched.process_queue[next_pid as usize].status == multitasking::ProcStatus::Awake
+                {
+                    break;
+                }
+
+                next_pid = (next_pid + 1) % sched.process_queue.len() as u64;
+            }
+
+            // Set new PID + restore instruction pointer + stack pointer
+            sched.current_pid = next_pid;
+            vol_frame.instruction_pointer =
+                VirtAddr::new(sched.process_queue[sched.current_pid as usize].ip as u64);
+            vol_frame.stack_pointer =
+                VirtAddr::new(sched.process_queue[sched.current_pid as usize].rsp as u64);
+            vol_frame.cpu_flags = sched.process_queue[sched.current_pid as usize].cpu_flags;
+
+            frame.write(vol_frame);
         }
     });
 
