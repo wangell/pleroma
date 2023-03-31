@@ -33,6 +33,8 @@ cfg_if::cfg_if! {
         pub mod architecture;
         pub mod initrd;
         pub mod drivers;
+
+        pub mod framebuffer;
     }
 }
 

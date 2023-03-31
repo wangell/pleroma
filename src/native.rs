@@ -1,7 +1,9 @@
 use core::arch::asm;
 extern crate alloc;
 
+use crate::drivers;
 use crate::filesys::fat;
+use crate::initrd;
 use crate::interrupts;
 use crate::memory;
 use crate::multitasking;
@@ -12,8 +14,6 @@ use crate::pci;
 use crate::vm;
 use crate::vm_core;
 use crate::vm_core::{Msg, Vat};
-use crate::drivers;
-use crate::initrd;
 use core::mem;
 use core::ptr;
 
@@ -42,7 +42,8 @@ pub static vat_list: spin::Mutex<BTreeMap<u32, Vat>> = spin::Mutex::new(BTreeMap
 pub static available_vats: spin::Mutex<Vec<u32>> = spin::Mutex::new(Vec::new());
 
 pub static MAPPER: spin::Mutex<Option<OffsetPageTable<'static>>> = spin::Mutex::new(None);
-pub static FRAME_ALLOCATOR: spin::Mutex<Option<memory::BootInfoFrameAllocator>>  = spin::Mutex::new(None);
+pub static FRAME_ALLOCATOR: spin::Mutex<Option<memory::BootInfoFrameAllocator>> =
+    spin::Mutex::new(None);
 
 pub fn print_bootloader_info() {
     if let Some(bootinfo) = BOOTLOADER_INFO.get_response().get() {
@@ -51,6 +52,16 @@ pub fn print_bootloader_info() {
             bootinfo.name.to_str().unwrap().to_str().unwrap(),
             bootinfo.version.to_str().unwrap().to_str().unwrap(),
         );
+    }
+}
+
+pub fn write_buffer(fb: &limine::LimineFramebuffer, buf: *mut u8, buf_size: usize) {
+    let mut write_add = fb.address.as_ptr().unwrap();
+
+    for i in 0..100 {
+        unsafe {
+            core::ptr::copy(buf, write_add, buf_size);
+        }
     }
 }
 
@@ -75,7 +86,13 @@ pub fn boot() -> ! {
         *frame_allocator = unsafe { Some(memory::BootInfoFrameAllocator::init()) };
     }
 
-    palloc::init_heap(MAPPER.lock().as_mut().unwrap(), FRAME_ALLOCATOR.lock().as_mut().unwrap()).expect("heap initialization failed");
+    palloc::init_heap(
+        MAPPER.lock().as_mut().unwrap(),
+        FRAME_ALLOCATOR.lock().as_mut().unwrap(),
+    )
+    .expect("heap initialization failed");
+
+    let mut frame_allocator = FRAME_ALLOCATOR.lock();
 
     initrd::setup_initrd();
 
@@ -98,8 +115,18 @@ pub fn boot() -> ! {
         avail.push(1);
     }
 
+    let fb = &FB_INFO.get_response().get().unwrap().framebuffers()[0];
+
+    println!("BPP : {} {}", fb.width, fb.height);
+    //let mut buf = Box::new(vec![0xFF; (fb.width * fb.height * 4) as usize]);
+    //write_buffer(&*fb, buf.as_mut_ptr(), (fb.width * fb.height * 4) as usize);
+    use crate::framebuffer;
+    let mut our_fb = framebuffer::Framebuffer::new(fb);
+
+    our_fb.write_str("Welcome to Pleroma!", 1, 2);
+    //our_fb.swap_buffer();
+
     // Wait for first interrupt to trigger scheduler
-    println!("Boot complete: waiting for first scheduled task.");
 
     unsafe { interrupts::PICS.lock().initialize() };
     unsafe { interrupts::PICS.lock().write_masks(0, 0) };
