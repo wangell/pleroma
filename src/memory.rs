@@ -29,6 +29,46 @@ pub struct BootInfoFrameAllocator {
     max_entries: usize,
 }
 
+// FIXME: change to NonNullPtr
+pub fn create_physical_buffer(n_pages: u32) -> u64 {
+    use crate::native;
+    use x86_64::structures::paging::PageTableFlags as Flags;
+    let mut ft = native::FRAME_ALLOCATOR.lock();
+    let mut frame_allocator = ft.as_mut().unwrap();
+
+    let mut mt = native::MAPPER.lock();
+    let mut mapper = mt.as_mut().unwrap();
+
+    let frame_start = frame_allocator.allocate_contiguous(n_pages.into());
+    let frame_start_idx = 0;
+    let frame_end_idx = n_pages;
+    for i in frame_start_idx..frame_end_idx {
+        unsafe {
+            let frame = PhysFrame::<Size4KiB>::from_start_address(PhysAddr::new(
+                frame_start.start_address().as_u64() + (i as u64 * 4096),
+            ))
+            .unwrap();
+
+            mapper.identity_map(
+                frame,
+                Flags::PRESENT | Flags::NO_CACHE | Flags::WRITABLE,
+                frame_allocator,
+            );
+        }
+    }
+
+    // Zero all the pages
+    let bb_add = frame_start.start_address().as_u64() as *mut u8;
+    for i in 0..(n_pages * 4096) {
+        unsafe {
+            core::ptr::write_volatile(bb_add.offset(i.try_into().unwrap()), 0);
+        }
+    }
+
+    return frame_start.start_address().as_u64();
+}
+
+// FIXME: has to be bigger than TOTAL_MEMORY / PAGE_SIZE
 static mut bitmap: [u8; 50000] = [0; 50000];
 static MM_INFO: LimineMemmapRequest = LimineMemmapRequest::new(0);
 
@@ -164,4 +204,3 @@ impl BootInfoAllocatorTrait for BootInfoFrameAllocator {
         PhysFrame::from_start_address(PhysAddr::new(start * 4096)).unwrap()
     }
 }
-

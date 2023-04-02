@@ -38,7 +38,7 @@ impl VirtioDevice {
             io_base,
             irq,
             registers: VirtioRegisters::new(io_base),
-            vqs: HashMap::new()
+            vqs: HashMap::new(),
         }
     }
 }
@@ -71,11 +71,11 @@ impl VirtioRegisters {
 
 #[derive(Debug, Copy, Clone)]
 #[repr(C, align(16))]
-struct VqBuffer {
-    address: u64,
-    length: u32,
-    flags: u16,
-    next: u16,
+pub struct VqBuffer {
+    pub address: u64,
+    pub length: u32,
+    pub flags: u16,
+    pub next: u16,
 }
 
 #[repr(C, align(2))]
@@ -104,6 +104,7 @@ pub struct VirtualQueue {
     id: u16,
     size: u16,
     next_idx: u32,
+    avail_idx: u16,
     vq_data: *mut VirtualQueueData,
 }
 
@@ -158,6 +159,7 @@ impl VirtioDevice {
         let base_addr = phys_add[0];
         let base_page_idx = (base_addr / 4096).try_into().unwrap();
 
+        // Notify device of queue address
         unsafe {
             self.registers.queue_select.write(queue_n);
             self.registers.queue_address.write(base_page_idx);
@@ -170,9 +172,25 @@ impl VirtioDevice {
                 id: queue_n,
                 next_idx: 0,
                 size: queue_size,
+                avail_idx: 0,
                 vq_data: base_addr as *mut VirtualQueueData,
             },
         );
+    }
+
+    pub fn push_descriptor_chain(&mut self, queue_n: u16, buffers: Vec<VqBuffer>) {
+        let idx = self.vqs[&queue_n].next_idx as usize;
+
+        for (idx, buf) in buffers.iter().enumerate() {
+
+            let next_idx = if idx == buffers.len() - 1 {
+                0
+            } else {
+                idx + 1
+            };
+
+            self.push_descriptor(queue_n, buf.address, buf.length, buf.flags, next_idx as u16, idx == 0);
+        }
     }
 
     pub fn push_descriptor(
@@ -182,6 +200,7 @@ impl VirtioDevice {
         length: u32,
         flags: u16,
         next: u16,
+        head: bool,
     ) {
         let idx = self.vqs[&queue_n].next_idx as usize;
 
@@ -190,14 +209,24 @@ impl VirtioDevice {
             (*self.vqs[&queue_n].vq_data).buffers[idx].length = length;
             (*self.vqs[&queue_n].vq_data).buffers[idx].flags = flags;
             (*self.vqs[&queue_n].vq_data).buffers[idx].next = next;
-
-            //FIXME
-            (*self.vqs[&queue_n].vq_data).available.ring[0] = 0;
-
-            //FIXME: auto increment index as bool field?
         }
 
         self.vqs.get_mut(&queue_n).unwrap().next_idx += 1;
+
+        if head {
+            unsafe {
+                (*self.vqs[&queue_n].vq_data).available.ring
+                    [self.vqs[&queue_n].avail_idx as usize] = idx as u16;
+                self.increment_available(queue_n);
+            }
+        }
+    }
+
+    pub fn increment_available(&mut self, queue_n: u16) {
+        let vq = self.vqs.get_mut(&queue_n).unwrap();
+        vq.avail_idx = (vq.avail_idx + 1) % vq.size;
+        let aidx = vq.avail_idx;
+        self.set_available_index(queue_n, aidx);
     }
 
     pub fn set_available_index(&mut self, queue_n: u16, n: u16) {
@@ -214,7 +243,9 @@ impl VirtioDevice {
     // Called after setting up queues, before device goes live
     pub fn device_ready(&mut self) {
         unsafe {
-            self.registers.device_status.write(DEV_ACKNOWLEDGE | DEV_DRIVER | DEV_DRIVER_OK);
+            self.registers
+                .device_status
+                .write(DEV_ACKNOWLEDGE | DEV_DRIVER | DEV_DRIVER_OK);
         }
     }
 }

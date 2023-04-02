@@ -17,6 +17,7 @@ use x86_64::structures::paging::Size4KiB;
 use x86_64::PhysAddr;
 
 use crate::memory::BootInfoAllocatorTrait;
+use crate::memory;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
@@ -101,49 +102,12 @@ struct NetHeader {
     //num_buffers: u16
 }
 
-// FIXME: change to NonNullPtr
-pub fn create_physical_buffer(n_pages: u32) -> u64 {
-    let mut ft = native::FRAME_ALLOCATOR.lock();
-    let mut frame_allocator = ft.as_mut().unwrap();
-
-    let mut mt = native::MAPPER.lock();
-    let mut mapper = mt.as_mut().unwrap();
-
-    let frame_start = frame_allocator.allocate_contiguous(n_pages.into());
-    let frame_start_idx = 0;
-    let frame_end_idx = n_pages;
-    for i in frame_start_idx..frame_end_idx {
-        unsafe {
-            let frame = PhysFrame::<Size4KiB>::from_start_address(PhysAddr::new(
-                frame_start.start_address().as_u64() + (i as u64 * 4096),
-            ))
-            .unwrap();
-
-            mapper.identity_map(
-                frame,
-                Flags::PRESENT | Flags::NO_CACHE | Flags::WRITABLE,
-                frame_allocator,
-            );
-        }
-    }
-
-    // Zero all the pages
-    let bb_add = frame_start.start_address().as_u64() as *mut u8;
-    for i in 0..(n_pages * 4096) {
-        unsafe {
-            core::ptr::write_volatile(bb_add.offset(i.try_into().unwrap()), 0);
-        }
-    }
-
-    return frame_start.start_address().as_u64();
-}
-
 pub fn doit(netdev: &mut VirtioNetDev) {
     // The base address of the request buffer
-    let rx_buffer_base = create_physical_buffer(5);
-    let tx_buffer_base = create_physical_buffer(5);
+    let rx_buffer_base = memory::create_physical_buffer(5);
+    let tx_buffer_base = memory::create_physical_buffer(5);
 
-    let blah = create_physical_buffer(1) as *mut u8;
+    let blah = memory::create_physical_buffer(1) as *mut u8;
 
     // FIXME get from size
     const fixed_queue_size: usize = 256;
@@ -166,7 +130,7 @@ pub fn doit(netdev: &mut VirtioNetDev) {
     }
 
     let msg = tx_buffer_base;
-    let eth = net::new_arp(&[0x00, 0x11, 0x22, 0x33, 0x44, 0x55], &[192, 168, 100, 2],);
+    let eth = net::create_arp_broadcast_packet(&[0x00, 0x11, 0x22, 0x33, 0x44, 0x55], &[192, 168, 100, 2],);
     unsafe {
         core::ptr::copy(eth.as_ptr(), blah, eth.len());
     }
@@ -178,6 +142,7 @@ pub fn doit(netdev: &mut VirtioNetDev) {
         mem::size_of::<NetHeader>() as u32,
         virtio::VRING_NEXT,
         1,
+        true
     );
     netdev.dev.push_descriptor(
         NetQueueSelector::Transmit as u16,
@@ -185,6 +150,7 @@ pub fn doit(netdev: &mut VirtioNetDev) {
         eth.len() as u32,
         0,
         0,
+        false
     );
     netdev
         .dev

@@ -1,6 +1,7 @@
 use x86_64::instructions::port::{PortGeneric, ReadOnlyAccess, ReadWriteAccess, WriteOnlyAccess};
 
 use crate::drivers::virtio_net;
+use crate::drivers::virtio_blk;
 
 // Ported from https://wiki.osdev.org/PCI
 pub fn pciConfigRead_u16(bus: u8, slot: u8, func: u8, offset: u8) -> u16 {
@@ -88,6 +89,10 @@ pub fn pciCheckVendor(bus: u8, slot: u8) -> Option<u16> {
 
         if subsystem == 1 {
             virtio_net::hello_virtio_network(bus, slot, 0);
+        }
+
+        if subsystem == 2 {
+            virtio_blk::hello_virtio_block(bus, slot, 0);
         }
     }
 

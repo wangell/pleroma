@@ -76,21 +76,20 @@ pub fn boot() -> ! {
 
     // Setup virtual memory + heap
     {
+        let mut frame_allocator = FRAME_ALLOCATOR.lock();
+        let mut mapper = MAPPER.lock();
+
         let mem_offset: u64 = HH_INFO.get_response().get().unwrap().offset;
         let phys_mem_offset = VirtAddr::new(mem_offset);
-        let mut mapper = MAPPER.lock();
         *mapper = unsafe { Some(memory::init(phys_mem_offset)) };
-    }
-    {
-        let mut frame_allocator = FRAME_ALLOCATOR.lock();
         *frame_allocator = unsafe { Some(memory::BootInfoFrameAllocator::init()) };
-    }
 
-    palloc::init_heap(
-        MAPPER.lock().as_mut().unwrap(),
-        FRAME_ALLOCATOR.lock().as_mut().unwrap(),
-    )
-    .expect("heap initialization failed");
+        palloc::init_heap(
+            mapper.as_mut().unwrap(),
+            frame_allocator.as_mut().unwrap(),
+        )
+        .expect("heap initialization failed");
+    }
 
     initrd::setup_initrd();
 
