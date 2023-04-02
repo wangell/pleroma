@@ -1,6 +1,6 @@
 use x86_64::instructions::port::{PortGeneric, ReadOnlyAccess, ReadWriteAccess, WriteOnlyAccess};
 
-use crate::drivers::virtio_legacy;
+use crate::drivers::virtio_net;
 
 // Ported from https://wiki.osdev.org/PCI
 pub fn pciConfigRead_u16(bus: u8, slot: u8, func: u8, offset: u8) -> u16 {
@@ -86,7 +86,9 @@ pub fn pciCheckVendor(bus: u8, slot: u8) -> Option<u16> {
         let header_type: u32 = pciConfigRead_u32(bus, slot, 0x3, 2) & 0x0F00;
         println!("Header type: {}", header_type);
 
-        virtio_legacy::hello_virtio(bus, slot, 0);
+        if subsystem == 1 {
+            virtio_net::hello_virtio_network(bus, slot, 0);
+        }
     }
 
     return Some(vendor);

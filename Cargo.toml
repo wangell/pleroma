@@ -16,6 +16,7 @@ crossbeam = { verison = "0.8.2", optional = true }
 linked_list_allocator = { version = "0.9.0", optional = true }
 cfg-if = "1.0.0"
 lalrpop-util = { version = "0.19", default-features = false, optional = true }
+enumflags2 = "0.7.6"
 #lalrpop-util = { path = "./third_party/lalrpop-util", version = "0.19", optional = true, default-features = false }
 
 [dependencies.lazy_static]

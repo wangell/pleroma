@@ -92,8 +92,6 @@ pub fn boot() -> ! {
     )
     .expect("heap initialization failed");
 
-    let mut frame_allocator = FRAME_ALLOCATOR.lock();
-
     initrd::setup_initrd();
 
     // Scan + setup PCI devices
