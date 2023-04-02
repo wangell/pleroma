@@ -181,15 +181,15 @@ impl VirtioDevice {
     pub fn push_descriptor_chain(&mut self, queue_n: u16, buffers: Vec<VqBuffer>) {
         let idx = self.vqs[&queue_n].next_idx as usize;
 
-        for (idx, buf) in buffers.iter().enumerate() {
+        for (rel_idx, buf) in buffers.iter().enumerate() {
 
-            let next_idx = if idx == buffers.len() - 1 {
+            let next_idx = if rel_idx == buffers.len() - 1 {
                 0
             } else {
-                idx + 1
+                (idx + rel_idx + 1) % self.vqs[&queue_n].size as usize
             };
 
-            self.push_descriptor(queue_n, buf.address, buf.length, buf.flags, next_idx as u16, idx == 0);
+            self.push_descriptor(queue_n, buf.address, buf.length, buf.flags, next_idx as u16, rel_idx == 0);
         }
     }
 
@@ -203,6 +203,7 @@ impl VirtioDevice {
         head: bool,
     ) {
         let idx = self.vqs[&queue_n].next_idx as usize;
+        let queue_size = self.vqs[&queue_n].size;
 
         unsafe {
             (*self.vqs[&queue_n].vq_data).buffers[idx].address = address;
@@ -211,12 +212,13 @@ impl VirtioDevice {
             (*self.vqs[&queue_n].vq_data).buffers[idx].next = next;
         }
 
-        self.vqs.get_mut(&queue_n).unwrap().next_idx += 1;
+        let next_idx = (idx + 1) % self.vqs[&queue_n].size as usize;
+
+        self.vqs.get_mut(&queue_n).unwrap().next_idx = next_idx as u32;
 
         if head {
             unsafe {
-                (*self.vqs[&queue_n].vq_data).available.ring
-                    [self.vqs[&queue_n].avail_idx as usize] = idx as u16;
+                (*self.vqs[&queue_n].vq_data).available.ring [(self.vqs[&queue_n].avail_idx % queue_size) as usize] = idx as u16;
                 self.increment_available(queue_n);
             }
         }
@@ -224,7 +226,12 @@ impl VirtioDevice {
 
     pub fn increment_available(&mut self, queue_n: u16) {
         let vq = self.vqs.get_mut(&queue_n).unwrap();
-        vq.avail_idx = (vq.avail_idx + 1) % vq.size;
+        // This can be removed when compiling to release
+        if vq.avail_idx == core::u16::MAX {
+            vq.avail_idx = 0;
+        } else {
+            vq.avail_idx = vq.avail_idx + 1;
+        }
         let aidx = vq.avail_idx;
         self.set_available_index(queue_n, aidx);
     }

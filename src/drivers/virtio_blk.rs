@@ -36,6 +36,9 @@ impl VirtioBlkDev {
         }
     }
 
+    pub fn read_buffer(&mut self, sector: u64, buffer: &mut [u8; 512]) {
+    }
+
     pub fn write_buffer(&mut self, sector: u64, buffer: &[u8; 512]) {
 
         unsafe {
@@ -43,8 +46,7 @@ impl VirtioBlkDev {
         }
 
         let block_requests = self.request_base as *mut [BlockRequest; fixed_queue_size];
-        let block_requests_array: &mut [BlockRequest; fixed_queue_size] =
-            unsafe { &mut *block_requests };
+        let block_requests_array: &mut [BlockRequest; fixed_queue_size] = unsafe { &mut *block_requests };
 
         unsafe {
             // TODO: multiple buffers
@@ -140,7 +142,7 @@ pub fn hello_virtio_block(bus: u8, slot: u8, function: u8) {
     blkdev.dev.make_queue(0);
     blkdev.dev.device_ready();
 
-    blkdev.write_buffer(0, &[b'Q'; 512]);
-    blkdev.write_buffer(1, &[b'G'; 512]);
-    blkdev.write_buffer(2, &[b'Z'; 512]);
+    for i in 0..258 {
+        blkdev.write_buffer(i, &[b'Q'; 512]);
+    }
 }
