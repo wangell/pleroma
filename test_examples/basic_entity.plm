@@ -1,11 +1,12 @@
-~sys;
+~B;
 
-ε Nodeman {blah : far u32, yolo : loc u32} {
+ε Nodeman { Blob : far u32 } {
 
-  δ create() -> loc u32 {
+  δ test2() → loc u32 {
+		self ! test();
   }
 
-  δ createblah() -> loc u32 {
-    ↵ 9 + 11 + 2;
+  δ test() → loc u32 {
+    ↵ 9 + 11;
   }
 }
