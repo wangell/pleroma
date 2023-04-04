@@ -5,6 +5,7 @@ use crate::common::Vec;
 use crate::native;
 use crate::pci;
 use core::mem;
+use crate::common::ceil;
 use enumflags2::{bitflags, make_bitflags, BitFlags};
 use x86_64::instructions::port::{PortGeneric, ReadOnlyAccess, ReadWriteAccess, WriteOnlyAccess};
 use x86_64::structures::paging::FrameAllocator;
@@ -106,14 +107,13 @@ pub struct VirtualQueue {
     next_idx: u32,
     avail_idx: u16,
     vq_data: *mut VirtualQueueData,
+    vq_used: *mut Used,
 }
 
 #[repr(C)]
 struct VirtualQueueData {
     buffers: [VqBuffer; fixed_queue_size],
     available: Available,
-    _padding: [u8; 3568],
-    used: Used,
 }
 
 impl VirtioDevice {
@@ -165,6 +165,13 @@ impl VirtioDevice {
             self.registers.queue_address.write(base_page_idx);
         }
 
+        // Calculate used ring offset
+        let queue_byte_size = (queue_size * mem::size_of::<VqBuffer>() as u16) + mem::size_of::<Available>() as u16;
+        let used_base_page = ceil(queue_byte_size as f64 / 4096.0) as u64;
+        let used_addr = base_addr + (4096 * used_base_page);
+
+        //println!("Size: {}, Base page: {}, used: {}", queue_byte_size, used_base_page, used_addr);
+
         //self.vqs.insert(queue_n, Box::from_raw(base_addr));
         self.vqs.insert(
             queue_n,
@@ -174,6 +181,7 @@ impl VirtioDevice {
                 size: queue_size,
                 avail_idx: 0,
                 vq_data: base_addr as *mut VirtualQueueData,
+                vq_used: used_addr as *mut Used
             },
         );
     }

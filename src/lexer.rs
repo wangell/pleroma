@@ -32,6 +32,8 @@ pub enum Tok {
 
     QuotationMark,
 
+    Message,
+
     Entity,
     Function,
     ReturnType,
@@ -96,6 +98,8 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, 'ε')) => { self.set_char = true; return Some(Ok((i, Tok::Entity, i+1)))},
 
                 Some((i, '+')) => { self.set_char = true; return Some(Ok((i, Tok::Plus, i+1)))},
+
+                Some((i, '!')) => { self.set_char = true; return Some(Ok((i, Tok::Message, i+1)))},
 
                 Some((i, '↵')) => { self.set_char = true; return Some(Ok((i, Tok::ReturnKeyword, i+1)))},
 

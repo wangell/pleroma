@@ -93,6 +93,11 @@ impl VirtioBlkDev {
         }
 
         unsafe { while (core::ptr::read_volatile(status_byte) == 0xff) {} }
+
+        // This disables the interrupt
+        unsafe {
+            self.dev.registers.isr_status.read();
+        }
     }
 }
 
@@ -142,7 +147,8 @@ pub fn hello_virtio_block(bus: u8, slot: u8, function: u8) {
     blkdev.dev.make_queue(0);
     blkdev.dev.device_ready();
 
-    for i in 0..258 {
-        blkdev.write_buffer(i, &[b'Q'; 512]);
-    }
+    blkdev.write_buffer(0, &[b'Q'; 512]);
+    //for i in 0..258 {
+    //    blkdev.write_buffer(i, &[b'Q'; 512]);
+    //}
 }

@@ -11,8 +11,9 @@ pub enum Inst {
     Ret,
     Push(u8),
 
-    ForeignCall(u8),
+    ForeignCall(u64),
     Call(u64),
+    Message,
 }
 
 pub fn read_u8(vblock: &[u8]) -> (usize, u8) {
@@ -90,8 +91,11 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Inst) {
         Op::Ret => {
             return (x, Inst::Ret);
         }
+        Op::Message => {
+            return (x, Inst::Message);
+        }
         Op::ForeignCall => {
-            let (y, a0) = read_u8(&vblock[x..]);
+            let (y, a0) = read_u64(&vblock[x..]);
 
             return (x + y, Inst::ForeignCall(a0));
         }
@@ -146,7 +150,7 @@ pub fn disassemble(binary_code: &Vec<u8>) {
     for (eid, funcs) in &table {
         println!("EID: {}", eid);
         for (fid, (loc, sz)) in &table[&eid] {
-            println!("\tFID ({}): {}", sz, *fid);
+            println!("\tFID (sz: {}): {}", sz, *fid);
             x = *loc;
             let loc_end = *sz + *loc;
             while x < loc_end {

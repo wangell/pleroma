@@ -1,6 +1,7 @@
-use crate::ast::{AstNode, AstNodeVisitor, Value, BinOp};
+use crate::ast::{AstNode, AstNodeVisitor, Hvalue, BinOp};
 use crate::opcodes::{Op};
 use crate::ast;
+use crate::vm_core;
 
 use crate::common::{HashMap, String, Box, Vec};
 
@@ -77,7 +78,7 @@ impl GenCode {
 }
 
 impl AstNodeVisitor<()> for GenCode {
-    fn visit_entity_def(&mut self, name: &String, data_declarations: &Vec<(String, ast::CType)>, inoculation_list: &Vec<(String, ast::CType)>,  functions: &HashMap<String, Box<AstNode>>, foreign_functions: &HashMap<u8, fn()->i64>) {
+    fn visit_entity_def(&mut self, name: &String, data_declarations: &Vec<(String, ast::CType)>, inoculation_list: &Vec<(String, ast::CType)>,  functions: &HashMap<String, Box<AstNode>>, foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue)->Hvalue>) {
 
         let mut sorted_functions : Vec<(&String, &Box<AstNode>)> = functions.iter().collect();
         sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
@@ -89,13 +90,10 @@ impl AstNodeVisitor<()> for GenCode {
         self.current_entity_id += 1;
     }
 
-    fn visit_foreign_call(&mut self, idx: &u8, params: &Vec<AstNode>) {
-        //hack for address
-        self.emit_op(Op::Lb8);
-        self.emit_u8(0);
-
+    fn visit_foreign_call(&mut self, func: &fn(&mut vm_core::Entity, Hvalue)->Hvalue, params: &Vec<AstNode>) {
         self.emit_op(Op::ForeignCall);
-        self.emit_u8(*idx);
+        // TODO: emit fn() pointer here
+        emit_u64(&mut self.code, &(*func as u64));
 
         self.emit_op(Op::Ret);
     }
@@ -117,11 +115,15 @@ impl AstNodeVisitor<()> for GenCode {
     }
 
     fn visit_return(&mut self, expr: &AstNode) {
-        self.emit_op(Op::Lb8);
-        self.emit_u8(0);
+        //self.emit_op(Op::Lb8);
+        //self.emit_u8(0);
 
         expr.visit(self);
         self.emit_op(Op::Ret);
+    }
+
+    fn visit_message(&mut self) {
+        self.emit_op(Op::Message);
     }
 
     fn visit_operator(&mut self, left: &AstNode, op: &BinOp, right: &AstNode) {
@@ -136,9 +138,9 @@ impl AstNodeVisitor<()> for GenCode {
         }
     }
 
-    fn visit_value(&mut self, v: &Value) {
+    fn visit_value(&mut self, v: &Hvalue) {
         match v {
-            Value::Pu8(n) => {
+            Hvalue::Pu8(n) => {
                 self.emit_op(Op::Lb8);
                 self.emit_u8(*n);
             },

@@ -1,5 +1,5 @@
 use crate::ast;
-use crate::ast::{AstNode, Identifier, Module, Value};
+use crate::ast::{AstNode, Identifier, Module, Hvalue};
 use crate::common::{HashMap, String, Box, Vec, vec, str};
 
 pub struct ScopeTree {

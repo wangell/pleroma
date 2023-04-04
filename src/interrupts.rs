@@ -58,7 +58,7 @@ lazy_static! {
         idt.page_fault.set_handler_fn(page_fault_handler);
         idt[InterruptIndex::Timer.as_usize()].set_handler_fn(timer_interrupt_handler);
         idt[InterruptIndex::Keyboard.as_usize()].set_handler_fn(keyboard_interrupt_handler);
-        idt[11 + 32].set_handler_fn(network_interrupt_handler);
+        idt[11 + 32].set_handler_fn(virtio_interrupt_handler);
 
         idt
     };
@@ -205,9 +205,17 @@ extern "x86-interrupt" fn timer_interrupt_handler(mut _stack_frame: InterruptSta
     }
 }
 
-extern "x86-interrupt" fn network_interrupt_handler(_stack_frame: InterruptStackFrame) {
+extern "x86-interrupt" fn virtio_interrupt_handler(_stack_frame: InterruptStackFrame) {
     println!("Network thing!");
     println!("EXCEPTION: {:#?}", _stack_frame);
+
+    // This should be called after handling the descriptor that triggered interrupt + reading ISR register
+    // Interrupt trigger -> send message to virtio server (PIC still not notified) -> virtio server processes whatever, reads ISR status, sends message to interrupt server -> interrupt server finally calls notify_end_of_interrupt
+
+    //unsafe {
+    //    PICS.lock()
+    //        .notify_end_of_interrupt(11 + 32);
+    //}
 }
 
 extern "x86-interrupt" fn keyboard_interrupt_handler(_stack_frame: InterruptStackFrame) {

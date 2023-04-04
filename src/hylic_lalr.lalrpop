@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::lexer;
-use crate::ast::{AstNode, BinOp, Distance, PType, CType, Value, EntityDef, Module, Identifier};
+use crate::ast::{AstNode, BinOp, Distance, PType, CType, Hvalue, EntityDef, Module, Identifier};
 
 use crate::common::{HashMap, String, Box, str, FromStr, Vec, ToString};
 
@@ -47,18 +47,19 @@ ExprOp: BinOp = {
 }
 
 Expr: AstNode = {
-    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Value::Pu8(e2 as u8)))),
-    Num => AstNode::ValueNode(Value::Pu8(<> as u8)),
+    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Hvalue::Pu8(e2 as u8)))),
+    Num => AstNode::ValueNode(Hvalue::Pu8(<> as u8)),
     <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, e),
     <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
+    <s:Symbol> "!" <f:Symbol> "(" <e:Expr?> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
     PString => <>,
     Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from("")}),
     <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
-    "[" <v:Comma<Expr>> "]" => AstNode::ValueNode(Value::List(v)),
+    "[" <v:Comma<Expr>> "]" => AstNode::ValueNode(Hvalue::List(v)),
 }
 
 PString: AstNode = {
-    "\"" <s:Symbol> "\"" => AstNode::ValueNode(Value::PString(s))
+    "\"" <s:Symbol> "\"" => AstNode::ValueNode(Hvalue::PString(s))
 }
 
 
@@ -136,6 +137,7 @@ extern {
         ReturnType => lexer::Tok::ReturnType,
         "~" => lexer::Tok::Import,
         "," => lexer::Tok::Comma,
+        "!" => lexer::Tok::Message,
 
         "\t" => lexer::Tok::Tab,
         "\n" => lexer::Tok::Linefeed,

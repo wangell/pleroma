@@ -24,7 +24,6 @@ cfg_if::cfg_if! {
         pub mod native;
 
         pub mod multitasking;
-        pub mod zeno;
         pub mod metanoid;
         pub mod bin_helpers;
         pub mod filesys;
@@ -48,6 +47,7 @@ cfg_if::cfg_if! {
         pub mod hosted;
         pub mod kernel;
         pub mod compile;
+        pub mod system;
     }
 }
 

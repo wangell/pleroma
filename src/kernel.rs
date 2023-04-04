@@ -18,14 +18,14 @@ pub struct Program {
 #[derive(Debug)]
 pub struct Node {
     pub vats: HashMap<u64, vm_core::Vat>,
-    pub code: HashMap<u64, Vec<u8>>
+    pub code: HashMap<u64, Vec<u8>>,
 }
 
 impl Node {
     pub fn new() -> Node {
         Node {
             vats: HashMap::new(),
-            code: HashMap::new()
+            code: HashMap::new(),
         }
     }
 }
@@ -33,11 +33,6 @@ impl Node {
 pub struct Monad {
     pub programs: HashMap<String, Program>,
     pub def: ast::EntityDef,
-}
-
-pub fn hello() -> i64 {
-    println!("\x1b[0;32mHello, welcome to Pleroma!\x1b[0m");
-    return 0;
 }
 
 impl Monad {
@@ -53,8 +48,6 @@ impl Monad {
             },
         };
 
-        n.def
-            .register_foreign_function(&String::from("hello"), 0, hello);
         n
     }
 
@@ -64,15 +57,13 @@ impl Monad {
     }
 
     // Enlists current Monad into the cluster, becomes passive until election
-    pub fn enlist() {
-    }
+    pub fn enlist() {}
 }
 
 pub struct Nodeman<'a> {
     pub node: &'a mut Node,
     pub def: ast::EntityDef,
 }
-
 
 impl Nodeman<'_> {
     pub fn new(node: &mut Node) -> Nodeman {
@@ -87,10 +78,15 @@ impl Nodeman<'_> {
             },
         };
 
-        n.def
-            .register_foreign_function(&String::from("hello"), 0, hello);
         n
     }
+
+    pub fn hello(entity: &mut vm_core::Entity, args: ast::Hvalue) -> ast::Hvalue {
+        println!("\x1b[0;32mHello, welcome to Pleroma!\x1b[0m");
+        entity.data.insert(String::from("Hi"), ast::Hvalue::Pu8(5));
+        return ast::Hvalue::None;
+    }
+
 }
 
 pub fn load_nodeman(nodeman: &Nodeman) {
@@ -106,10 +102,16 @@ pub fn load_nodeman(nodeman: &Nodeman) {
         current_func_id: 0,
     };
 
-    module.entity_defs.insert(
-        String::from("Nodeman"),
-        ast::AstNode::EntityDef(nodeman.def.clone()),
-    );
+    let mut nodedef = nodeman.def.clone();
+
+
+    //module
+    //    .entity_defs
+    //    .insert(String::from("Nodeman"), ast::AstNode::EntityDef(nodedef));
+    let real_def = module.entity_defs.get_mut("Nodeman").unwrap();
+    if let ast::AstNode::EntityDef(d) = real_def {
+        //d.register_foreign_function(&String::from("test"), Nodeman::hello);
+    }
 
     for (entity_name, entity_def) in &module.entity_defs {
         let result = entity_def.visit(&mut cg_visitor);

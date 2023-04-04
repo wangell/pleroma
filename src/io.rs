@@ -1,6 +1,4 @@
 use core::fmt;
-use core::format_args;
-
 use limine::LimineTerminalRequest;
 use spin::Mutex;
 use x86_64;

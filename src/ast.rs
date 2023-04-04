@@ -1,4 +1,5 @@
-use crate::common::{HashMap, String, Box, Vec, vec};
+use crate::common::{vec, Box, HashMap, String, Vec};
+use crate::vm_core;
 
 #[derive(Debug)]
 pub struct Module {
@@ -6,7 +7,7 @@ pub struct Module {
     pub entity_defs: HashMap<String, AstNode>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub enum AstNode {
     EntityDef(EntityDef),
 
@@ -21,8 +22,9 @@ pub enum AstNode {
     AssignmentNode(Identifier, Box<AstNode>),
 
     FunctionCall(Identifier, Vec<AstNode>),
+    Message(Identifier, Box<Option<AstNode>>),
 
-    ForeignCall(u8, Vec<AstNode>),
+    ForeignCall(fn(&mut vm_core::Entity, Hvalue) -> Hvalue, Vec<AstNode>),
 
     EntityConstruction(Identifier, Box<Option<AstNode>>),
 
@@ -34,7 +36,7 @@ pub enum AstNode {
 
     Identifier(Identifier),
 
-    ValueNode(Value),
+    ValueNode(Hvalue),
 
     Error,
 }
@@ -45,39 +47,51 @@ pub struct Identifier {
     pub unique_sym: String,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone)]
 pub struct EntityDef {
     pub name: String,
     pub data_declarations: Vec<(String, CType)>,
     pub inoculation_list: Vec<(String, CType)>,
     pub functions: HashMap<String, Box<AstNode>>,
-    pub foreign_functions: HashMap<u8, fn()->i64>,
+    pub foreign_functions: HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
 }
 
-impl EntityDef {
-    pub fn register_foreign_function(&mut self, name: &String, idx: u8, func: fn()->i64) {
-        self.foreign_functions.insert(idx, func);
-        self.functions.insert(
-        name.clone(),
-        Box::new(AstNode::Function {
-            name: name.clone(),
-            parameters: Vec::new(),
-            return_type: CType::Loc(PType::Pu32),
-            body: vec![Box::new(AstNode::ForeignCall(
-                idx,
-                Vec::new(),
-            ))],
-        }));
+use core::fmt;
+use core::fmt::Debug;
+impl Debug for AstNode {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Hi")
     }
 }
 
+impl EntityDef {
+    pub fn register_foreign_function(
+        &mut self,
+        name: &String,
+        func: fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
+    ) {
+        let idx = self.foreign_functions.len() as u8;
+        self.foreign_functions.insert(idx, func);
+        self.functions.insert(
+            name.clone(),
+            Box::new(AstNode::Function {
+                name: name.clone(),
+                parameters: Vec::new(),
+                return_type: CType::Loc(PType::Pu32),
+                body: vec![Box::new(AstNode::ForeignCall(func, Vec::new()))],
+            }),
+        );
+    }
+}
 
 #[derive(Clone, Debug)]
-pub enum Value {
+pub enum Hvalue {
     None,
     PString(String),
     Pu8(u8),
+    EntityAddress(vm_core::EntityAddress),
     List(Vec<AstNode>),
+    Promise
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -129,13 +143,18 @@ pub trait AstNodeVisitor<T> {
         data_declarations: &Vec<(String, CType)>,
         inoculation_list: &Vec<(String, CType)>,
         functions: &HashMap<String, Box<AstNode>>,
-        foreign_functions: &HashMap<u8, fn()->i64>
+        foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
     ) -> T;
     fn visit_function(&mut self, name: &String, body: &Vec<Box<AstNode>>) -> T;
     fn visit_return(&mut self, expr: &AstNode) -> T;
-    fn visit_value(&mut self, value: &Value) -> T;
+    fn visit_value(&mut self, value: &Hvalue) -> T;
     fn visit_operator(&mut self, left: &AstNode, op: &BinOp, right: &AstNode) -> T;
-    fn visit_foreign_call(&mut self, idx: &u8, params: &Vec<AstNode>) -> T;
+    fn visit_message(&mut self) -> T;
+    fn visit_foreign_call(
+        &mut self,
+        func: &fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
+        params: &Vec<AstNode>,
+    ) -> T;
     //fn visit_function_call(&mut self, identifier: &Identifier, arguments: &Vec<AstNode>) -> T;
 }
 
@@ -147,18 +166,25 @@ impl AstNode {
                 data_declarations,
                 inoculation_list,
                 functions,
-                foreign_functions
-            }) => visitor.visit_entity_def(name, data_declarations, inoculation_list, functions, foreign_functions),
+                foreign_functions,
+            }) => visitor.visit_entity_def(
+                name,
+                data_declarations,
+                inoculation_list,
+                functions,
+                foreign_functions,
+            ),
             AstNode::Function {
                 name,
                 parameters,
                 return_type,
-                body
+                body,
             } => visitor.visit_function(name, body),
             AstNode::Return(r) => visitor.visit_return(r),
             AstNode::ValueNode(v) => visitor.visit_value(v),
             AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
             AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
+            AstNode::Message(_, _) => visitor.visit_message(),
             x => {
                 println!("{:?}", x);
                 panic!()

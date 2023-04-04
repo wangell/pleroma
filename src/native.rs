@@ -164,7 +164,10 @@ fn call_other_func(a: u32, b: u32) -> u32{
 fn vat_runner() {
     let program: Vec<u8> = vec![1, 0, 0, 0, 7, 0, 5, 0, 0, 7, 0, 1, 6];
 
+
     loop {
+        // Lift vat onto hotplate
+
         println!("Hello from proc1!");
 
         ksleep(2000);
@@ -205,6 +208,8 @@ fn vat_runner() {
         //    let mut av = available_vats.lock();
         //    av.push(z);
         //}
+
+        // Release vat, if vat list is empty, hlt()
 
         x86_64::instructions::hlt();
     }

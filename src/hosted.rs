@@ -1,6 +1,7 @@
 use crossbeam::channel::{select, unbounded};
 use std::collections::HashMap;
 use std::{fs, panic, thread, time};
+use crate::compile;
 
 use crate::{vm_core, kernel, vm};
 
@@ -8,16 +9,18 @@ pub fn hotplate(
     hp_rx_vat: crossbeam::channel::Receiver<vm_core::Vat>,
     ml_tx_vat: crossbeam::channel::Sender<vm_core::Vat>,
 
-    tx_msg: crossbeam::channel::Sender<vm_core::Msg>,
+    mut tx_msg: crossbeam::channel::Sender<vm_core::Msg>,
 ) {
     loop {
+        // Unload vat onto hotplate
         let mut vat = hp_rx_vat.recv().unwrap();
 
         while vat.inbox.len() > 0 {
             let msg = vat.inbox.pop().unwrap();
-            vm::run_msg(&fs::read("kernel.plmb").unwrap(), &mut vat, &msg);
+            vm::run_msg(&fs::read("kernel.plmb").unwrap(), &mut vat, &msg, &mut tx_msg);
         }
 
+        // Back on to the sushi belt
         let rs = ml_tx_vat.send(vat).unwrap();
     }
 }
@@ -49,15 +52,16 @@ fn deliver_mail(
     vat_tx: &crossbeam::channel::Sender<vm_core::Vat>,
 ) {
     let mut vi = vat_inboxes.get_mut(&cv.vat_id).unwrap();
+
+    // If inbox is empty, put the vat to sleep, otherwise deliver the mail
     if (vi.is_empty()) {
         sleeping_vats.push(cv);
     } else {
-        // If inbox is empty, put the vat to sleep, otherwise deliver the mail
         let mut temp_msgs = vi.clone();
         vi.clear();
         vi.append(&mut cv.outbox);
         cv.inbox.append(&mut temp_msgs);
-        println!("{:?}", vat_tx.send(cv).unwrap());
+        vat_tx.send(cv).unwrap();
     }
 }
 
@@ -123,22 +127,6 @@ fn main_loop(
     }
 }
 
-fn send_test_msg(tx_msg: crossbeam::channel::Sender<vm_core::Msg>) {
-    loop {
-        let msg = vm_core::Msg {
-            src_address: vm_core::EntityAddress::new(0, 0, 0),
-            dst_address: vm_core::EntityAddress::new(0, 0, 0),
-            promise_id: None,
-            is_response: false,
-            function_name: String::from("main"),
-            values: Vec::new(),
-            function_id: 0,
-        };
-        tx_msg.send(msg).unwrap();
-        thread::sleep(time::Duration::from_millis(1000));
-    }
-}
-
 pub fn boot() {
     let (tx_ml_box, rx_ml_box) = unbounded::<vm_core::Msg>();
 
@@ -156,8 +144,16 @@ pub fn boot() {
         thread::spawn(move || hotplate(prx, ptx, hp_msg_tx));
     }
 
-    let tx_test = tx_ml_box.clone();
-    thread::spawn(move || send_test_msg(tx_test));
+    let msg = vm_core::Msg {
+        src_address: vm_core::EntityAddress::new(0, 0, 0),
+        dst_address: vm_core::EntityAddress::new(0, 0, 0),
+        promise_id: None,
+        is_response: false,
+        function_name: String::from("main"),
+        values: Vec::new(),
+        function_id: 1,
+    };
+    tx_ml_box.send(msg).unwrap();
 
     let mut sleeping_vats: Vec<vm_core::Vat> = Vec::new();
     let mut vat_inboxes: HashMap<u32, Vec<vm_core::Msg>> = HashMap::new();
