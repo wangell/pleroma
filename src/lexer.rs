@@ -40,6 +40,9 @@ pub enum Tok {
     Import,
     Comma,
 
+    ResolveAll,
+    Print,
+
     Tab,
     Linefeed,
     EntityIdentifier { value: String },
@@ -146,6 +149,8 @@ impl<'input> Iterator for Lexer<'input> {
                     }
 
                     match sym.as_str() {
+                        "resolve" => return Some(Ok((start_i, Tok::ResolveAll, last_i))),
+                        "print" => return Some(Ok((start_i, Tok::Print, last_i))),
                         "loc" => return Some(Ok((start_i, Tok::Loc, last_i))),
                         "far" => return Some(Ok((start_i, Tok::Far, last_i))),
                         "u32" => return Some(Ok((start_i, Tok::Pu32, last_i))),

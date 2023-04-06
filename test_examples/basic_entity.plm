@@ -4,6 +4,8 @@
 
   δ test2() → loc u32 {
 		self ! test();
+    resolve;
+    print 4;
   }
 
   δ test() → loc u32 {

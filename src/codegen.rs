@@ -138,6 +138,15 @@ impl AstNodeVisitor<()> for GenCode {
         }
     }
 
+    fn visit_resolve(&mut self) {
+        self.emit_op(Op::Resolve);
+    }
+
+    fn visit_print(&mut self, node: &AstNode) {
+        self.emit_op(Op::Print);
+        self.emit_u8(4);
+    }
+
     fn visit_value(&mut self, v: &Hvalue) {
         match v {
             Hvalue::Pu8(n) => {

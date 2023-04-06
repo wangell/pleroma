@@ -17,7 +17,7 @@ cfg_if::cfg_if! {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct EntityAddress {
     pub node_id: u32,
     pub vat_id: u32,
@@ -37,23 +37,44 @@ impl EntityAddress {
 }
 
 #[derive(Debug, Clone)]
+pub enum MsgContents {
+    Request { args: Vec<Hvalue>, function_id: u32, function_name: String, src_promise: Option<u32> },
+    Response { result: Hvalue, dst_promise: Option<u32> },
+
+    // Initial message to kick off universe
+    BigBang{ args: Vec<Hvalue>, function_id: u32, function_name: String, }
+}
+
+#[derive(Debug, Clone)]
 pub struct Msg {
     pub src_address: EntityAddress,
     pub dst_address: EntityAddress,
-
-    pub promise_id: Option<u32>,
-
-    pub is_response: bool,
-
-    pub function_name: String,
-    pub function_id: u32,
-    pub values: Vec<Hvalue>,
+    pub contents: MsgContents
 }
 
 #[derive(Debug)]
 pub struct Entity {
     address: EntityAddress,
     pub data: HashMap<String, Hvalue>,
+}
+
+#[derive(Debug)]
+pub struct Promise {
+    pub on_vars: Vec<Option<Hvalue>>,
+    pub resolved: bool,
+    pub returned_val: Option<Hvalue>,
+    pub on_resolve: Vec<usize>
+}
+
+impl Promise {
+    pub fn new() -> Self {
+        Self {
+            on_vars: Vec::new(),
+            resolved: false,
+            returned_val: None,
+            on_resolve: Vec::new()
+        }
+    }
 }
 
 #[derive(Debug)]
@@ -69,7 +90,7 @@ pub struct Vat {
     // Execution
     pub op_stack: Vec<Hvalue>,
     pub call_stack: Vec<StackFrame>,
-    pub promise_stack: Vec<u32>
+    pub promise_stack: Vec<Promise>
 }
 
 pub struct EvalContext<'a> {

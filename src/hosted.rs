@@ -2,6 +2,7 @@ use crossbeam::channel::{select, unbounded};
 use std::collections::HashMap;
 use std::{fs, panic, thread, time};
 use crate::compile;
+use crate::ast;
 
 use crate::{vm_core, kernel, vm};
 
@@ -17,7 +18,10 @@ pub fn hotplate(
 
         while vat.inbox.len() > 0 {
             let msg = vat.inbox.pop().unwrap();
-            vm::run_msg(&fs::read("kernel.plmb").unwrap(), &mut vat, &msg, &mut tx_msg);
+            let return_msg = vm::run_msg(&fs::read("kernel.plmb").unwrap(), &mut vat, &msg, &mut tx_msg);
+            if let Some(return_msg_contents) = return_msg {
+                tx_msg.send(return_msg_contents).unwrap();
+            }
         }
 
         // Back on to the sushi belt
@@ -147,11 +151,7 @@ pub fn boot() {
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
         dst_address: vm_core::EntityAddress::new(0, 0, 0),
-        promise_id: None,
-        is_response: false,
-        function_name: String::from("main"),
-        values: Vec::new(),
-        function_id: 1,
+        contents: vm_core::MsgContents::BigBang{ function_id: 1, function_name: String::from("hi"), args: Vec::new() }
     };
     tx_ml_box.send(msg).unwrap();
 
@@ -162,10 +162,12 @@ pub fn boot() {
     let mut vat = vm_core::Vat::new();
 
     let mut node = kernel::Node::new();
-    node.code.insert(0, fs::read("kernel.plmb").unwrap());
 
     let nodeman = kernel::Nodeman::new(&mut node);
     kernel::load_nodeman(&nodeman);
+
+    //node.code.insert(0, fs::read("kernel.plmb").unwrap());
+
     vat.create_entity(&nodeman.def);
 
     ml_vat_tx.send(vat);

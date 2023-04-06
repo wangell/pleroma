@@ -36,7 +36,9 @@ Statement : Box<AstNode> = {
    "let" <s:Symbol> <t:TypeSpec?> "=" <e:Expr> ";" => Box::new(AstNode::DefinitionNode(s, Box::new(e))),
    <s:Symbol> "=" <e:Expr> ";" => Box::new(AstNode::AssignmentNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e))),
    Expr ";" => Box::new((<>).0),
-   "↵" <e:Expr> ";" => Box::new(AstNode::Return(Box::new(e)))
+   "↵" <e:Expr> ";" => Box::new(AstNode::Return(Box::new(e))),
+   "resolve" ";" => Box::new(AstNode::ResolveAll),
+   "print" <e:Expr> ";" => Box::new(AstNode::Print(Box::new(e))),
 }
 
 ExprOp: BinOp = {
@@ -153,6 +155,9 @@ extern {
         "loc" => lexer::Tok::Loc,
 
         "aln" => lexer::Tok::Aln,
+
+        "resolve" => lexer::Tok::ResolveAll,
+        "print" => lexer::Tok::Print,
 
         "void" => lexer::Tok::Void,
         Pu8 => lexer::Tok::Pu8 {value : <u8> },

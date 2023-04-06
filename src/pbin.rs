@@ -14,6 +14,8 @@ pub enum Inst {
     ForeignCall(u64),
     Call(u64),
     Message,
+    Print(u8),
+    Resolve
 }
 
 pub fn read_u8(vblock: &[u8]) -> (usize, u8) {
@@ -103,6 +105,14 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Inst) {
             let (y, a0) = read_u8(&vblock[x..]);
 
             return (x + y, Inst::Push(a0));
+        }
+        Op::Print => {
+            let (y, a0) = read_u8(&vblock[x..]);
+
+            return (x + y, Inst::Print(a0));
+        }
+        Op::Resolve => {
+            return (x, Inst::Resolve);
         }
         _ => {
             println!("Nop");

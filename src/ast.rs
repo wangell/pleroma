@@ -30,6 +30,9 @@ pub enum AstNode {
 
     Return(Box<AstNode>),
 
+    ResolveAll,
+    Print(Box<AstNode>),
+
     OperatorNode(Box<AstNode>, BinOp, Box<AstNode>),
 
     Index(Box<AstNode>, Box<AstNode>),
@@ -91,7 +94,7 @@ pub enum Hvalue {
     Pu8(u8),
     EntityAddress(vm_core::EntityAddress),
     List(Vec<AstNode>),
-    Promise
+    Promise(u8)
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -150,6 +153,10 @@ pub trait AstNodeVisitor<T> {
     fn visit_value(&mut self, value: &Hvalue) -> T;
     fn visit_operator(&mut self, left: &AstNode, op: &BinOp, right: &AstNode) -> T;
     fn visit_message(&mut self) -> T;
+
+    fn visit_resolve(&mut self) -> T;
+    fn visit_print(&mut self, node: &AstNode) -> T;
+
     fn visit_foreign_call(
         &mut self,
         func: &fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
@@ -185,6 +192,8 @@ impl AstNode {
             AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
             AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
             AstNode::Message(_, _) => visitor.visit_message(),
+            AstNode::ResolveAll => visitor.visit_resolve(),
+            AstNode::Print(a) => visitor.visit_print(a),
             x => {
                 println!("{:?}", x);
                 panic!()

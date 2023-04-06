@@ -14,7 +14,10 @@ pub enum Op {
     ForeignCall,
     SysCall,
 
-    Message
+    Message,
+
+    Print,
+    Resolve
 }
 
 impl From<u8> for Op {
@@ -34,6 +37,8 @@ impl From<u8> for Op {
             0x08 => Op::SysCall,
 
             0x09 => Op::Message,
+            0x0A => Op::Print,
+            0x0B => Op::Resolve,
             _ => panic!("Invalid value for Op {}", value),
         }
     }

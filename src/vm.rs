@@ -1,8 +1,8 @@
 use crate::ast;
 use crate::ast::Hvalue;
 use crate::common::{vec, Box, HashMap, String, Vec};
-use core;
 use crate::vm_core;
+use core;
 
 use crate::pbin::{
     decode_instruction, disassemble, load_entity_function_table, read_u16, read_u32, read_u64,
@@ -10,28 +10,20 @@ use crate::pbin::{
 };
 use crate::vm_core::{Msg, StackFrame, Vat};
 
-pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>) {
-    disassemble(code);
-
-    let mut x = 0;
-
+pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>, code: &Vec<u8>,) -> Hvalue {
     let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
 
-    let table = load_entity_function_table(&mut x, &code[..]);
-
-    vat.call_stack.push(StackFrame {
-        locals: HashMap::new(),
-        return_address: None,
-    });
-
-    x = table[&0][&msg.function_id].0 as usize;
+    let mut x = start_addr;
 
     loop {
+        // TODO: this should never happen, need implicit return
         if x >= code.len() {
+            //panic!("Code overrun: x was {}, code is len {}", x, code.len());
             break;
         }
 
         let (q, inst) = decode_instruction(x, &code[..]);
+
         x = q;
 
         match inst {
@@ -81,19 +73,20 @@ pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossbeam:
             }
             Inst::Message => {
                 let msg = vm_core::Msg {
-                    src_address: vm_core::EntityAddress::new(0, 0, 0),
+                    src_address: msg.dst_address,
                     dst_address: vm_core::EntityAddress::new(0, 0, 0),
-                    promise_id: None,
-                    is_response: false,
-                    function_name: String::from("main"),
-                    values: Vec::new(),
-                    function_id: 0,
+
+                    contents: vm_core::MsgContents::Request {
+                        args: Vec::new(),
+                        function_id: 0,
+                        function_name: String::from("main"),
+                        src_promise: Some(0),
+                    },
                 };
-                //tx_ml_box.send(msg).unwrap();
-                //vat.outbox.push(msg);
+
                 tx_msg.send(msg).unwrap();
-                vat.op_stack.push(Hvalue::Promise);
-                println!("added a message");
+                vat.promise_stack.push(vm_core::Promise::new());
+                vat.op_stack.push(Hvalue::Promise(0));
             }
             Inst::Ret => {
                 //let ret_val = vat.op_stack.pop().unwrap();
@@ -133,15 +126,114 @@ pub fn run_msg(code: &Vec<u8>, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossbeam:
             //        }
             //    }
             //}
+            Inst::Print(a0) => {
+                println!("print {}", a0);
+            }
+            Inst::Resolve => {
+                println!("Resolve {}!", vat.promise_stack.len());
+
+                // If promise is resolved, run code, else push onto on_resolve
+
+                //if vat.promise_stack[0].resolved {
+                //    println!("Already resolved!");
+                //} else {
+                //    println!("Inserting resolution callback");
+                //    vat.promise_stack[0].on_resolve.push(4);
+                //}
+            }
             Inst::Nop => {}
+        }
+
+    }
+
+    if vat.op_stack.len() > 1 {
+        println!("{:?}", vat.op_stack);
+        panic!(
+            "Invalid program, left with {} operands on stack",
+            vat.op_stack.len()
+        );
+    }
+
+    if vat.op_stack.is_empty() {
+        Hvalue::None
+    } else {
+        vat.op_stack.pop().unwrap()
+    }
+}
+
+pub fn run_msg(
+    code: &Vec<u8>,
+    vat: &mut Vat,
+    msg: &Msg,
+    tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
+) -> Option<Msg> {
+    println!("Running message: {:?}", msg);
+
+    let mut out_msg: Option<Msg> = None;
+
+    match &msg.contents {
+        vm_core::MsgContents::Request {
+            args,
+            function_id,
+            function_name,
+            src_promise,
+        } => {
+            let mut z = 0;
+
+            let table = load_entity_function_table(&mut z, &code[..]);
+
+            vat.call_stack.push(StackFrame {
+                locals: HashMap::new(),
+                return_address: None,
+            });
+
+
+            z = table[&0][&function_id].0 as usize;
+
+            let res = run_expr(z, vat, msg, tx_msg, code);
+            out_msg = Some(Msg {
+                src_address: msg.dst_address,
+                dst_address: msg.src_address,
+                contents: vm_core::MsgContents::Response {
+                    result: res,
+                    dst_promise: *src_promise,
+                },
+            });
+        }
+        vm_core::MsgContents::Response {
+            result,
+            dst_promise,
+        } => {
+            if let (promise_id) = dst_promise {
+                println!("Got response, fulfilling promise");
+                let mut promise = &mut vat.promise_stack[dst_promise.unwrap() as usize];
+                promise.resolved = true;
+
+                for i in &promise.on_resolve {
+                    println!("doing a resolve");
+                }
+            }
+        }
+        vm_core::MsgContents::BigBang {
+            args,
+            function_id,
+            function_name,
+        } => {
+            let mut z = 0;
+
+            let table = load_entity_function_table(&mut z, &code[..]);
+
+            vat.call_stack.push(StackFrame {
+                locals: HashMap::new(),
+                return_address: None,
+            });
+
+
+            z = table[&0][&function_id].0 as usize;
+
+            run_expr(z, vat, msg, tx_msg, code);
         }
     }
 
-    if vat.op_stack.len() != 1 {
-        println!("{:?}", vat.op_stack);
-        panic!("Invalid program, left with {} operands on stack", vat.op_stack.len());
-    }
-
-    let res = vat.op_stack.pop();
-    println!("Result: {:?}", res.unwrap());
+    out_msg
 }
