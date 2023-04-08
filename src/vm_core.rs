@@ -123,6 +123,12 @@ impl Vat {
         }
     }
 
+    pub fn set_local(&mut self, s: &String, val: &Hvalue) {
+        let last_ind = self.call_stack.len() - 1;
+        let mut last_frame = &mut self.call_stack[last_ind];
+        last_frame.locals.insert(s.clone(), val.clone());
+    }
+
     pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {
         let entity_id = self.last_entity_id;
         self.entities.insert(

@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::ast::Hvalue;
-use crate::bin_helpers::{read_u64_sz, read_u32_sz, read_u16_sz, read_u8_sz};
+use crate::bin_helpers::{read_u64_sz, read_u32_sz, read_u16_sz, read_u8_sz, read_utf8_str_sz};
 
 #[derive(Debug)]
 pub enum Op {
@@ -17,6 +17,12 @@ pub enum Op {
 
     ForeignCall(u64),
     Message,
+
+    Lload(String),
+    Lstore(String),
+
+    Eload(String),
+    Estore(String)
 }
 
 #[repr(u8)]
@@ -34,6 +40,12 @@ pub enum SimpleOp {
 
     ForeignCall,
     Message,
+
+    Lload,
+    Lstore,
+
+    Eload,
+    Estore
 }
 
 pub fn decode_value(vblock: &[u8]) -> (usize, Hvalue) {
@@ -97,6 +109,18 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
 
         Op::Message => {},
 
+        Op::Lstore(s0) => {
+            bytes.push(SimpleOp::Lstore as u8);
+            bytes.extend_from_slice(s0.as_bytes());
+            bytes.push(0x0);
+        }
+
+        Op::Estore(s0) => {
+            bytes.push(SimpleOp::Estore as u8);
+            bytes.extend_from_slice(s0.as_bytes());
+            bytes.push(0x0);
+        }
+
         _ => panic!()
     }
 
@@ -125,6 +149,14 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
         }
         SimpleOp::Message => {
             return (x, Op::Message);
+        }
+        SimpleOp::Estore => {
+            let (y, a0) = read_utf8_str_sz(&vblock[x..]);
+            return (x + y, Op::Estore(a0));
+        }
+        SimpleOp::Lstore => {
+            let (y, a0) = read_utf8_str_sz(&vblock[x..]);
+            return (x + y, Op::Lstore(a0));
         }
         SimpleOp::ForeignCall => {
             let (y, a0) = read_u64_sz(&vblock[x..]);

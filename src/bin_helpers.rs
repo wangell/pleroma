@@ -83,10 +83,11 @@ pub fn read_utf8_str_sz(vblock: &[u8]) -> (usize, String) {
         i += 1;
     }
 
-    let s = match str::from_utf8(vblock) {
+    let s = match str::from_utf8(&vblock[0..i]) {
         Ok(v) => v,
         Err(e) => panic!("Invalid UTF-8 sequence: {}", e),
     };
 
-    return (i, String::from(s))
+    // Include +1 to account for null delimiter
+    return (i + 1, String::from(s))
 }

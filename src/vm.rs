@@ -17,7 +17,6 @@ pub fn run_expr(
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
     code: &Vec<u8>,
 ) -> Option<Hvalue> {
-    let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
 
     let mut x = start_addr;
 
@@ -79,6 +78,13 @@ pub fn run_expr(
                     panic!();
                 }
             }
+            Op::Lstore(s0) => {
+                let store_val = vat.op_stack.pop().unwrap();
+                vat.set_local(&s0, &store_val);
+                println!("vat {:?}", vat);
+            },
+            Op::Estore(s0) => {
+            },
             Op::Message => {
                 let msg = vm_core::Msg {
                     src_address: msg.dst_address,
@@ -110,6 +116,7 @@ pub fn run_expr(
                 // TODO: if kernel is recompiled, this won't point to the right memory address - need to create a table for sys modules
                 let ptr = a0 as *const ();
                 // TODO: create a type FFI for this
+                let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
                 let foreign_func: vm_core::SystemFunction = unsafe { core::mem::transmute(ptr) };
                 let res = foreign_func(target_entity, Hvalue::None);
 
@@ -143,7 +150,9 @@ pub fn run_expr(
             //        break;
             //    }
             //}
-            Op::Nop => {}
+            Op::Nop => {},
+            _ => panic!()
+
         }
     }
 
@@ -241,6 +250,7 @@ pub fn run_msg(
             z = table[&0][&function_id].0 as usize;
 
             run_expr(z, vat, msg, tx_msg, code);
+
         }
     }
 
