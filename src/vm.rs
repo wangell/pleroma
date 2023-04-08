@@ -78,10 +78,15 @@ pub fn run_expr(
                     panic!();
                 }
             }
+            Op::Lload(s0) => {
+                let local_var = vat.load_local(&s0);
+                vat.op_stack.push(local_var);
+                println!("load vat {:?}", vat);
+            },
             Op::Lstore(s0) => {
                 let store_val = vat.op_stack.pop().unwrap();
-                vat.set_local(&s0, &store_val);
-                println!("vat {:?}", vat);
+                vat.store_local(&s0, &store_val);
+                println!("store vat {:?}", vat);
             },
             Op::Estore(s0) => {
             },

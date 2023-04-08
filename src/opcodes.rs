@@ -109,6 +109,18 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
 
         Op::Message => {},
 
+        Op::Lload(s0) => {
+            bytes.push(SimpleOp::Lload as u8);
+            bytes.extend_from_slice(s0.as_bytes());
+            bytes.push(0x0);
+        },
+
+        Op::Eload(s0) => {
+            bytes.push(SimpleOp::Eload as u8);
+            bytes.extend_from_slice(s0.as_bytes());
+            bytes.push(0x0);
+        },
+
         Op::Lstore(s0) => {
             bytes.push(SimpleOp::Lstore as u8);
             bytes.extend_from_slice(s0.as_bytes());
@@ -149,6 +161,14 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
         }
         SimpleOp::Message => {
             return (x, Op::Message);
+        }
+        SimpleOp::Lload => {
+            let (y, a0) = read_utf8_str_sz(&vblock[x..]);
+            return (x + y, Op::Lload(a0));
+        }
+        SimpleOp::Eload => {
+            let (y, a0) = read_utf8_str_sz(&vblock[x..]);
+            return (x + y, Op::Eload(a0));
         }
         SimpleOp::Estore => {
             let (y, a0) = read_utf8_str_sz(&vblock[x..]);

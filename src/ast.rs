@@ -250,6 +250,7 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
 
         AstNode::DefinitionNode(a, b) => visitor.visit_definition(a, b),
         AstNode::AssignmentNode(a, b) => visitor.visit_assignment(a, b),
+        AstNode::Identifier(a) => visitor.visit_identifier(a),
         x => {
             println!("{:?}", x);
             panic!()

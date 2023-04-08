@@ -184,6 +184,14 @@ impl AstNodeVisitor for GenCode {
         }
     }
 
+    fn visit_identifier(&mut self, symbol: &mut Identifier) {
+        if let IdentifierTarget::LocalVar = symbol.target {
+            self.emit_op(Op::Lload(symbol.original_sym.clone()));
+        } else {
+            self.emit_op(Op::Eload(symbol.original_sym.clone()));
+        }
+    }
+
     fn visit_assignment(&mut self, symbol: &mut Identifier, expr: &mut AstNode) {}
 
     fn visit_print(&mut self, node: &mut AstNode) {

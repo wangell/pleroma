@@ -123,7 +123,14 @@ impl Vat {
         }
     }
 
-    pub fn set_local(&mut self, s: &String, val: &Hvalue) {
+    pub fn load_local(&mut self, s: &String) -> Hvalue {
+        let last_ind = self.call_stack.len() - 1;
+        let mut last_frame = &mut self.call_stack[last_ind];
+
+        last_frame.locals[s].clone()
+    }
+
+    pub fn store_local(&mut self, s: &String, val: &Hvalue) {
         let last_ind = self.call_stack.len() - 1;
         let mut last_frame = &mut self.call_stack[last_ind];
         last_frame.locals.insert(s.clone(), val.clone());
