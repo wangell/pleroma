@@ -151,7 +151,7 @@ pub fn boot() {
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
         dst_address: vm_core::EntityAddress::new(0, 0, 0),
-        contents: vm_core::MsgContents::BigBang{ function_id: 1, function_name: String::from("hi"), args: Vec::new() }
+        contents: vm_core::MsgContents::BigBang{ function_id: 0, function_name: String::from("hi"), args: Vec::new() }
     };
     tx_ml_box.send(msg).unwrap();
 

@@ -25,7 +25,6 @@ cfg_if::cfg_if! {
 
         pub mod multitasking;
         pub mod metanoid;
-        pub mod bin_helpers;
         pub mod filesys;
 
         pub mod pci;
@@ -61,6 +60,7 @@ pub mod ast;
 pub mod pbin;
 pub mod opcodes;
 pub mod common;
+pub mod bin_helpers;
 
 #[cfg(feature = "hosted")]
 fn main() {

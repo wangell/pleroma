@@ -5,15 +5,23 @@ use crate::vm_core;
 use core;
 
 use crate::pbin::{
-    decode_instruction, disassemble, load_entity_function_table, read_u16, read_u32, read_u64,
-    read_u8, Inst,
+    disassemble, load_entity_function_table
 };
+use crate::opcodes::{decode_instruction, Op};
 use crate::vm_core::{Msg, StackFrame, Vat};
 
-pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>, code: &Vec<u8>,) -> Hvalue {
+pub fn run_expr(
+    start_addr: usize,
+    vat: &mut Vat,
+    msg: &Msg,
+    tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
+    code: &Vec<u8>,
+) -> Option<Hvalue> {
     let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
 
     let mut x = start_addr;
+
+    let mut yield_op = false;
 
     loop {
         // TODO: this should never happen, need implicit return
@@ -27,51 +35,51 @@ pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossb
         x = q;
 
         match inst {
-            Inst::Push(a0) => {
-                vat.op_stack.push(Hvalue::Pu8(a0.into()));
+            Op::Push(a0) => {
+                vat.op_stack.push(a0);
             }
-            Inst::Addi => {
-                if let (Hvalue::Pu8(a0), Hvalue::Pu8(a1)) =
+            Op::Add => {
+                if let (Hvalue::Hu8(a0), Hvalue::Hu8(a1)) =
                     (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap())
                 {
                     let res = a0 + a1;
                     println!("Calling add {} + {} : {}", a0, a1, res);
-                    vat.op_stack.push(Hvalue::Pu8(res));
+                    vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     panic!();
                 }
             }
-            Inst::Subi => {
-                if let (Hvalue::Pu8(a0), Hvalue::Pu8(a1)) =
+            Op::Sub => {
+                if let (Hvalue::Hu8(a0), Hvalue::Hu8(a1)) =
                     (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap())
                 {
                     let res = a0 - a1;
-                    vat.op_stack.push(Hvalue::Pu8(res));
+                    vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     panic!();
                 }
             }
-            Inst::Muli => {
-                if let (Hvalue::Pu8(a0), Hvalue::Pu8(a1)) =
+            Op::Mul => {
+                if let (Hvalue::Hu8(a0), Hvalue::Hu8(a1)) =
                     (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap())
                 {
                     let res = a0 * a1;
-                    vat.op_stack.push(Hvalue::Pu8(res));
+                    vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     panic!();
                 }
             }
-            Inst::Divi => {
-                if let (Hvalue::Pu8(a0), Hvalue::Pu8(a1)) =
+            Op::Div => {
+                if let (Hvalue::Hu8(a0), Hvalue::Hu8(a1)) =
                     (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap())
                 {
                     let res = a0 / a1;
-                    vat.op_stack.push(Hvalue::Pu8(res));
+                    vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     panic!();
                 }
             }
-            Inst::Message => {
+            Op::Message => {
                 let msg = vm_core::Msg {
                     src_address: msg.dst_address,
                     dst_address: vm_core::EntityAddress::new(0, 0, 0),
@@ -86,9 +94,9 @@ pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossb
 
                 tx_msg.send(msg).unwrap();
                 vat.promise_stack.push(vm_core::Promise::new());
-                vat.op_stack.push(Hvalue::Promise(0));
+                //vat.op_stack.push(Hvalue::Promise(0));
             }
-            Inst::Ret => {
+            Op::Ret => {
                 //let ret_val = vat.op_stack.pop().unwrap();
                 let sf = vat.call_stack.pop().unwrap();
 
@@ -98,15 +106,7 @@ pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossb
                     break;
                 }
             }
-            Inst::Call(a0) => {
-                println!("Calling pos {} from {}", a0, x);
-                vat.call_stack.push(StackFrame {
-                    locals: HashMap::new(),
-                    return_address: Some(x),
-                });
-                x = a0 as usize;
-            }
-            Inst::ForeignCall(a0) => {
+            Op::ForeignCall(a0) => {
                 // TODO: if kernel is recompiled, this won't point to the right memory address - need to create a table for sys modules
                 let ptr = a0 as *const ();
                 // TODO: create a type FFI for this
@@ -126,24 +126,25 @@ pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossb
             //        }
             //    }
             //}
-            Inst::Print(a0) => {
-                println!("print {}", a0);
-            }
-            Inst::Resolve => {
-                println!("Resolve {}!", vat.promise_stack.len());
+            //::Print(a0) => {
+            //    println!("print {}", a0);
+            //}
+            //Inst::Resolve => {
+            //    println!("Resolve {}!", vat.promise_stack.len());
 
-                // If promise is resolved, run code, else push onto on_resolve
-
-                //if vat.promise_stack[0].resolved {
-                //    println!("Already resolved!");
-                //} else {
-                //    println!("Inserting resolution callback");
-                //    vat.promise_stack[0].on_resolve.push(4);
-                //}
-            }
-            Inst::Nop => {}
+            //    // If promise is resolved, run code, else push onto on_resolve
+            //    if vat.promise_stack[0].resolved {
+            //        println!("Already resolved!");
+            //    } else {
+            //        // Insert into top of stack + block vat
+            //        println!("Inserting resolution callback");
+            //        vat.promise_stack[0].on_resolve.push(x);
+            //        yield_op = true;
+            //        break;
+            //    }
+            //}
+            Op::Nop => {}
         }
-
     }
 
     if vat.op_stack.len() > 1 {
@@ -154,10 +155,14 @@ pub fn run_expr(start_addr: usize, vat: &mut Vat, msg: &Msg, tx_msg: &mut crossb
         );
     }
 
+    if yield_op {
+        return None
+    }
+
     if vat.op_stack.is_empty() {
-        Hvalue::None
+        Some(Hvalue::None)
     } else {
-        vat.op_stack.pop().unwrap()
+        Some(vat.op_stack.pop().unwrap())
     }
 }
 
@@ -187,15 +192,15 @@ pub fn run_msg(
                 return_address: None,
             });
 
-
             z = table[&0][&function_id].0 as usize;
 
             let res = run_expr(z, vat, msg, tx_msg, code);
+
             out_msg = Some(Msg {
                 src_address: msg.dst_address,
                 dst_address: msg.src_address,
                 contents: vm_core::MsgContents::Response {
-                    result: res,
+                    result: res.unwrap(),
                     dst_promise: *src_promise,
                 },
             });
@@ -205,12 +210,17 @@ pub fn run_msg(
             dst_promise,
         } => {
             if let (promise_id) = dst_promise {
+                // We want to execute from top of stack down
                 println!("Got response, fulfilling promise");
-                let mut promise = &mut vat.promise_stack[dst_promise.unwrap() as usize];
-                promise.resolved = true;
+                {
+                    let  promise = &mut vat.promise_stack[dst_promise.unwrap() as usize];
+                    promise.resolved = true;
+                }
 
-                for i in &promise.on_resolve {
-                    println!("doing a resolve");
+                let resolutions = vat.promise_stack[dst_promise.unwrap() as usize].on_resolve.clone();
+
+                for i in resolutions {
+                    run_expr(i, vat, msg, tx_msg, code);
                 }
             }
         }
@@ -227,7 +237,6 @@ pub fn run_msg(
                 locals: HashMap::new(),
                 return_address: None,
             });
-
 
             z = table[&0][&function_id].0 as usize;
 

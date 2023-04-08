@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::lexer;
-use crate::ast::{AstNode, BinOp, Distance, PType, CType, Hvalue, EntityDef, Module, Identifier};
+use crate::ast::{AstNode, BinOp, Distance, PType, CType, Hvalue, EntityDef, Module, Identifier, IdentifierTarget};
 
 use crate::common::{HashMap, String, Box, str, FromStr, Vec, ToString};
 
@@ -33,8 +33,8 @@ TypeSpec: CType = {
 }
 
 Statement : Box<AstNode> = {
-   "let" <s:Symbol> <t:TypeSpec?> "=" <e:Expr> ";" => Box::new(AstNode::DefinitionNode(s, Box::new(e))),
-   <s:Symbol> "=" <e:Expr> ";" => Box::new(AstNode::AssignmentNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e))),
+   "let" <s:Symbol> <t:TypeSpec?> "=" <e:Expr> ";" => Box::new(AstNode::DefinitionNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e))),
+   <s:Symbol> "=" <e:Expr> ";" => Box::new(AstNode::AssignmentNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e))),
    Expr ";" => Box::new((<>).0),
    "↵" <e:Expr> ";" => Box::new(AstNode::Return(Box::new(e))),
    "resolve" ";" => Box::new(AstNode::ResolveAll),
@@ -49,13 +49,13 @@ ExprOp: BinOp = {
 }
 
 Expr: AstNode = {
-    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Hvalue::Pu8(e2 as u8)))),
-    Num => AstNode::ValueNode(Hvalue::Pu8(<> as u8)),
-    <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, e),
-    <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
-    <s:Symbol> "!" <f:Symbol> "(" <e:Expr?> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from("")}, Box::new(e)),
+    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Hvalue::Hu8(e2 as u8)))),
+    Num => AstNode::ValueNode(Hvalue::Hu8(<> as u8)),
+    <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, e),
+    <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
+    <s:Symbol> "!" <f:Symbol> "(" <e:Expr?> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
     PString => <>,
-    Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from("")}),
+    Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from(""), target: IdentifierTarget::Undecided}),
     <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
     "[" <v:Comma<Expr>> "]" => AstNode::ValueNode(Hvalue::List(v)),
 }
@@ -102,7 +102,7 @@ PDist: Distance = {
 }
 
 Num: u8 = {
-    <Pu8> => <>
+    <Hu8> => <>
 };
 
 extern {
@@ -160,6 +160,6 @@ extern {
         "print" => lexer::Tok::Print,
 
         "void" => lexer::Tok::Void,
-        Pu8 => lexer::Tok::Pu8 {value : <u8> },
+        Hu8 => lexer::Tok::Hu8 {value : <u8> },
     }
 }

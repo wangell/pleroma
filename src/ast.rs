@@ -7,7 +7,7 @@ pub struct Module {
     pub entity_defs: HashMap<String, AstNode>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum AstNode {
     EntityDef(EntityDef),
 
@@ -18,7 +18,7 @@ pub enum AstNode {
         body: Vec<Box<AstNode>>,
     },
 
-    DefinitionNode(String, Box<AstNode>),
+    DefinitionNode(Identifier, Box<AstNode>),
     AssignmentNode(Identifier, Box<AstNode>),
 
     FunctionCall(Identifier, Vec<AstNode>),
@@ -45,12 +45,21 @@ pub enum AstNode {
 }
 
 #[derive(Clone, Debug)]
+pub enum IdentifierTarget {
+    Undecided,
+    LocalVar,
+    EntityVar,
+}
+
+#[derive(Clone, Debug)]
 pub struct Identifier {
     pub original_sym: String,
     pub unique_sym: String,
+
+    pub target: IdentifierTarget,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EntityDef {
     pub name: String,
     pub data_declarations: Vec<(String, CType)>,
@@ -61,11 +70,11 @@ pub struct EntityDef {
 
 use core::fmt;
 use core::fmt::Debug;
-impl Debug for AstNode {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Hi")
-    }
-}
+//impl Debug for AstNode {
+//    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+//        write!(f, "Hi")
+//    }
+//}
 
 impl EntityDef {
     pub fn register_foreign_function(
@@ -91,10 +100,10 @@ impl EntityDef {
 pub enum Hvalue {
     None,
     PString(String),
-    Pu8(u8),
+    Hu8(u8),
     EntityAddress(vm_core::EntityAddress),
     List(Vec<AstNode>),
-    Promise(u8)
+    Promise(u8),
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -139,65 +148,111 @@ pub enum CType {
 //    inoculation_list: Vec<(String, CType)>
 //}
 
-pub trait AstNodeVisitor<T> {
+pub trait AstNodeVisitor {
     fn visit_entity_def(
         &mut self,
         name: &String,
         data_declarations: &Vec<(String, CType)>,
         inoculation_list: &Vec<(String, CType)>,
-        functions: &HashMap<String, Box<AstNode>>,
+        functions: &mut HashMap<String, Box<AstNode>>,
         foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
-    ) -> T;
-    fn visit_function(&mut self, name: &String, body: &Vec<Box<AstNode>>) -> T;
-    fn visit_return(&mut self, expr: &AstNode) -> T;
-    fn visit_value(&mut self, value: &Hvalue) -> T;
-    fn visit_operator(&mut self, left: &AstNode, op: &BinOp, right: &AstNode) -> T;
-    fn visit_message(&mut self) -> T;
+    ) {
+        for (func_name, func_def) in functions.iter_mut() {
+            walk(self, func_def);
+        }
+    }
 
-    fn visit_resolve(&mut self) -> T;
-    fn visit_print(&mut self, node: &AstNode) -> T;
+    fn visit_function(&mut self, name: &String, body: &mut Vec<Box<AstNode>>) {
+        for b in body.iter_mut() {
+            walk(self, b);
+        }
+    }
+
+    fn visit_return(&mut self, expr: &mut AstNode) {
+        walk(self, expr);
+    }
+
+    fn visit_value(&mut self, value: &Hvalue) {
+    }
+
+    fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {
+        walk(self, left);
+        walk(self, right);
+    }
+
+    fn visit_message(&mut self) {
+    }
+
+    fn visit_resolve(&mut self) {
+    }
+
+    fn visit_print(&mut self, node: &mut AstNode) {
+        walk(self, node);
+    }
+
+    fn visit_definition(&mut self, symbol: &mut Identifier, expr: &mut AstNode) {
+        self.visit_identifier(symbol);
+        walk(self, expr);
+    }
+
+    fn visit_identifier(&mut self, symbol: &mut Identifier) {}
+
+    fn visit_assignment(&mut self, symbol: &mut Identifier, expr: &mut AstNode) {
+        self.visit_identifier(symbol);
+        walk(self, expr);
+    }
 
     fn visit_foreign_call(
         &mut self,
         func: &fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
-        params: &Vec<AstNode>,
-    ) -> T;
+        params: &mut Vec<AstNode>,
+    ) {
+        for p in params.iter_mut() {
+            walk(self, p);
+        }
+    }
+
     //fn visit_function_call(&mut self, identifier: &Identifier, arguments: &Vec<AstNode>) -> T;
 }
 
-impl AstNode {
-    pub fn visit<T>(&self, visitor: &mut dyn AstNodeVisitor<T>) -> T {
-        match self {
-            AstNode::EntityDef(EntityDef {
-                name,
-                data_declarations,
-                inoculation_list,
-                functions,
-                foreign_functions,
-            }) => visitor.visit_entity_def(
-                name,
-                data_declarations,
-                inoculation_list,
-                functions,
-                foreign_functions,
-            ),
-            AstNode::Function {
-                name,
-                parameters,
-                return_type,
-                body,
-            } => visitor.visit_function(name, body),
-            AstNode::Return(r) => visitor.visit_return(r),
-            AstNode::ValueNode(v) => visitor.visit_value(v),
-            AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
-            AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
-            AstNode::Message(_, _) => visitor.visit_message(),
-            AstNode::ResolveAll => visitor.visit_resolve(),
-            AstNode::Print(a) => visitor.visit_print(a),
-            x => {
-                println!("{:?}", x);
-                panic!()
-            }
+pub fn walk_return<V: AstNodeVisitor>(visitor: &mut V, expr: &mut AstNode) {
+    walk(visitor, expr);
+}
+
+pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
+    match node {
+        AstNode::EntityDef(EntityDef {
+            name,
+            data_declarations,
+            inoculation_list,
+            functions,
+            foreign_functions,
+        }) => visitor.visit_entity_def(
+            name,
+            data_declarations,
+            inoculation_list,
+            functions,
+            foreign_functions,
+        ),
+        AstNode::Function {
+            name,
+            parameters,
+            return_type,
+            body,
+        } => visitor.visit_function(name, body),
+        AstNode::Return(r) => visitor.visit_return(r),
+        AstNode::ValueNode(v) => visitor.visit_value(v),
+        AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
+        AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
+        AstNode::Message(_, _) => visitor.visit_message(),
+        AstNode::ResolveAll => visitor.visit_resolve(),
+        AstNode::Print(a) => visitor.visit_print(a),
+
+        AstNode::DefinitionNode(a, b) => visitor.visit_definition(a, b),
+        AstNode::AssignmentNode(a, b) => visitor.visit_assignment(a, b),
+        x => {
+            println!("{:?}", x);
+            panic!()
         }
     }
 }

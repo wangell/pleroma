@@ -83,7 +83,7 @@ impl Nodeman<'_> {
 
     pub fn hello(entity: &mut vm_core::Entity, args: ast::Hvalue) -> ast::Hvalue {
         println!("\x1b[0;32mHello, welcome to Pleroma!\x1b[0m");
-        entity.data.insert(String::from("Hi"), ast::Hvalue::Pu8(5));
+        entity.data.insert(String::from("Hi"), ast::Hvalue::Hu8(5));
         return ast::Hvalue::None;
     }
 
@@ -94,16 +94,11 @@ pub fn load_nodeman(nodeman: &Nodeman) {
         .expect("Should have been able to read the file");
     let mut module = parser::parse(contents.as_str());
 
-    let mut cg_visitor = codegen::GenCode {
-        header: Vec::new(),
-        code: Vec::new(),
-        entity_function_locations: HashMap::new(),
-        current_entity_id: 0,
-        current_func_id: 0,
+    let mut vf_visitor = codegen::VariableFlow {
+        local_vars: HashMap::new()
     };
 
     let mut nodedef = nodeman.def.clone();
-
 
     //module
     //    .entity_defs
@@ -113,17 +108,7 @@ pub fn load_nodeman(nodeman: &Nodeman) {
         //d.register_foreign_function(&String::from("test"), Nodeman::hello);
     }
 
-    for (entity_name, entity_def) in &module.entity_defs {
-        let result = entity_def.visit(&mut cg_visitor);
-        println!("{:?}", cg_visitor.entity_function_locations);
-
-        cg_visitor.build_entity_function_location_table();
-
-        let mut complete_output: Vec<u8> = cg_visitor.header.clone();
-        complete_output.append(&mut cg_visitor.code);
-        complete_output.push(opcodes::Op::RetExit as u8);
-        fs::write(format!("kernel.plmb"), &complete_output).unwrap();
-    }
+    compile::compile(&mut module);
 }
 
 pub fn load_kernel(monad: &Monad) {

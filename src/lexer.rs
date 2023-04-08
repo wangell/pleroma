@@ -6,7 +6,7 @@ pub type Spanned<Tok, Loc, Error> = Result<(Loc, Tok, Loc), Error>;
 
 #[derive(Debug, Clone)]
 pub enum Tok {
-    Pu8 { value: u8 },
+    Hu8 { value: u8 },
     Space,
     Colon,
     Semicolon,
@@ -100,6 +100,8 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, '~')) => { self.set_char = true; return Some(Ok((i, Tok::Import, i+1)))},
                 Some((i, 'ε')) => { self.set_char = true; return Some(Ok((i, Tok::Entity, i+1)))},
 
+                Some((i, '=')) => { self.set_char = true; return Some(Ok((i, Tok::Equals, i+1)))},
+
                 Some((i, '+')) => { self.set_char = true; return Some(Ok((i, Tok::Plus, i+1)))},
 
                 Some((i, '!')) => { self.set_char = true; return Some(Ok((i, Tok::Message, i+1)))},
@@ -126,7 +128,8 @@ impl<'input> Iterator for Lexer<'input> {
                         }
                     }
 
-                    return Some(Ok((start_i, Tok::Pu8 { value: 50 }, last_i)));
+                    let parsed_val : u64 = sym.parse().unwrap();
+                    return Some(Ok((start_i, Tok::Hu8 { value: parsed_val.try_into().unwrap() }, last_i)));
                 },
 
                 Some((i, ch)) if ch.is_alphabetic() => {
@@ -154,6 +157,7 @@ impl<'input> Iterator for Lexer<'input> {
                         "loc" => return Some(Ok((start_i, Tok::Loc, last_i))),
                         "far" => return Some(Ok((start_i, Tok::Far, last_i))),
                         "u32" => return Some(Ok((start_i, Tok::Pu32, last_i))),
+                        "let" => return Some(Ok((start_i, Tok::Let, last_i))),
                         _ => return Some(Ok((start_i, Tok::Symbol { value: sym }, last_i))),
                     }
                 },
