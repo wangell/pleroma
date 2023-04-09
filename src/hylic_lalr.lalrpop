@@ -49,7 +49,7 @@ ExprOp: BinOp = {
 }
 
 Expr: AstNode = {
-    <e1:Expr> <o:ExprOp> <e2:Num> => AstNode::OperatorNode(Box::new(e1), o, Box::new(AstNode::ValueNode(Hvalue::Hu8(e2 as u8)))),
+    <e1:Expr> <o:ExprOp> <e2:Term> => AstNode::OperatorNode(Box::new(e1), o, Box::new(e2)),
     Num => AstNode::ValueNode(Hvalue::Hu8(<> as u8)),
     <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, e),
     <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
@@ -64,6 +64,10 @@ PString: AstNode = {
     "\"" <s:Symbol> "\"" => AstNode::ValueNode(Hvalue::PString(s))
 }
 
+Term: AstNode = {
+    <n:Num> => AstNode::ValueNode(Hvalue::Hu8(n as u8)),
+    Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from(""), target: IdentifierTarget::Undecided}),
+}
 
 Function: (String, Box<AstNode>) = {
     "δ" <f:Symbol> "(" <p:Comma<Inoc>> ")" <nn:ReturnType> <r:CType> "{" <b:Statement*> "}" => (f.clone(), Box::new(AstNode::Function{name: f, parameters: p, body: b, return_type: r}))

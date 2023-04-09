@@ -15,6 +15,8 @@ pub struct GenCode {
 
     pub current_entity_id: u32,
     pub current_func_id: u32,
+
+    pub function_num: HashMap<String, u32>
 }
 
 pub struct VariableFlow {
@@ -160,8 +162,6 @@ impl AstNodeVisitor for GenCode {
         functions: &mut HashMap<String, Box<AstNode>>,
         foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
     ) {
-        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
-        sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
 
         let mut data_map: HashMap<String, Hvalue> = HashMap::new();
         for (data_name, data_type) in data_declarations {
@@ -170,6 +170,18 @@ impl AstNodeVisitor for GenCode {
         self.entity_data_values
             .insert(self.current_entity_id, data_map);
 
+        {
+        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
+        sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
+        let mut fid = 0;
+        for (func_name, func_def) in sorted_functions {
+            self.function_num.insert(func_name.clone(), fid);
+            fid += 1;
+        }
+        }
+
+        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
+        sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
         for (func_name, func_def) in sorted_functions {
             walk(self, func_def);
         }
@@ -212,7 +224,7 @@ impl AstNodeVisitor for GenCode {
     }
 
     fn visit_message(&mut self, id: &mut Identifier, func_name: &mut String, args: &mut Vec<AstNode>) {
-        self.emit_op(Op::Message(0));
+        self.emit_op(Op::Message(self.function_num[func_name].into()));
     }
 
     fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {

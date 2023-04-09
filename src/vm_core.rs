@@ -60,24 +60,27 @@ pub struct Entity {
 
 #[derive(Debug, Clone)]
 pub struct Promise {
-    pub on_vars: Vec<Option<Hvalue>>,
+    pub on_resolve: Vec<usize>,
+
     pub resolved: bool,
     pub returned_val: Option<Hvalue>,
-    pub on_resolve: Vec<usize>,
     pub save_point: (Vec<Hvalue>, Vec<StackFrame>),
 
-    pub var_names: Vec<String>
+    pub var_names: Vec<String>,
+
+    pub src_promise: Option<u32>
+
 }
 
 impl Promise {
-    pub fn new() -> Self {
+    pub fn new(src_promise: Option<u32>) -> Self {
         Self {
-            on_vars: Vec::new(),
             resolved: false,
             returned_val: None,
             on_resolve: Vec::new(),
             save_point: (Vec::new(), Vec::new()),
-            var_names: Vec::new()
+            var_names: Vec::new(),
+            src_promise: src_promise
         }
     }
 }

@@ -14,6 +14,7 @@ pub fn run_expr(
     msg: &Msg,
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
     code: &Vec<u8>,
+    src_promise_id: Option<u32>
 ) -> Option<Hvalue> {
     let mut x = start_addr;
 
@@ -104,6 +105,8 @@ pub fn run_expr(
             }
             Op::Message(a0) => {
                 println!("message!!!!");
+                let next_prom_id = vat.promise_stack.len() as u8;
+
                 let msg = vm_core::Msg {
                     src_address: msg.dst_address,
                     dst_address: vm_core::EntityAddress::new(0, 0, 0),
@@ -113,13 +116,12 @@ pub fn run_expr(
                         // TODO: u64
                         function_id: a0 as u32,
                         function_name: String::from("main"),
-                        src_promise: Some(0),
+                        src_promise: Some(next_prom_id.into())
                     },
                 };
 
                 tx_msg.send(msg).unwrap();
-                let next_prom_id = vat.promise_stack.len() as u8;
-                vat.promise_stack.insert(next_prom_id, vm_core::Promise::new());
+                vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id));
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
             }
             Op::Await => {
@@ -220,16 +222,18 @@ pub fn run_msg(
 
             z = table[&0][&function_id].0 as usize;
 
-            let res = run_expr(z, vat, msg, tx_msg, code);
+            let poss_res = run_expr(z, vat, msg, tx_msg, code, src_promise.clone());
 
-            out_msg = Some(Msg {
-                src_address: msg.dst_address,
-                dst_address: msg.src_address,
-                contents: vm_core::MsgContents::Response {
-                    result: res.unwrap(),
-                    dst_promise: *src_promise,
-                },
-            });
+            if let Some(res) = poss_res {
+                out_msg = Some(Msg {
+                    src_address: msg.dst_address,
+                    dst_address: msg.src_address,
+                    contents: vm_core::MsgContents::Response {
+                        result: res,
+                        dst_promise: *src_promise,
+                    },
+                });
+            }
         }
         vm_core::MsgContents::Response {
             result,
@@ -255,7 +259,17 @@ pub fn run_msg(
                     vat.call_stack = promise.save_point.1.clone();
 
                     vat.store_local(&promise.var_names[0], result);
-                    run_expr(i, vat, msg, tx_msg, code);
+                    let poss_res = run_expr(i, vat, msg, tx_msg, code, *dst_promise);
+                    if let (Some(res), Some(src_prom_real)) = (poss_res, promise.src_promise) {
+                        out_msg = Some(Msg {
+                            src_address: msg.dst_address,
+                            dst_address: msg.src_address,
+                            contents: vm_core::MsgContents::Response {
+                                result: res,
+                                dst_promise: Some(src_prom_real)
+                            },
+                        });
+                    }
                 }
             }
         }
@@ -277,7 +291,7 @@ pub fn run_msg(
 
             z = table[&0][&function_id].0 as usize;
 
-            run_expr(z, vat, msg, tx_msg, code);
+            run_expr(z, vat, msg, tx_msg, code, None);
         }
     }
 

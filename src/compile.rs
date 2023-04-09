@@ -46,6 +46,7 @@ pub fn compile(module: &mut ast::Module) {
         entity_data_values: HashMap::new(),
         current_entity_id: 0,
         current_func_id: 0,
+        function_num: HashMap::new()
     };
 
     let mut vf_visitor = codegen::VariableFlow {
