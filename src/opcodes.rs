@@ -16,13 +16,15 @@ pub enum Op {
     Push(ast::Hvalue),
 
     ForeignCall(u64),
-    Message,
+    Message(u64),
 
     Lload(String),
     Lstore(String),
 
     Eload(String),
-    Estore(String)
+    Estore(String),
+
+    Await
 }
 
 #[repr(u8)]
@@ -45,7 +47,9 @@ pub enum SimpleOp {
     Lstore,
 
     Eload,
-    Estore
+    Estore,
+
+    Await
 }
 
 pub fn decode_value(vblock: &[u8]) -> (usize, Hvalue) {
@@ -56,6 +60,10 @@ pub fn decode_value(vblock: &[u8]) -> (usize, Hvalue) {
         0x01 => {
             let (y, a0) = read_u8_sz(&vblock[x+1..]);
             return (1 + y, Hvalue::Hu8(a0));
+        }
+        0x02 => {
+            let (y, a0) = read_u8_sz(&vblock[x+1..]);
+            return (1 + y, Hvalue::Promise(a0));
         }
         _ => panic!()
     }
@@ -69,6 +77,10 @@ pub fn encode_value(val: &ast::Hvalue) -> Vec<u8> {
             bytes.push(0x01);
             bytes.push(*a0);
         },
+        Hvalue::Promise(a0) => {
+            bytes.push(0x02);
+            bytes.push(*a0);
+        }
         _ => panic!()
     }
 
@@ -100,6 +112,10 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
             bytes.push(SimpleOp::Ret as u8)
         },
 
+        Op::Await => {
+            bytes.push(SimpleOp::Await as u8)
+        },
+
         Op::Push(a0) => {
             bytes.push(SimpleOp::Push as u8);
             bytes.append(&mut encode_value(&a0));
@@ -107,7 +123,10 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
 
         Op::ForeignCall(a0) => {},
 
-        Op::Message => {},
+        Op::Message(a0) => {
+            bytes.push(SimpleOp::Message as u8);
+            bytes.extend_from_slice(&a0.to_be_bytes());
+        },
 
         Op::Lload(s0) => {
             bytes.push(SimpleOp::Lload as u8);
@@ -159,9 +178,13 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
         SimpleOp::Ret => {
             return (x, Op::Ret);
         }
+
         SimpleOp::Message => {
-            return (x, Op::Message);
+            let (y, a0) = read_u64_sz(&vblock[x..]);
+
+            return (x + y, Op::Message(a0));
         }
+
         SimpleOp::Lload => {
             let (y, a0) = read_utf8_str_sz(&vblock[x..]);
             return (x + y, Op::Lload(a0));
@@ -187,6 +210,9 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
             let (y, a0) = decode_value(&vblock[x..]);
 
             return (x + y, Op::Push(a0));
+        }
+        SimpleOp::Await => {
+            return (x, Op::Await);
         }
         _ => {
             return (x, Op::Nop);

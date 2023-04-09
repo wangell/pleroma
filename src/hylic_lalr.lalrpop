@@ -35,10 +35,10 @@ TypeSpec: CType = {
 Statement : Box<AstNode> = {
    "let" <s:Symbol> <t:TypeSpec?> "=" <e:Expr> ";" => Box::new(AstNode::DefinitionNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e))),
    <s:Symbol> "=" <e:Expr> ";" => Box::new(AstNode::AssignmentNode(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e))),
-   Expr ";" => Box::new((<>).0),
    "↵" <e:Expr> ";" => Box::new(AstNode::Return(Box::new(e))),
-   "resolve" ";" => Box::new(AstNode::ResolveAll),
+   "await" <e:Expr> ";" => Box::new(AstNode::Await(Box::new(e))),
    "print" <e:Expr> ";" => Box::new(AstNode::Print(Box::new(e))),
+   Expr ";" => Box::new((<>).0),
 }
 
 ExprOp: BinOp = {
@@ -53,7 +53,7 @@ Expr: AstNode = {
     Num => AstNode::ValueNode(Hvalue::Hu8(<> as u8)),
     <s:Symbol> "(" <e:Expr*> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, e),
     <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
-    <s:Symbol> "!" <f:Symbol> "(" <e:Expr?> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
+    <s:Symbol> "!" <f:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, String::from(f), e),
     PString => <>,
     Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from(""), target: IdentifierTarget::Undecided}),
     <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
@@ -156,7 +156,7 @@ extern {
 
         "aln" => lexer::Tok::Aln,
 
-        "resolve" => lexer::Tok::ResolveAll,
+        "await" => lexer::Tok::Await,
         "print" => lexer::Tok::Print,
 
         "void" => lexer::Tok::Void,

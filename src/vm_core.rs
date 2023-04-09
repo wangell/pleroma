@@ -58,12 +58,15 @@ pub struct Entity {
     pub data: HashMap<String, Hvalue>,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Promise {
     pub on_vars: Vec<Option<Hvalue>>,
     pub resolved: bool,
     pub returned_val: Option<Hvalue>,
-    pub on_resolve: Vec<usize>
+    pub on_resolve: Vec<usize>,
+    pub save_point: (Vec<Hvalue>, Vec<StackFrame>),
+
+    pub var_names: Vec<String>
 }
 
 impl Promise {
@@ -72,7 +75,9 @@ impl Promise {
             on_vars: Vec::new(),
             resolved: false,
             returned_val: None,
-            on_resolve: Vec::new()
+            on_resolve: Vec::new(),
+            save_point: (Vec::new(), Vec::new()),
+            var_names: Vec::new()
         }
     }
 }
@@ -90,7 +95,7 @@ pub struct Vat {
     // Execution
     pub op_stack: Vec<Hvalue>,
     pub call_stack: Vec<StackFrame>,
-    pub promise_stack: Vec<Promise>
+    pub promise_stack: HashMap<u8, Promise>
 }
 
 pub struct EvalContext<'a> {
@@ -99,7 +104,7 @@ pub struct EvalContext<'a> {
     pub module: &'a Module,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct StackFrame {
     pub locals: HashMap<String, Hvalue>,
     pub return_address: Option<usize>,
@@ -119,7 +124,7 @@ impl Vat {
 
             op_stack: Vec::new(),
             call_stack: Vec::new(),
-            promise_stack: Vec::new()
+            promise_stack: HashMap::new()
         }
     }
 
@@ -134,6 +139,25 @@ impl Vat {
         let last_ind = self.call_stack.len() - 1;
         let mut last_frame = &mut self.call_stack[last_ind];
         last_frame.locals.insert(s.clone(), val.clone());
+    }
+
+    pub fn create_entity_code(&mut self, data: &HashMap<String, Hvalue>) -> &Entity {
+        let entity_id = self.last_entity_id;
+        self.entities.insert(
+            entity_id,
+            Entity {
+                address: EntityAddress {
+                    node_id: 0,
+                    vat_id: self.vat_id,
+                    entity_id: entity_id,
+                },
+                data: data.clone()
+            },
+        );
+
+        self.last_entity_id += 1;
+
+        &self.entities[&entity_id]
     }
 
     pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {

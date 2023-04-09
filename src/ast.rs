@@ -22,7 +22,7 @@ pub enum AstNode {
     AssignmentNode(Identifier, Box<AstNode>),
 
     FunctionCall(Identifier, Vec<AstNode>),
-    Message(Identifier, Box<Option<AstNode>>),
+    Message(Identifier, String, Vec<AstNode>),
 
     ForeignCall(fn(&mut vm_core::Entity, Hvalue) -> Hvalue, Vec<AstNode>),
 
@@ -30,7 +30,8 @@ pub enum AstNode {
 
     Return(Box<AstNode>),
 
-    ResolveAll,
+    Await(Box<AstNode>),
+
     Print(Box<AstNode>),
 
     OperatorNode(Box<AstNode>, BinOp, Box<AstNode>),
@@ -180,10 +181,11 @@ pub trait AstNodeVisitor {
         walk(self, right);
     }
 
-    fn visit_message(&mut self) {
+    fn visit_message(&mut self, id: &mut Identifier, func_name: &mut String, args: &mut Vec<AstNode>) {
     }
 
-    fn visit_resolve(&mut self) {
+    fn visit_await(&mut self, node: &mut AstNode) {
+        walk(self, node);
     }
 
     fn visit_print(&mut self, node: &mut AstNode) {
@@ -244,8 +246,8 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
         AstNode::ValueNode(v) => visitor.visit_value(v),
         AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
         AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
-        AstNode::Message(_, _) => visitor.visit_message(),
-        AstNode::ResolveAll => visitor.visit_resolve(),
+        AstNode::Message(a, b, c) => visitor.visit_message(a, b, c),
+        AstNode::Await(a) => visitor.visit_await(a),
         AstNode::Print(a) => visitor.visit_print(a),
 
         AstNode::DefinitionNode(a, b) => visitor.visit_definition(a, b),

@@ -40,7 +40,7 @@ pub enum Tok {
     Import,
     Comma,
 
-    ResolveAll,
+    Await,
     Print,
 
     Tab,
@@ -152,7 +152,7 @@ impl<'input> Iterator for Lexer<'input> {
                     }
 
                     match sym.as_str() {
-                        "resolve" => return Some(Ok((start_i, Tok::ResolveAll, last_i))),
+                        "await" => return Some(Ok((start_i, Tok::Await, last_i))),
                         "print" => return Some(Ok((start_i, Tok::Print, last_i))),
                         "loc" => return Some(Ok((start_i, Tok::Loc, last_i))),
                         "far" => return Some(Ok((start_i, Tok::Far, last_i))),

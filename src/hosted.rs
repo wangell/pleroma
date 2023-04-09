@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use std::{fs, panic, thread, time};
 use crate::compile;
 use crate::ast;
+use crate::pbin;
 
 use crate::{vm_core, kernel, vm};
 
@@ -151,7 +152,7 @@ pub fn boot() {
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
         dst_address: vm_core::EntityAddress::new(0, 0, 0),
-        contents: vm_core::MsgContents::BigBang{ function_id: 0, function_name: String::from("hi"), args: Vec::new() }
+        contents: vm_core::MsgContents::BigBang{ function_id: 2, function_name: String::from("hi"), args: Vec::new() }
     };
     tx_ml_box.send(msg).unwrap();
 
@@ -167,8 +168,10 @@ pub fn boot() {
     kernel::load_nodeman(&nodeman);
 
     //node.code.insert(0, fs::read("kernel.plmb").unwrap());
+    let mut z = 0;
+    let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
 
-    vat.create_entity(&nodeman.def);
+    vat.create_entity_code(&data_table[&0]);
 
     ml_vat_tx.send(vat);
 

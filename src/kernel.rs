@@ -94,10 +94,6 @@ pub fn load_nodeman(nodeman: &Nodeman) {
         .expect("Should have been able to read the file");
     let mut module = parser::parse(contents.as_str());
 
-    let mut vf_visitor = codegen::VariableFlow {
-        local_vars: HashMap::new()
-    };
-
     let mut nodedef = nodeman.def.clone();
 
     //module
