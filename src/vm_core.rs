@@ -146,16 +146,19 @@ impl Vat {
 
     pub fn create_entity_code(&mut self, data: &HashMap<String, Hvalue>) -> &Entity {
         let entity_id = self.last_entity_id;
-        self.entities.insert(
-            entity_id,
-            Entity {
+        let mut ent = Entity {
                 address: EntityAddress {
                     node_id: 0,
                     vat_id: self.vat_id,
                     entity_id: entity_id,
                 },
                 data: data.clone()
-            },
+            };
+
+        ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
+
+        self.entities.insert(
+            entity_id, ent
         );
 
         self.last_entity_id += 1;

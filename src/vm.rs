@@ -104,12 +104,17 @@ pub fn run_expr(
                 target_entity.data.insert(s0, store_val);
             }
             Op::Message(a0) => {
-                println!("message!!!!");
                 let next_prom_id = vat.promise_stack.len() as u8;
+                let target_entity = vat.op_stack.pop().unwrap();
+
+                let mut target_address: Option<vm_core::EntityAddress> = None;
+                if let Hvalue::EntityAddress(add) = target_entity {
+                    target_address = Some(add);
+                }
 
                 let msg = vm_core::Msg {
                     src_address: msg.dst_address,
-                    dst_address: vm_core::EntityAddress::new(0, 0, 0),
+                    dst_address: target_address.unwrap(),
 
                     contents: vm_core::MsgContents::Request {
                         args: Vec::new(),

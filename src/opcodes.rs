@@ -1,6 +1,7 @@
 use crate::ast;
 use crate::ast::Hvalue;
 use crate::bin_helpers::{read_u64_sz, read_u32_sz, read_u16_sz, read_u8_sz, read_utf8_str_sz};
+use crate::vm_core;
 
 #[derive(Debug)]
 pub enum Op {
@@ -65,6 +66,13 @@ pub fn decode_value(vblock: &[u8]) -> (usize, Hvalue) {
             let (y, a0) = read_u8_sz(&vblock[x+1..]);
             return (1 + y, Hvalue::Promise(a0));
         }
+        0x03 => {
+            let (y0, node_id) = read_u32_sz(&vblock[x+1..]);
+            let (y1, vat_id) = read_u32_sz(&vblock[x+1+y0..]);
+            let (y2, entity_id) = read_u32_sz(&vblock[x+1+y0+y1..]);
+
+            return (1 + y0 + y1 + y2, Hvalue::EntityAddress(vm_core::EntityAddress{node_id, vat_id, entity_id}));
+        }
         _ => panic!()
     }
 }
@@ -80,6 +88,12 @@ pub fn encode_value(val: &ast::Hvalue) -> Vec<u8> {
         Hvalue::Promise(a0) => {
             bytes.push(0x02);
             bytes.push(*a0);
+        },
+        Hvalue::EntityAddress(address) => {
+            bytes.push(0x03);
+            bytes.extend_from_slice(&address.node_id.to_be_bytes());
+            bytes.extend_from_slice(&address.vat_id.to_be_bytes());
+            bytes.extend_from_slice(&address.entity_id.to_be_bytes());
         }
         _ => panic!()
     }

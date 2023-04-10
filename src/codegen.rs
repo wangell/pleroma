@@ -35,6 +35,9 @@ impl AstNodeVisitor for VariableFlow {
     ) {
         self.entity_vars = HashMap::new();
 
+        // Implicit self var
+        self.entity_vars.insert(String::from("self"), ());
+
         for (data_dec, data_type) in data_declarations.iter() {
             self.entity_vars.insert(data_dec.clone(), ());
         }
@@ -224,6 +227,7 @@ impl AstNodeVisitor for GenCode {
     }
 
     fn visit_message(&mut self, id: &mut Identifier, func_name: &mut String, args: &mut Vec<AstNode>) {
+        self.visit_identifier(id);
         self.emit_op(Op::Message(self.function_num[func_name].into()));
     }
 
