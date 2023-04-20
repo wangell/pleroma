@@ -1,27 +1,31 @@
 use crate::ast;
 use crate::ast::walk;
-use crate::ast::{AstNode, AstNodeVisitor, BinOp, Hvalue, Identifier, IdentifierTarget};
-use crate::opcodes::{encode_instruction, Op, encode_value};
+use crate::ast::{AstNode, AstNodeVisitor, BinOp, Hvalue, Identifier, IdentifierTarget, CType};
+use crate::opcodes::{encode_instruction, encode_value, Op};
 use crate::vm_core;
 
-use crate::common::{Box, HashMap, String, Vec};
+use crate::common::{Box, HashMap, String, Vec, BTreeMap};
+
+pub struct VariableFlow {
+    pub inoc_vars: HashMap<String, ()>,
+    pub entity_vars: HashMap<String, ()>,
+    pub local_vars: HashMap<String, ()>,
+}
 
 pub struct GenCode {
     pub header: Vec<u8>,
     pub code: Vec<u8>,
 
-    pub entity_function_locations: HashMap<u32, HashMap<u32, (usize, usize)>>,
+    pub entity_function_locations: BTreeMap<u32, HashMap<u32, (usize, usize)>>,
     pub entity_data_values: HashMap<u32, HashMap<String, Hvalue>>,
 
     pub current_entity_id: u32,
     pub current_func_id: u32,
 
-    pub function_num: HashMap<String, u32>
-}
+    pub function_num: HashMap<String, u32>,
 
-pub struct VariableFlow {
-    pub entity_vars: HashMap<String, ()>,
-    pub local_vars: HashMap<String, ()>,
+    pub absolute_entity_function_locations: BTreeMap<(u32, u32), usize>,
+    pub relocations: Vec<(u32, u32, u64)>
 }
 
 impl AstNodeVisitor for VariableFlow {
@@ -38,12 +42,33 @@ impl AstNodeVisitor for VariableFlow {
         // Implicit self var
         self.entity_vars.insert(String::from("self"), ());
 
+        // For each inoc, emit inoc_request message to Monad(Nodeman for caching?) in create preamble
+        // Create ->
+        //   Inoc Request for each type (need await? Emit await? Handle promise chaining?)
+        //   Setup entity data with default/consts
+        //   Load arguments
+        //   User supplied function body
+        for (data_dec, data_type) in inoculation_list.iter() {
+            self.inoc_vars.insert(data_dec.clone(), ());
+        }
+
         for (data_dec, data_type) in data_declarations.iter() {
             self.entity_vars.insert(data_dec.clone(), ());
         }
 
         for (func_name, func_def) in functions.iter_mut() {
+            self.local_vars = HashMap::new();
             walk(self, func_def);
+        }
+    }
+
+    fn visit_function(&mut self, name: &String, parameters: &mut Vec<(String, CType)>, return_type: &mut CType, body: &mut Vec<Box<AstNode>>) {
+        for p in parameters {
+            self.local_vars.insert(p.0.clone(), ());
+        }
+
+        for b in body.iter_mut() {
+            walk(self, b);
         }
     }
 
@@ -60,6 +85,8 @@ impl AstNodeVisitor for VariableFlow {
             symbol.target = IdentifierTarget::LocalVar;
         } else if self.entity_vars.contains_key(&symbol.original_sym) {
             symbol.target = IdentifierTarget::EntityVar;
+        } else if self.inoc_vars.contains_key(&symbol.original_sym) {
+            symbol.target = IdentifierTarget::InocVar;
         }
     }
 }
@@ -91,6 +118,13 @@ impl GenCode {
 
     fn emit_u8(l: &mut Vec<u8>, v: u8) {
         l.push(v);
+    }
+
+    pub fn relocate_functions(&mut self) {
+        for (ent_id, func_id, loc) in &self.relocations {
+            let new_loc = self.absolute_entity_function_locations[&(*ent_id, *func_id)];
+            self.code.splice(*loc as usize..(loc+8) as usize, new_loc.to_be_bytes());
+        }
     }
 
     pub fn build_entity_data_table(&mut self) {
@@ -141,7 +175,11 @@ impl GenCode {
                 efl.push(*func_id as u8);
                 // Table size byte + table size
                 // TODO: make this u64
-                Self::emit_u16(&mut efl, &((*loc_start + 1 + sz * 6 + loc_offset) as u16));
+                let final_loc_start = (*loc_start + 1 + sz * 6 + loc_offset) as u16;
+
+                self.absolute_entity_function_locations.insert((*ent_id, *func_id), final_loc_start as usize);
+
+                Self::emit_u16(&mut efl, &(final_loc_start));
                 Self::emit_u16(&mut efl, &(*fun_size as u16));
             }
         }
@@ -165,6 +203,7 @@ impl AstNodeVisitor for GenCode {
         functions: &mut HashMap<String, Box<AstNode>>,
         foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
     ) {
+        self.current_func_id = 0;
 
         let mut data_map: HashMap<String, Hvalue> = HashMap::new();
         for (data_name, data_type) in data_declarations {
@@ -174,16 +213,18 @@ impl AstNodeVisitor for GenCode {
             .insert(self.current_entity_id, data_map);
 
         {
-        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
-        sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
-        let mut fid = 0;
-        for (func_name, func_def) in sorted_functions {
-            self.function_num.insert(func_name.clone(), fid);
-            fid += 1;
-        }
+            let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> =
+                functions.iter_mut().collect();
+            sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
+            let mut fid = 0;
+            for (func_name, func_def) in sorted_functions {
+                self.function_num.insert(func_name.clone(), fid);
+                fid += 1;
+            }
         }
 
-        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
+        let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> =
+            functions.iter_mut().collect();
         sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
         for (func_name, func_def) in sorted_functions {
             walk(self, func_def);
@@ -201,8 +242,14 @@ impl AstNodeVisitor for GenCode {
         self.emit_op(Op::Ret);
     }
 
-    fn visit_function(&mut self, name: &String, body: &mut Vec<Box<AstNode>>) {
+    fn visit_function(&mut self, name: &String, parameters: &mut Vec<(String, CType)>, return_type: &mut CType, body: &mut Vec<Box<AstNode>>) {
         let mut fun_size: (usize, usize) = (self.code.len(), 0);
+
+        // TODO: Remove when moving to local idx
+        // All arguments are pushed onto op stack, pop + estore number of arguments
+        for p in parameters {
+            self.emit_op(Op::Lstore(p.0.clone()));
+        }
 
         for n in body.iter_mut() {
             walk(self, n);
@@ -226,9 +273,17 @@ impl AstNodeVisitor for GenCode {
         self.emit_op(Op::Ret);
     }
 
-    fn visit_message(&mut self, id: &mut Identifier, func_name: &mut String, args: &mut Vec<AstNode>) {
+    fn visit_message(
+        &mut self,
+        id: &mut Identifier,
+        func_name: &mut String,
+        args: &mut Vec<AstNode>,
+    ) {
         self.visit_identifier(id);
-        self.emit_op(Op::Message(self.function_num[func_name].into()));
+        for arg in args.iter_mut() {
+            walk(self, arg);
+        }
+        self.emit_op(Op::Message(self.function_num[func_name].into(), args.len() as u8));
     }
 
     fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {
@@ -281,6 +336,18 @@ impl AstNodeVisitor for GenCode {
         } else {
             panic!();
         }
+    }
+
+    fn visit_function_call(&mut self, identifier: &mut Identifier, arguments: &mut Vec<AstNode>) {
+        for arg in arguments.iter_mut() {
+            walk(self, arg);
+        }
+        let fnum = self.function_num[&identifier.original_sym];
+        //let floc = self.entity_function_locations[&self.current_entity_id][&fnum].0 as u64;
+
+        // Entity, function, location
+        self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
+        self.emit_op(Op::Call(0, arguments.len() as u8));
     }
 
     fn visit_print(&mut self, node: &mut AstNode) {

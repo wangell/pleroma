@@ -40,6 +40,8 @@ pub enum Tok {
     Import,
     Comma,
 
+    Dot,
+
     Await,
     Print,
 
@@ -49,11 +51,21 @@ pub enum Tok {
     StringToken { value: String },
     Symbol { value: String },
     Number,
-    Pu32,
     Far,
     Loc,
     Aln,
-    Void
+    Void,
+
+    Pu8,
+    Pu16,
+    Pu32,
+    Pu64,
+
+    Ps8,
+    Ps16,
+    Ps32,
+    Ps64,
+
 }
 
 #[derive(Debug)]
@@ -96,6 +108,7 @@ impl<'input> Iterator for Lexer<'input> {
                 Some((i, 'δ')) => { self.set_char = true; return Some(Ok((i, Tok::Function, i+1)))},
 
                 Some((i, ',')) => { self.set_char = true; return Some(Ok((i, Tok::Comma, i+1)))},
+                Some((i, '.')) => { self.set_char = true; return Some(Ok((i, Tok::Dot, i+1)))},
                 Some((i, ':')) => { self.set_char = true; return Some(Ok((i, Tok::Colon, i+1)))},
                 Some((i, '~')) => { self.set_char = true; return Some(Ok((i, Tok::Import, i+1)))},
                 Some((i, 'ε')) => { self.set_char = true; return Some(Ok((i, Tok::Entity, i+1)))},
@@ -156,8 +169,18 @@ impl<'input> Iterator for Lexer<'input> {
                         "print" => return Some(Ok((start_i, Tok::Print, last_i))),
                         "loc" => return Some(Ok((start_i, Tok::Loc, last_i))),
                         "far" => return Some(Ok((start_i, Tok::Far, last_i))),
-                        "u32" => return Some(Ok((start_i, Tok::Pu32, last_i))),
                         "let" => return Some(Ok((start_i, Tok::Let, last_i))),
+
+                        "u8" => return Some(Ok((start_i, Tok::Pu8, last_i))),
+                        "u16" => return Some(Ok((start_i, Tok::Pu16, last_i))),
+                        "u32" => return Some(Ok((start_i, Tok::Pu32, last_i))),
+                        "u64" => return Some(Ok((start_i, Tok::Pu64, last_i))),
+
+                        "s8" => return Some(Ok((start_i, Tok::Ps8, last_i))),
+                        "s16" => return Some(Ok((start_i, Tok::Ps16, last_i))),
+                        "s32" => return Some(Ok((start_i, Tok::Ps32, last_i))),
+                        "s64" => return Some(Ok((start_i, Tok::Ps64, last_i))),
+
                         _ => return Some(Ok((start_i, Tok::Symbol { value: sym }, last_i))),
                     }
                 },

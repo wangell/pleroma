@@ -1,6 +1,7 @@
 cfg_if::cfg_if! {
     if #[cfg(feature = "hosted")] {
         use std::collections::HashMap as HashMap;
+        use std::collections::BTreeMap;
         use crate::ast::{Hvalue, Module, EntityDef};
     }
 }
@@ -38,24 +39,36 @@ impl EntityAddress {
 
 #[derive(Debug, Clone)]
 pub enum MsgContents {
-    Request { args: Vec<Hvalue>, function_id: u32, function_name: String, src_promise: Option<u32> },
-    Response { result: Hvalue, dst_promise: Option<u32> },
+    Request {
+        args: Vec<Hvalue>,
+        function_id: u32,
+        function_name: String,
+        src_promise: Option<u32>,
+    },
+    Response {
+        result: Hvalue,
+        dst_promise: Option<u32>,
+    },
 
     // Initial message to kick off universe
-    BigBang{ args: Vec<Hvalue>, function_id: u32, function_name: String, }
+    BigBang {
+        args: Vec<Hvalue>,
+        function_id: u32,
+        function_name: String,
+    },
 }
 
 #[derive(Debug, Clone)]
 pub struct Msg {
     pub src_address: EntityAddress,
     pub dst_address: EntityAddress,
-    pub contents: MsgContents
+    pub contents: MsgContents,
 }
 
 #[derive(Debug)]
 pub struct Entity {
     address: EntityAddress,
-    pub data: HashMap<String, Hvalue>,
+    pub data: BTreeMap<String, Hvalue>,
 }
 
 #[derive(Debug, Clone)]
@@ -68,8 +81,8 @@ pub struct Promise {
 
     pub var_names: Vec<String>,
 
-    pub src_promise: Option<u32>
-
+    // Create from promise ID src_promise
+    pub src_promise: Option<u32>,
 }
 
 impl Promise {
@@ -80,7 +93,7 @@ impl Promise {
             on_resolve: Vec::new(),
             save_point: (Vec::new(), Vec::new()),
             var_names: Vec::new(),
-            src_promise: src_promise
+            src_promise: src_promise,
         }
     }
 }
@@ -96,9 +109,10 @@ pub struct Vat {
     last_entity_id: u32,
 
     // Execution
+    // FIXME: move inside stackframe
     pub op_stack: Vec<Hvalue>,
     pub call_stack: Vec<StackFrame>,
-    pub promise_stack: HashMap<u8, Promise>
+    pub promise_stack: HashMap<u8, Promise>,
 }
 
 pub struct EvalContext<'a> {
@@ -111,6 +125,9 @@ pub struct EvalContext<'a> {
 pub struct StackFrame {
     pub locals: HashMap<String, Hvalue>,
     pub return_address: Option<usize>,
+    // Store source promise in here
+
+    pub promise_id: Option<u32>
 }
 
 pub struct PleromaNode {}
@@ -127,7 +144,7 @@ impl Vat {
 
             op_stack: Vec::new(),
             call_stack: Vec::new(),
-            promise_stack: HashMap::new()
+            promise_stack: HashMap::new(),
         }
     }
 
@@ -144,22 +161,29 @@ impl Vat {
         last_frame.locals.insert(s.clone(), val.clone());
     }
 
-    pub fn create_entity_code(&mut self, data: &HashMap<String, Hvalue>) -> &Entity {
+    pub fn create_entity_code(&mut self, data: &BTreeMap<String, Hvalue>) -> &Entity {
         let entity_id = self.last_entity_id;
         let mut ent = Entity {
-                address: EntityAddress {
-                    node_id: 0,
-                    vat_id: self.vat_id,
-                    entity_id: entity_id,
-                },
-                data: data.clone()
-            };
+            address: EntityAddress {
+                node_id: 0,
+                vat_id: self.vat_id,
+                entity_id: entity_id,
+            },
+            data: data.clone(),
+        };
 
-        ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
-
-        self.entities.insert(
-            entity_id, ent
+        ent.data
+            .insert(String::from("self"), Hvalue::EntityAddress(ent.address));
+        ent.data.insert(
+            String::from("io"),
+            Hvalue::EntityAddress(EntityAddress {
+                node_id: 0,
+                vat_id: 0,
+                entity_id: 0,
+            }),
         );
+
+        self.entities.insert(entity_id, ent);
 
         self.last_entity_id += 1;
 
@@ -168,18 +192,19 @@ impl Vat {
 
     pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {
         let entity_id = self.last_entity_id;
-        self.entities.insert(
-            entity_id,
-            Entity {
-                address: EntityAddress {
-                    node_id: 0,
-                    vat_id: self.vat_id,
-                    entity_id: entity_id,
-                },
-                data: HashMap::new(),
-            },
-        );
 
+        let mut ent = Entity {
+            address: EntityAddress {
+                node_id: 0,
+                vat_id: self.vat_id,
+                entity_id: entity_id,
+            },
+            data: BTreeMap::new()
+        };
+
+        ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
+
+        self.entities.insert(entity_id, ent);
         self.last_entity_id += 1;
 
         &self.entities[&entity_id]

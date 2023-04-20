@@ -1,14 +1,26 @@
-use crate::common::{vec, Box, HashMap, String, Vec};
+use crate::common::{vec, Box, HashMap, String, Vec, BTreeMap};
 use crate::vm_core;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+pub struct Root {
+    pub modules: BTreeMap<String, AstNode>,
+    pub external_modules: BTreeMap<String, AstNode>
+}
+
+#[derive(Debug, Clone)]
 pub struct Module {
     pub imports: Vec<String>,
-    pub entity_defs: HashMap<String, AstNode>,
+    pub entity_defs: BTreeMap<String, AstNode>,
 }
 
 #[derive(Clone, Debug)]
 pub enum AstNode {
+    Root(Root),
+
+    Module(Module),
+
+    ImportModule(String),
+
     EntityDef(EntityDef),
 
     Function {
@@ -50,6 +62,7 @@ pub enum IdentifierTarget {
     Undecided,
     LocalVar,
     EntityVar,
+    InocVar
 }
 
 #[derive(Clone, Debug)]
@@ -163,7 +176,7 @@ pub trait AstNodeVisitor {
         }
     }
 
-    fn visit_function(&mut self, name: &String, body: &mut Vec<Box<AstNode>>) {
+    fn visit_function(&mut self, name: &String, parameters: &mut Vec<(String, CType)>, return_type: &mut CType, body: &mut Vec<Box<AstNode>>) {
         for b in body.iter_mut() {
             walk(self, b);
         }
@@ -182,6 +195,10 @@ pub trait AstNodeVisitor {
     }
 
     fn visit_message(&mut self, id: &mut Identifier, func_name: &mut String, args: &mut Vec<AstNode>) {
+        self.visit_identifier(id);
+        for arg in args.iter_mut() {
+            walk(self, arg);
+        }
     }
 
     fn visit_await(&mut self, node: &mut AstNode) {
@@ -190,6 +207,18 @@ pub trait AstNodeVisitor {
 
     fn visit_print(&mut self, node: &mut AstNode) {
         walk(self, node);
+    }
+
+    fn visit_root(&mut self, root: &mut Root) {
+        for (module_name, module) in root.modules.iter_mut() {
+            walk(self, module);
+        }
+    }
+
+    fn visit_module(&mut self, module: &mut Module) {
+        for (ename, edef) in module.entity_defs.iter_mut() {
+            walk(self, edef);
+        }
     }
 
     fn visit_definition(&mut self, symbol: &mut Identifier, expr: &mut AstNode) {
@@ -214,7 +243,12 @@ pub trait AstNodeVisitor {
         }
     }
 
-    //fn visit_function_call(&mut self, identifier: &Identifier, arguments: &Vec<AstNode>) -> T;
+    fn visit_function_call(&mut self, identifier: &mut Identifier, arguments: &mut Vec<AstNode>) {
+        for arg in arguments.iter_mut() {
+            walk(self, arg);
+        }
+        self.visit_identifier(identifier);
+    }
 }
 
 pub fn walk_return<V: AstNodeVisitor>(visitor: &mut V, expr: &mut AstNode) {
@@ -241,7 +275,7 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
             parameters,
             return_type,
             body,
-        } => visitor.visit_function(name, body),
+        } => visitor.visit_function(name, parameters, return_type, body),
         AstNode::Return(r) => visitor.visit_return(r),
         AstNode::ValueNode(v) => visitor.visit_value(v),
         AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
@@ -253,6 +287,10 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
         AstNode::DefinitionNode(a, b) => visitor.visit_definition(a, b),
         AstNode::AssignmentNode(a, b) => visitor.visit_assignment(a, b),
         AstNode::Identifier(a) => visitor.visit_identifier(a),
+
+        AstNode::Root(a) => visitor.visit_root(a),
+        AstNode::Module(a) => visitor.visit_module(a),
+        AstNode::FunctionCall(a, b) => visitor.visit_function_call(a, b),
         x => {
             println!("{:?}", x);
             panic!()

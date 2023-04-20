@@ -167,10 +167,16 @@ pub fn boot() {
     let nodeman = kernel::Nodeman::new(&mut node);
     kernel::load_nodeman(&nodeman);
 
-    //node.code.insert(0, fs::read("kernel.plmb").unwrap());
+    use crate::parser;
+    let mut root = parser::parse_root("./blah");
+
+    compile::compile(&mut root);
+
+    node.code.insert(0, fs::read("kernel.plmb").unwrap());
     let mut z = 0;
     let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
 
+    //vat.create_entity(&nodeman.def);
     vat.create_entity_code(&data_table[&0]);
 
     ml_vat_tx.send(vat);

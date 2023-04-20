@@ -14,7 +14,7 @@ pub fn run_expr(
     msg: &Msg,
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
     code: &Vec<u8>,
-    src_promise_id: Option<u32>
+    src_promise_id: Option<u32>,
 ) -> Option<Hvalue> {
     let mut x = start_addr;
 
@@ -39,9 +39,7 @@ pub fn run_expr(
             }
             Op::Add => {
                 let (a0, a1) = (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap());
-                if let (Hvalue::Hu8(b0), Hvalue::Hu8(b1)) =
-                    (a0.clone(), a1.clone())
-                {
+                if let (Hvalue::Hu8(b0), Hvalue::Hu8(b1)) = (a0.clone(), a1.clone()) {
                     let res = b0 + b1;
                     println!("Calling add {} + {} : {}", b0, b1, res);
                     vat.op_stack.push(Hvalue::Hu8(res));
@@ -89,11 +87,16 @@ pub fn run_expr(
             Op::Lstore(s0) => {
                 let store_val = vat.op_stack.pop().unwrap();
                 if let Hvalue::Promise(promise_id) = store_val {
-                    vat.promise_stack.get_mut(&promise_id).unwrap().var_names.push(s0.clone());
+                    vat.promise_stack
+                        .get_mut(&promise_id)
+                        .unwrap()
+                        .var_names
+                        .push(s0.clone());
                 }
                 vat.store_local(&s0, &store_val);
             }
             Op::Eload(s0) => {
+                println!("s0 : {}", s0);
                 let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
                 let local_var = target_entity.data[&s0].clone();
                 vat.op_stack.push(local_var);
@@ -103,7 +106,32 @@ pub fn run_expr(
                 let store_val = vat.op_stack.pop().unwrap();
                 target_entity.data.insert(s0, store_val);
             }
-            Op::Message(a0) => {
+            Op::Call(a0, a1) => {
+                // #a1 rguments should already be on the stack
+                let current_promise_id = vat.call_stack[vat.call_stack.len() - 1].promise_id;
+                let mut nf = StackFrame {
+                    locals: HashMap::new(),
+                    return_address: Some(x),
+                    promise_id: current_promise_id,
+                };
+
+                // TODO: Add back once we remove the argument/op stack method
+                for i in 0..a1 {
+                    //let tv = vat.op_stack.pop();
+                    //nf.locals.insert(String::from("f"), tv.unwrap());
+                }
+
+                // Need to load / store current entity in StackFrame
+
+                vat.call_stack.push(nf);
+                x = a0 as usize;
+            }
+            Op::Message(a0, a1) => {
+                let mut args = Vec::new();
+                for i in 0..a1 {
+                    args.push(vat.op_stack.pop().unwrap());
+                }
+
                 let next_prom_id = vat.promise_stack.len() as u8;
                 let target_entity = vat.op_stack.pop().unwrap();
 
@@ -117,15 +145,16 @@ pub fn run_expr(
                     dst_address: target_address.unwrap(),
 
                     contents: vm_core::MsgContents::Request {
-                        args: Vec::new(),
+                        args: args,
                         // TODO: u64
                         function_id: a0 as u32,
                         function_name: String::from("main"),
-                        src_promise: Some(next_prom_id.into())
+                        src_promise: Some(next_prom_id.into()),
                     },
                 };
 
                 tx_msg.send(msg).unwrap();
+                println!("{:?}", src_promise_id);
                 vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id));
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
             }
@@ -136,7 +165,6 @@ pub fn run_expr(
                     if vat.promise_stack[&target_promise].resolved {
                         println!("Already resolved!");
                     } else {
-                        println!("Insert promise handler!");
                         vat.promise_stack
                             .get_mut(&target_promise)
                             .unwrap()
@@ -203,9 +231,9 @@ pub fn run_msg(
     msg: &Msg,
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
 ) -> Option<Msg> {
-    println!("Running message: {:?}", msg);
-
     let mut out_msg: Option<Msg> = None;
+    println!("Message {:?}", msg);
+    println!("");
 
     match &msg.contents {
         vm_core::MsgContents::Request {
@@ -223,7 +251,12 @@ pub fn run_msg(
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
                 return_address: None,
+                promise_id: *src_promise,
             });
+
+            for i in args {
+                vat.op_stack.push(i.clone());
+            }
 
             z = table[&0][&function_id].0 as usize;
 
@@ -244,13 +277,15 @@ pub fn run_msg(
             result,
             dst_promise,
         } => {
+            // FIXME: there is a logic error here when doing promise chaining
             if let (promise_id) = dst_promise {
                 // We want to execute from top of stack down
                 let fix_id = promise_id.unwrap() as u8;
+                let prom = &mut vat.promise_stack.get_mut(&fix_id).unwrap();
                 let mut promise;
                 {
-                    let prom = &mut vat.promise_stack.get_mut(&fix_id).unwrap();
                     promise = prom.clone();
+                    //prom.on_resolve.clear();
                 }
 
                 {
@@ -259,6 +294,7 @@ pub fn run_msg(
 
                 let resolutions = promise.on_resolve.clone();
 
+                println!("{:?} {:?}", dst_promise, vat.promise_stack);
                 for i in resolutions {
                     vat.op_stack = promise.save_point.0.clone();
                     vat.call_stack = promise.save_point.1.clone();
@@ -271,7 +307,7 @@ pub fn run_msg(
                             dst_address: msg.src_address,
                             contents: vm_core::MsgContents::Response {
                                 result: res,
-                                dst_promise: Some(src_prom_real)
+                                dst_promise: Some(src_prom_real),
                             },
                         });
                     }
@@ -292,6 +328,7 @@ pub fn run_msg(
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
                 return_address: None,
+                promise_id: None,
             });
 
             z = table[&0][&function_id].0 as usize;

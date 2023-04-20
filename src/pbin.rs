@@ -1,15 +1,15 @@
-use crate::common::{HashMap, String, Box, Vec, vec, str};
+use crate::common::{HashMap, String, Box, Vec, vec, str, BTreeMap};
 use crate::opcodes::{Op, decode_instruction, decode_value};
 use crate::bin_helpers::{read_u8_sz, read_u16_sz};
 use crate::ast::Hvalue;
 
 use crate::bin_helpers::read_utf8_str_sz;
 
-pub fn load_entity_data_table(location: &mut usize, vblock: &[u8]) -> HashMap<u32, HashMap<String, Hvalue>> {
+pub fn load_entity_data_table(location: &mut usize, vblock: &[u8]) -> BTreeMap<u32, BTreeMap<String, Hvalue>> {
     let table_size = read_u8_sz(&vblock[*location..]);
     *location += 1;
 
-    let mut table : HashMap<u32, HashMap<String, Hvalue>> = HashMap::new();
+    let mut table : BTreeMap<u32, BTreeMap<String, Hvalue>> = BTreeMap::new();
 
     let mut z = 0;
 
@@ -25,7 +25,7 @@ pub fn load_entity_data_table(location: &mut usize, vblock: &[u8]) -> HashMap<u3
         let (y1, val) = decode_value(&vblock[*location..]);
         *location += y1;
 
-        table.entry(ent_id.1.into()).or_insert(HashMap::new());
+        table.entry(ent_id.1.into()).or_insert(BTreeMap::new());
         table.get_mut(&ent_id.1.into()).unwrap().insert(func_id, val);
 
         z += 1;
@@ -34,11 +34,11 @@ pub fn load_entity_data_table(location: &mut usize, vblock: &[u8]) -> HashMap<u3
     table
 }
 
-pub fn load_entity_function_table(location: &mut usize, vblock: &[u8]) -> HashMap<u32, HashMap<u32, (usize, usize)>> {
+pub fn load_entity_function_table(location: &mut usize, vblock: &[u8]) -> BTreeMap<u32, BTreeMap<u32, (usize, usize)>> {
     let table_size = read_u8_sz(&vblock[*location..]);
     *location += 1;
 
-    let mut table : HashMap<u32, HashMap<u32, (usize, usize)>> = HashMap::new();
+    let mut table : BTreeMap<u32, BTreeMap<u32, (usize, usize)>> = BTreeMap::new();
 
     let mut z = 0;
 
@@ -56,7 +56,7 @@ pub fn load_entity_function_table(location: &mut usize, vblock: &[u8]) -> HashMa
         let func_len = read_u16_sz(&vblock[*location..]);
         *location += 2;
 
-        table.entry(ent_id.1.into()).or_insert(HashMap::new());
+        table.entry(ent_id.1.into()).or_insert(BTreeMap::new());
         table.get_mut(&ent_id.1.into()).unwrap().insert(func_id.1.into(), (loc.1 as usize, func_len.1 as usize));
 
         z += 1;

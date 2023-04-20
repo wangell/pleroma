@@ -1,14 +1,73 @@
 ~B;
 
-ε Nodeman { Blob : far u32 } {
+ε Nodeman { io : u32 } {
 
-  δ test2() → loc u32 {
-		self ! test();
-    resolve;
-    print 4;
+  ourblah: u32;
+
+  δ darth() → loc u32 {
+    ↵ 4;
   }
 
-  δ test() → loc u32 {
-    ↵ 9 + 11;
+  δ callax() → loc u32 {
+		let n: u32 = self ! darth();
+
+		await n;
+
+    ↵ n + 8;
   }
+
+  δ bartho() → loc u32 {
+		let n: u32 = self ! callax();
+
+		await n;
+
+    ↵ n;
+  }
+
+  δ alabama() → loc u32 {
+    let q : u32 = 2;
+		q = 9;
+
+    let z: u32 = io ! bartho();
+		await z;
+
+    ↵ z + q;
+  }
+
+}
+
+ε Io { } {
+
+  ourblah: u32;
+
+  δ darth() → loc u32 {
+    ↵ 4;
+  }
+
+  δ callax() → loc u32 {
+		let n: u32 = self ! darth();
+
+		await n;
+
+    ↵ n + 8;
+  }
+
+  δ bartho() → loc u32 {
+		let n: u32 = self ! callax();
+
+		await n;
+
+    ↵ n;
+  }
+
+  δ alabama() → loc u32 {
+    let q : u32 = 2;
+		q = 9;
+
+    let z: u32 = io ! bartho();
+		await z;
+
+    ↵ z + q;
+  }
+
 }

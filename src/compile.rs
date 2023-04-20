@@ -6,12 +6,13 @@ use crate::ast;
 use crate::pbin;
 use crate::ast::AstNodeVisitor;
 
-use std::collections::HashMap;
+use crate::common::{Box, HashMap, String, Vec, BTreeMap};
+
 use std::fs;
 
 pub fn compile_to_file(path_in: &String, path_out: &String) {
     let contents = fs::read_to_string(path_in).expect("Should have been able to read the file");
-    let mut module = parser::parse(contents.as_str());
+    let mut module = parser::parse_module(contents.as_str());
 
     //let mut cg_visitor = codegen::GenCode {
     //    header: Vec::new(),
@@ -38,37 +39,38 @@ pub fn compile_to_file(path_in: &String, path_out: &String) {
     //}
 }
 
-pub fn compile(module: &mut ast::Module) {
+pub fn compile(root: &mut ast::AstNode) {
     let mut cg_visitor = codegen::GenCode {
         header: Vec::new(),
         code: Vec::new(),
-        entity_function_locations: HashMap::new(),
+        entity_function_locations: BTreeMap::new(),
         entity_data_values: HashMap::new(),
         current_entity_id: 0,
         current_func_id: 0,
-        function_num: HashMap::new()
+        absolute_entity_function_locations: BTreeMap::new(),
+        function_num: HashMap::new(),
+        relocations: Vec::new()
     };
 
     let mut vf_visitor = codegen::VariableFlow {
         local_vars: HashMap::new(),
-        entity_vars: HashMap::new()
+        entity_vars: HashMap::new(),
+        inoc_vars: HashMap::new()
     };
 
-    for (entity_name, entity_def) in module.entity_defs.iter_mut() {
+    // Apply passes
+    let vf_result = ast::walk(&mut vf_visitor, root);
+    let cg_result = ast::walk(&mut cg_visitor, root);
 
-        let vf_result = ast::walk(&mut vf_visitor, entity_def);
-        let cg_result = ast::walk(&mut cg_visitor, entity_def);
+    // TODO: these should be run inside GenCode automatically - add "pre/post" methods to all AstNodeVisitors
+    cg_visitor.build_entity_data_table();
+    cg_visitor.build_entity_function_location_table();
+    cg_visitor.relocate_functions();
 
-        cg_visitor.build_entity_data_table();
-        cg_visitor.build_entity_function_location_table();
+    let mut complete_output: Vec<u8> = cg_visitor.header.clone();
+    complete_output.append(&mut cg_visitor.code);
 
-        let mut complete_output: Vec<u8> = cg_visitor.header.clone();
-        complete_output.append(&mut cg_visitor.code);
-        //complete_output.push(opcodes::Op::RetExit as u8);
+    pbin::disassemble(&complete_output);
 
-        pbin::disassemble(&complete_output);
-
-        fs::write(format!("kernel.plmb"), &complete_output).unwrap();
-    }
-
+    fs::write(format!("kernel.plmb"), &complete_output).unwrap();
 }

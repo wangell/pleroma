@@ -1,6 +1,7 @@
 cfg_if::cfg_if! {
     if #[cfg(feature = "hosted")] {
         pub use std::collections::HashMap;
+        pub use std::collections::BTreeMap;
         pub use std::fmt::{Debug, Error, Formatter};
 
         pub use String;
@@ -18,6 +19,7 @@ cfg_if::cfg_if! {
         extern crate alloc;
 
         pub use alloc::collections::BTreeMap as HashMap;
+        pub use alloc::collections::BTreeMap;
         pub use alloc::string::String;
         pub use alloc::vec::Vec;
         pub use alloc::boxed::Box;

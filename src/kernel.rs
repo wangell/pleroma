@@ -92,19 +92,24 @@ impl Nodeman<'_> {
 pub fn load_nodeman(nodeman: &Nodeman) {
     let contents = fs::read_to_string("./test_examples/basic_entity.plm")
         .expect("Should have been able to read the file");
-    let mut module = parser::parse(contents.as_str());
+    let mut module = parser::parse_module(contents.as_str());
 
     let mut nodedef = nodeman.def.clone();
 
     //module
     //    .entity_defs
     //    .insert(String::from("Nodeman"), ast::AstNode::EntityDef(nodedef));
-    let real_def = module.entity_defs.get_mut("Nodeman").unwrap();
-    if let ast::AstNode::EntityDef(d) = real_def {
-        //d.register_foreign_function(&String::from("test"), Nodeman::hello);
-    }
+    //let real_def = module.entity_defs.get_mut("Nodeman").unwrap();
+    //if let ast::AstNode::EntityDef(d) = real_def {
+    //    //d.register_foreign_function(&String::from("test"), Nodeman::hello);
+    //}
 
-    compile::compile(&mut module);
+    //let mut root = ast::Root{
+    //    modules : HashMap::new(),
+    //    external_modules: HashMap::new()
+    //};
+
+    //compile::compile(&mut root);
 }
 
 pub fn load_kernel(monad: &Monad) {

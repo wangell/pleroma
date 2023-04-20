@@ -10,9 +10,10 @@ pub fn empty_ethernet_frame(src_mac: [u8; 6], dst_mac: [u8; 6]) -> [u8; MIN_FRAM
     // Ethernet header
     frame[0..6].copy_from_slice(&dst_mac);
     frame[6..12].copy_from_slice(&src_mac);
-    frame[12..14].copy_from_slice(&[0x05, 0xDC]); // EtherType: Set to 0x05DC (non-standard, for example)
+    frame[12..14].copy_from_slice(&[0x05, 0xDC]);
 
-    // Payload: No need to set any data, as padding with zeros is already done by initializing the frame array
+
+    // Payload = zeros
 
     frame
 }
@@ -36,14 +37,14 @@ pub fn create_eth_ipv4_udp_packet() -> [u8; 62] {
     packet[12..14].copy_from_slice(&ethertype_ipv4);
 
     // IPv4 header
-    let version_and_ihl = 0x45; // Version: 4, IHL: 5 (20 bytes)
-    let dscp_and_ecn = 0x00; // DSCP: 0, ECN: 0
-    let total_length : u16 = 0x002E; // 20 bytes (header) + 8 bytes (UDP header) + 5 bytes (data) = 33 bytes
-    let identification : u16 = 0x0000;
-    let flags_and_fragment_offset: u16 = 0x0000; // Flags: 0, Fragment offset: 0
+    let version_and_ihl = 0x45;
+    let dscp_and_ecn = 0x00;
+    let total_length: u16 = 0x002E;
+    let identification: u16 = 0x0000;
+    let flags_and_fragment_offset: u16 = 0x0000;
     let ttl = 0x40; // 64
-    let protocol_udp = 0x11; // UDP
-    let header_checksum : u16 = 0x0000; // Set to 0 for now
+    let protocol_udp = 0x11;
+    let header_checksum: u16 = 0x0000;
 
     packet[14] = version_and_ihl;
     packet[15] = dscp_and_ecn;
@@ -54,33 +55,25 @@ pub fn create_eth_ipv4_udp_packet() -> [u8; 62] {
     packet[23] = protocol_udp;
     packet[24..26].copy_from_slice(&header_checksum.to_be_bytes());
 
-    // Source IP address (change to your desired source IP)
     let src_ip = [192, 168, 100, 2];
-    // Destination IP address (change to your desired destination IP)
     let dst_ip = [192, 168, 100, 3];
 
     packet[26..30].copy_from_slice(&src_ip);
     packet[30..34].copy_from_slice(&dst_ip);
 
     // UDP header
-    let src_port: u16 = 5555; // Arbitrary source port (12345)
-    let dst_port: u16 = 5555; // Arbitrary destination port (12346)
-    let udp_length: u16 = 0x000D; // 8 bytes (header) + 5 bytes (data) = 13 bytes
-    let udp_checksum: u16 = 0x0000; // Set to 0 for now
+    let src_port: u16 = 5555;
+    let dst_port: u16 = 5555;
+    let udp_length: u16 = 0x000D;
+    let udp_checksum: u16 = 0x0000;
 
     packet[34..36].copy_from_slice(&src_port.to_be_bytes());
     packet[36..38].copy_from_slice(&dst_port.to_be_bytes());
     packet[38..40].copy_from_slice(&udp_length.to_be_bytes());
     packet[40..42].copy_from_slice(&udp_checksum.to_be_bytes());
 
-    // UDP payload: ASCII "Hello"
     let payload: &[u8] = b"Hello";
     packet[42..47].copy_from_slice(payload);
-
-    // Here, you can compute the checksums for the IPv4 header and UDP packet
-    // and update the checksum fields in the packet accordingly. However, this is
-    // not required for this example, and many systems allow transmitting packets
-    // with incorrect checksums for testing purposes.
 
     packet
 }
@@ -116,7 +109,7 @@ pub fn create_arp_broadcast_packet(src_mac: &[u8; 6], src_ip: &[u8; 4]) -> [u8; 
     };
 
     let arp_header = ArpHeader {
-        hw_type: u16::to_be(1), // Ethernet
+        hw_type: u16::to_be(1),         // Ethernet
         proto_type: u16::to_be(0x0800), // IPv4
         hw_addr_len: 6,
         proto_addr_len: 4,
@@ -132,7 +125,11 @@ pub fn create_arp_broadcast_packet(src_mac: &[u8; 6], src_ip: &[u8; 4]) -> [u8; 
     let arp_header_ptr = &arp_header as *const ArpHeader as *const u8;
 
     unsafe {
-        core::ptr::copy_nonoverlapping(eth_header_ptr, packet.as_mut_ptr(), mem::size_of::<EthernetHeader>());
+        core::ptr::copy_nonoverlapping(
+            eth_header_ptr,
+            packet.as_mut_ptr(),
+            mem::size_of::<EthernetHeader>(),
+        );
         core::ptr::copy_nonoverlapping(
             arp_header_ptr,
             packet.as_mut_ptr().add(mem::size_of::<EthernetHeader>()),

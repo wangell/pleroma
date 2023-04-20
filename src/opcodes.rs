@@ -17,7 +17,10 @@ pub enum Op {
     Push(ast::Hvalue),
 
     ForeignCall(u64),
-    Message(u64),
+
+    // Function #, # of args
+    Message(u64, u8),
+    Call(u64, u8),
 
     Lload(String),
     Lstore(String),
@@ -42,6 +45,7 @@ pub enum SimpleOp {
     Push,
 
     ForeignCall,
+    Call,
     Message,
 
     Lload,
@@ -137,9 +141,16 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
 
         Op::ForeignCall(a0) => {},
 
-        Op::Message(a0) => {
+        Op::Call(a0, a1) => {
+            bytes.push(SimpleOp::Call as u8);
+            bytes.extend_from_slice(&a0.to_be_bytes());
+            bytes.extend_from_slice(&a1.to_be_bytes());
+        },
+
+        Op::Message(a0, a1) => {
             bytes.push(SimpleOp::Message as u8);
             bytes.extend_from_slice(&a0.to_be_bytes());
+            bytes.extend_from_slice(&a1.to_be_bytes());
         },
 
         Op::Lload(s0) => {
@@ -195,8 +206,17 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
 
         SimpleOp::Message => {
             let (y, a0) = read_u64_sz(&vblock[x..]);
+            let (y0, a0) = read_u64_sz(&vblock[x..]);
+            let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
 
-            return (x + y, Op::Message(a0));
+            return (x + y0 + y1, Op::Message(a0, a1));
+        }
+
+        SimpleOp::Call => {
+            let (y0, a0) = read_u64_sz(&vblock[x..]);
+            let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
+
+            return (x + y0 + y1, Op::Call(a0, a1));
         }
 
         SimpleOp::Lload => {
