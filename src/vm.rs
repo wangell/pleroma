@@ -149,14 +149,14 @@ pub fn run_expr(
                         // TODO: u64
                         function_id: a0 as u32,
                         function_name: String::from("main"),
-                        src_promise: Some(next_prom_id.into()),
+                        src_promise: Some(next_prom_id.into())
                     },
                 };
 
                 tx_msg.send(msg).unwrap();
-                println!("{:?}", src_promise_id);
                 vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id));
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
+                println!("Created promise {} from source promise ID {:?}", next_prom_id, src_promise_id);
             }
             Op::Await => {
                 // If promise is resolved, run code, else push onto on_resolve
@@ -248,10 +248,13 @@ pub fn run_msg(
             z = 0;
             let table = load_entity_function_table(&mut z, &code[q..]);
 
+            println!("src prom : {:?}", src_promise);
+
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
                 return_address: None,
-                promise_id: *src_promise,
+                // remove this
+                promise_id: *src_promise
             });
 
             for i in args {
@@ -278,9 +281,9 @@ pub fn run_msg(
             dst_promise,
         } => {
             // FIXME: there is a logic error here when doing promise chaining
-            if let (promise_id) = dst_promise {
+            if let Some(promise_id) = dst_promise {
                 // We want to execute from top of stack down
-                let fix_id = promise_id.unwrap() as u8;
+                let fix_id = *promise_id as u8;
                 let prom = &mut vat.promise_stack.get_mut(&fix_id).unwrap();
                 let mut promise;
                 {
@@ -293,25 +296,30 @@ pub fn run_msg(
                 }
 
                 let resolutions = promise.on_resolve.clone();
+                promise.on_resolve.clear();
 
-                println!("{:?} {:?}", dst_promise, vat.promise_stack);
+                println!("{:?}", resolutions);
                 for i in resolutions {
                     vat.op_stack = promise.save_point.0.clone();
                     vat.call_stack = promise.save_point.1.clone();
 
                     vat.store_local(&promise.var_names[0], result);
-                    let poss_res = run_expr(i, vat, msg, tx_msg, code, *dst_promise);
-                    if let (Some(res), Some(src_prom_real)) = (poss_res, promise.src_promise) {
+                    println!("Got value, setting {} to {:?}", promise.var_names[0], result);
+                    //let poss_res = run_expr(i, vat, msg, tx_msg, code, *dst_promise);
+                    let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
+                    if let (Some(res), Some(src_prom_real)) = (poss_res.clone(), promise.src_promise) {
+                        println!("sending to {:?} Response expr: {:?}", promise.src_promise, poss_res.clone());
                         out_msg = Some(Msg {
                             src_address: msg.dst_address,
                             dst_address: msg.src_address,
                             contents: vm_core::MsgContents::Response {
                                 result: res,
-                                dst_promise: Some(src_prom_real),
+                                dst_promise: promise.src_promise
                             },
                         });
                     }
                 }
+
             }
         }
         vm_core::MsgContents::BigBang {
