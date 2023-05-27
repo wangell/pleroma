@@ -5,7 +5,7 @@ use crate::vm_core;
 use core;
 
 use crate::opcodes::{decode_instruction, Op};
-use crate::pbin::{disassemble, load_entity_data_table, load_entity_function_table};
+use crate::pbin::{disassemble, load_entity_data_table, load_entity_function_table, load_entity_inoculation_table};
 use crate::vm_core::{Msg, StackFrame, Vat};
 
 pub fn run_expr(
@@ -226,8 +226,8 @@ pub fn run_msg(
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
 ) -> Option<Msg> {
     let mut out_msg: Option<Msg> = None;
-    //println!("Message {:?}", msg);
-    //println!("");
+    println!("Message {:?}", msg);
+    println!("");
 
     match &msg.contents {
         vm_core::MsgContents::Request {
@@ -238,9 +238,12 @@ pub fn run_msg(
         } => {
             let mut z = 0;
             let data_table = load_entity_data_table(&mut z, &code[..]);
-            let q = z.clone();
-            z = 0;
-            let table = load_entity_function_table(&mut z, &code[q..]);
+
+            let mut q = 0;
+            let inoc_table = load_entity_inoculation_table(&mut q, &code[z..]);
+
+            let mut x = 0;
+            let table = load_entity_function_table(&mut x, &code[q + z ..]);
 
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
@@ -296,6 +299,7 @@ pub fn run_msg(
                     vat.store_local(&promise.var_names[0], result);
                     let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
                     if let (Some(res), Some(src_prom_real)) = (poss_res.clone(), promise.src_promise) {
+                        println!("Sending back res: {:?}", res);
                         out_msg = Some(Msg {
                             src_address: msg.dst_address,
                             dst_address: msg.src_address,
@@ -316,9 +320,12 @@ pub fn run_msg(
         } => {
             let mut z = 0;
             let data_table = load_entity_data_table(&mut z, &code[..]);
-            let q = z.clone();
-            z = 0;
-            let table = load_entity_function_table(&mut z, &code[q..]);
+
+            let mut q = 0;
+            let inoc_table = load_entity_inoculation_table(&mut q, &code[z..]);
+
+            let mut x = 0;
+            let table = load_entity_function_table(&mut x, &code[q + z ..]);
 
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),

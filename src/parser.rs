@@ -19,7 +19,7 @@ pub fn parse_root(directory_path: &str) -> AstNode {
         let base_path = path.unwrap().path();
         let mod_str = fs::read_to_string(base_path.clone()).unwrap();
         let module = parse_module(&mod_str);
-        println!("{:?}", module);
+        //println!("{:#?}", module);
         root.modules.insert(base_path.file_stem().unwrap().to_str().unwrap().to_string(), module);
     }
     println!("Done");

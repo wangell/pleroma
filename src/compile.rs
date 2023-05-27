@@ -45,6 +45,7 @@ pub fn compile(root: &mut ast::AstNode) {
         code: Vec::new(),
         entity_function_locations: BTreeMap::new(),
         entity_data_values: HashMap::new(),
+        entity_inoculation_values: HashMap::new(),
         current_entity_id: 0,
         current_func_id: 0,
         absolute_entity_function_locations: BTreeMap::new(),
@@ -64,6 +65,7 @@ pub fn compile(root: &mut ast::AstNode) {
 
     // TODO: these should be run inside GenCode automatically - add "pre/post" methods to all AstNodeVisitors
     cg_visitor.build_entity_data_table();
+    cg_visitor.build_entity_inoculation_table();
     cg_visitor.build_entity_function_location_table();
     cg_visitor.relocate_functions();
 

@@ -18,6 +18,7 @@ pub struct GenCode {
 
     pub entity_function_locations: BTreeMap<u32, HashMap<u32, (usize, usize)>>,
     pub entity_data_values: HashMap<u32, HashMap<String, Hvalue>>,
+    pub entity_inoculation_values: HashMap<u32, HashMap<String, Hvalue>>,
 
     pub current_entity_id: u32,
     pub current_func_id: u32,
@@ -123,8 +124,40 @@ impl GenCode {
     pub fn relocate_functions(&mut self) {
         for (ent_id, func_id, loc) in &self.relocations {
             let new_loc = self.absolute_entity_function_locations[&(*ent_id, *func_id)];
+            // TODO: what is 8?
             self.code.splice(*loc as usize..(loc+8) as usize, new_loc.to_be_bytes());
         }
+    }
+
+    pub fn build_entity_inoculation_table(&mut self) {
+        // Outputs binary: size (u8) + each(entity) -> entity_id, name, type
+        let mut sz = 0;
+
+        println!("Inoc {:#?}", self.entity_inoculation_values);
+
+        for (ent_id, ftab) in &self.entity_inoculation_values {
+            for (data_id, val) in ftab {
+                sz += 1;
+            }
+        }
+
+        let mut edt: Vec<u8> = Vec::new();
+        edt.push(sz as u8);
+
+        for (ent_id, ftab) in &self.entity_inoculation_values {
+            for (data_id, val) in ftab {
+                // TODO: not u8
+                edt.push(*ent_id as u8);
+
+                edt.extend_from_slice(data_id.as_bytes());
+                edt.push(0x0);
+
+                // Value
+                edt.append(&mut encode_value(&Hvalue::Hu8(4)));
+            }
+        }
+
+        self.header.append(&mut edt);
     }
 
     pub fn build_entity_data_table(&mut self) {
@@ -211,6 +244,12 @@ impl AstNodeVisitor for GenCode {
         }
         self.entity_data_values
             .insert(self.current_entity_id, data_map);
+
+        let mut inoc_map: HashMap<String, Hvalue> = HashMap::new();
+        for (data_name, data_type) in inoculation_list {
+            inoc_map.insert(data_name.clone(), Hvalue::None);
+        }
+        self.entity_inoculation_values.insert(self.current_entity_id, inoc_map);
 
         {
             let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> =
