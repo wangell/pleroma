@@ -69,6 +69,7 @@ pub struct Msg {
 pub struct Entity {
     address: EntityAddress,
     pub data: BTreeMap<String, Hvalue>,
+    pub code: u32
 }
 
 #[derive(Debug, Clone)]
@@ -83,10 +84,12 @@ pub struct Promise {
 
     // Create from promise ID src_promise
     pub src_promise: Option<u32>,
+
+    pub src_entity: Option<EntityAddress>
 }
 
 impl Promise {
-    pub fn new(src_promise: Option<u32>) -> Self {
+    pub fn new(src_promise: Option<u32>, src_entity: Option<EntityAddress>) -> Self {
         Self {
             resolved: false,
             returned_val: None,
@@ -94,6 +97,7 @@ impl Promise {
             save_point: (Vec::new(), Vec::new()),
             var_names: Vec::new(),
             src_promise: src_promise,
+            src_entity: src_entity
         }
     }
 }
@@ -159,7 +163,7 @@ impl Vat {
         last_frame.locals.insert(s.clone(), val.clone());
     }
 
-    pub fn create_entity_code(&mut self, data: &BTreeMap<String, Hvalue>) -> &Entity {
+    pub fn create_entity_code(&mut self, code: u32, data: &BTreeMap<String, Hvalue>) -> &Entity {
         let entity_id = self.last_entity_id;
         let mut ent = Entity {
             address: EntityAddress {
@@ -168,6 +172,7 @@ impl Vat {
                 entity_id: entity_id,
             },
             data: data.clone(),
+            code: code
         };
 
         ent.data
@@ -177,7 +182,7 @@ impl Vat {
             Hvalue::EntityAddress(EntityAddress {
                 node_id: 0,
                 vat_id: 0,
-                entity_id: 0,
+                entity_id: 1,
             }),
         );
 
@@ -189,6 +194,7 @@ impl Vat {
     }
 
     pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {
+        // Needs ref to underlying code
         let entity_id = self.last_entity_id;
 
         let mut ent = Entity {
@@ -197,7 +203,8 @@ impl Vat {
                 vat_id: self.vat_id,
                 entity_id: entity_id,
             },
-            data: BTreeMap::new()
+            data: BTreeMap::new(),
+            code: 0
         };
 
         ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));

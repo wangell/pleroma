@@ -41,6 +41,8 @@ pub fn run_expr(
                 let (a0, a1) = (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap());
                 if let (Hvalue::Hu8(b0), Hvalue::Hu8(b1)) = (a0.clone(), a1.clone()) {
                     let res = b0 + b1;
+                                        println!("Calling add {} + {} : {}", b0, b1, res);
+
                     vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     println!("Instruction: {:?}", inst);
@@ -136,7 +138,7 @@ pub fn run_expr(
                     target_address = Some(add);
                 }
 
-                let msg = vm_core::Msg {
+                let out_msg = vm_core::Msg {
                     src_address: msg.dst_address,
                     dst_address: target_address.unwrap(),
 
@@ -149,8 +151,9 @@ pub fn run_expr(
                     },
                 };
 
-                tx_msg.send(msg).unwrap();
-                vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id));
+                let ent_addr = msg.src_address.clone();
+                tx_msg.send(out_msg).unwrap();
+                vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id, Some(ent_addr)));
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
             }
             Op::Await => {
@@ -298,16 +301,20 @@ pub fn run_msg(
 
                     vat.store_local(&promise.var_names[0], result);
                     let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
+
+                    // If this message has a promise that it needs to respond to, do it
                     if let (Some(res), Some(src_prom_real)) = (poss_res.clone(), promise.src_promise) {
-                        println!("Sending back res: {:?}", res);
+                        //println!("{:#?}", vat);
+                        println!("Sending back res: {:?} to {:?}", res, promise.src_entity.unwrap());
                         out_msg = Some(Msg {
                             src_address: msg.dst_address,
-                            dst_address: msg.src_address,
+                            dst_address: promise.src_entity.unwrap(),
                             contents: vm_core::MsgContents::Response {
                                 result: res,
                                 dst_promise: promise.src_promise
                             },
                         });
+                        println!("Final msg: {:#?}", out_msg);
                     }
                 }
 

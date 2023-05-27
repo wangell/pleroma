@@ -4,6 +4,7 @@ use std::{fs, panic, thread, time};
 use crate::compile;
 use crate::ast;
 use crate::pbin;
+use crate::parser;
 
 use crate::{vm_core, kernel, vm};
 
@@ -149,6 +150,7 @@ pub fn boot() {
         thread::spawn(move || hotplate(prx, ptx, hp_msg_tx));
     }
 
+    // Insert seminal message
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
         dst_address: vm_core::EntityAddress::new(0, 0, 0),
@@ -167,17 +169,18 @@ pub fn boot() {
     let nodeman = kernel::Nodeman::new(&mut node);
     kernel::load_nodeman(&nodeman);
 
-    use crate::parser;
     let mut root = parser::parse_root("./blah");
-
     compile::compile(&mut root);
-
     node.code.insert(0, fs::read("kernel.plmb").unwrap());
     let mut z = 0;
     let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
+    vat.create_entity_code(0, &data_table[&0]);
+    vat.create_entity_code(0, &data_table[&0]);
 
-    //vat.create_entity(&nodeman.def);
-    vat.create_entity_code(&data_table[&0]);
+    // Create Monad/Nodeman
+    // Create Io
+    // Create user script
+    // Push_message(start_program(user_script))
 
     ml_vat_tx.send(vat);
 
