@@ -13,7 +13,7 @@ pub struct Module {
     pub entity_defs: BTreeMap<String, AstNode>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub enum AstNode {
     Root(Root),
 
@@ -36,7 +36,7 @@ pub enum AstNode {
     FunctionCall(Identifier, Vec<AstNode>),
     Message(Identifier, String, Vec<AstNode>),
 
-    ForeignCall(fn(&mut vm_core::Entity, Hvalue) -> Hvalue, Vec<AstNode>),
+    ForeignCall(ForeignFunc, Vec<AstNode>),
 
     EntityConstruction(Identifier, Box<Option<AstNode>>),
 
@@ -57,6 +57,11 @@ pub enum AstNode {
     Error,
 }
 
+#[derive(Clone)]
+pub struct ForeignFunc {
+    pub fc_fn: fn(&mut vm_core::Entity, Hvalue) -> Hvalue
+}
+
 #[derive(Clone, Debug)]
 pub enum IdentifierTarget {
     Undecided,
@@ -73,22 +78,22 @@ pub struct Identifier {
     pub target: IdentifierTarget,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Debug, Clone)]
 pub struct EntityDef {
     pub name: String,
     pub data_declarations: Vec<(String, CType)>,
     pub inoculation_list: Vec<(String, CType)>,
     pub functions: HashMap<String, Box<AstNode>>,
-    pub foreign_functions: HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
+    pub foreign_functions: HashMap<u8, ForeignFunc>
 }
 
 use core::fmt;
 use core::fmt::Debug;
-//impl Debug for AstNode {
-//    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-//        write!(f, "Hi")
-//    }
-//}
+impl Debug for ForeignFunc {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Hi")
+    }
+}
 
 impl EntityDef {
     pub fn register_foreign_function(
@@ -97,14 +102,14 @@ impl EntityDef {
         func: fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
     ) {
         let idx = self.foreign_functions.len() as u8;
-        self.foreign_functions.insert(idx, func);
+        self.foreign_functions.insert(idx, ForeignFunc{fc_fn: func});
         self.functions.insert(
             name.clone(),
             Box::new(AstNode::Function {
                 name: name.clone(),
                 parameters: Vec::new(),
                 return_type: CType::Loc(PType::Pu32),
-                body: vec![Box::new(AstNode::ForeignCall(func, Vec::new()))],
+                body: vec![Box::new(AstNode::ForeignCall(ForeignFunc{fc_fn: func}, Vec::new()))],
             }),
         );
     }
@@ -169,7 +174,7 @@ pub trait AstNodeVisitor {
         data_declarations: &Vec<(String, CType)>,
         inoculation_list: &Vec<(String, CType)>,
         functions: &mut HashMap<String, Box<AstNode>>,
-        foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
+        foreign_functions: &HashMap<u8, ForeignFunc>,
     ) {
         for (func_name, func_def) in functions.iter_mut() {
             walk(self, func_def);
@@ -279,7 +284,7 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
         AstNode::Return(r) => visitor.visit_return(r),
         AstNode::ValueNode(v) => visitor.visit_value(v),
         AstNode::OperatorNode(a, o, b) => visitor.visit_operator(a, o, b),
-        AstNode::ForeignCall(a, b) => visitor.visit_foreign_call(a, b),
+        AstNode::ForeignCall(ForeignFunc{fc_fn}, b) => visitor.visit_foreign_call(fc_fn, b),
         AstNode::Message(a, b, c) => visitor.visit_message(a, b, c),
         AstNode::Await(a) => visitor.visit_await(a),
         AstNode::Print(a) => visitor.visit_print(a),

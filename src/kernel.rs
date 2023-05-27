@@ -96,9 +96,6 @@ pub fn load_nodeman(nodeman: &Nodeman) {
 
     let mut nodedef = nodeman.def.clone();
 
-    //module
-    //    .entity_defs
-    //    .insert(String::from("Nodeman"), ast::AstNode::EntityDef(nodedef));
     //let real_def = module.entity_defs.get_mut("Nodeman").unwrap();
     //if let ast::AstNode::EntityDef(d) = real_def {
     //    //d.register_foreign_function(&String::from("test"), Nodeman::hello);

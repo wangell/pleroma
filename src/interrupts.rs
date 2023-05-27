@@ -137,7 +137,6 @@ extern "x86-interrupt" fn double_fault_handler(
     panic!();
 }
 
-static mut xxx: f64 = 0.0;
 // FIXME: manually do this so there is a common interface to the scheduler code
 extern "x86-interrupt" fn timer_interrupt_handler(mut _stack_frame: InterruptStackFrame) {
     x86_64::instructions::interrupts::without_interrupts(|| {

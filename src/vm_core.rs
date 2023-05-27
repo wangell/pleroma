@@ -126,8 +126,6 @@ pub struct StackFrame {
     pub locals: HashMap<String, Hvalue>,
     pub return_address: Option<usize>,
     // Store source promise in here
-
-    pub promise_id: Option<u32>
 }
 
 pub struct PleromaNode {}

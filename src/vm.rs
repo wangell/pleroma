@@ -41,7 +41,6 @@ pub fn run_expr(
                 let (a0, a1) = (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap());
                 if let (Hvalue::Hu8(b0), Hvalue::Hu8(b1)) = (a0.clone(), a1.clone()) {
                     let res = b0 + b1;
-                    println!("Calling add {} + {} : {}", b0, b1, res);
                     vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
                     println!("Instruction: {:?}", inst);
@@ -96,7 +95,6 @@ pub fn run_expr(
                 vat.store_local(&s0, &store_val);
             }
             Op::Eload(s0) => {
-                println!("s0 : {}", s0);
                 let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
                 let local_var = target_entity.data[&s0].clone();
                 vat.op_stack.push(local_var);
@@ -108,11 +106,9 @@ pub fn run_expr(
             }
             Op::Call(a0, a1) => {
                 // #a1 rguments should already be on the stack
-                let current_promise_id = vat.call_stack[vat.call_stack.len() - 1].promise_id;
                 let mut nf = StackFrame {
                     locals: HashMap::new(),
                     return_address: Some(x),
-                    promise_id: current_promise_id,
                 };
 
                 // TODO: Add back once we remove the argument/op stack method
@@ -156,7 +152,6 @@ pub fn run_expr(
                 tx_msg.send(msg).unwrap();
                 vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id));
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
-                println!("Created promise {} from source promise ID {:?}", next_prom_id, src_promise_id);
             }
             Op::Await => {
                 // If promise is resolved, run code, else push onto on_resolve
@@ -197,7 +192,6 @@ pub fn run_expr(
                 let foreign_func: vm_core::SystemFunction = unsafe { core::mem::transmute(ptr) };
                 let res = foreign_func(target_entity, Hvalue::None);
 
-                println!("Data {:?}", target_entity.data);
                 //let res = target_entity.def.foreign_functions[&a0](ast::Hvalue::None);
                 vat.op_stack.push(res);
             }
@@ -232,8 +226,8 @@ pub fn run_msg(
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
 ) -> Option<Msg> {
     let mut out_msg: Option<Msg> = None;
-    println!("Message {:?}", msg);
-    println!("");
+    //println!("Message {:?}", msg);
+    //println!("");
 
     match &msg.contents {
         vm_core::MsgContents::Request {
@@ -248,13 +242,10 @@ pub fn run_msg(
             z = 0;
             let table = load_entity_function_table(&mut z, &code[q..]);
 
-            println!("src prom : {:?}", src_promise);
-
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
                 return_address: None,
                 // remove this
-                promise_id: *src_promise
             });
 
             for i in args {
@@ -298,17 +289,13 @@ pub fn run_msg(
                 let resolutions = promise.on_resolve.clone();
                 promise.on_resolve.clear();
 
-                println!("{:?}", resolutions);
                 for i in resolutions {
                     vat.op_stack = promise.save_point.0.clone();
                     vat.call_stack = promise.save_point.1.clone();
 
                     vat.store_local(&promise.var_names[0], result);
-                    println!("Got value, setting {} to {:?}", promise.var_names[0], result);
-                    //let poss_res = run_expr(i, vat, msg, tx_msg, code, *dst_promise);
                     let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
                     if let (Some(res), Some(src_prom_real)) = (poss_res.clone(), promise.src_promise) {
-                        println!("sending to {:?} Response expr: {:?}", promise.src_promise, poss_res.clone());
                         out_msg = Some(Msg {
                             src_address: msg.dst_address,
                             dst_address: msg.src_address,
@@ -336,7 +323,6 @@ pub fn run_msg(
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
                 return_address: None,
-                promise_id: None,
             });
 
             z = table[&0][&function_id].0 as usize;

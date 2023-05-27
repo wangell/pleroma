@@ -35,7 +35,7 @@ impl AstNodeVisitor for VariableFlow {
         data_declarations: &Vec<(String, ast::CType)>,
         inoculation_list: &Vec<(String, ast::CType)>,
         functions: &mut HashMap<String, Box<AstNode>>,
-        foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
+        foreign_functions: &HashMap<u8, ast::ForeignFunc>,
     ) {
         self.entity_vars = HashMap::new();
 
@@ -201,7 +201,7 @@ impl AstNodeVisitor for GenCode {
         data_declarations: &Vec<(String, ast::CType)>,
         inoculation_list: &Vec<(String, ast::CType)>,
         functions: &mut HashMap<String, Box<AstNode>>,
-        foreign_functions: &HashMap<u8, fn(&mut vm_core::Entity, Hvalue) -> Hvalue>,
+        foreign_functions: &HashMap<u8, ast::ForeignFunc>,
     ) {
         self.current_func_id = 0;
 
