@@ -44,7 +44,7 @@ cfg_if::cfg_if! {
 
         pub mod pnet;
         pub mod hosted;
-        pub mod kernel;
+        pub mod monad;
         pub mod compile;
         pub mod system;
     }

@@ -117,6 +117,7 @@ pub struct Vat {
     pub op_stack: Vec<Hvalue>,
     pub call_stack: Vec<StackFrame>,
     pub promise_stack: HashMap<u8, Promise>,
+    pub code: HashMap<u64, Vec<u8>>,
 }
 
 pub struct EvalContext<'a> {
@@ -147,6 +148,7 @@ impl Vat {
             op_stack: Vec::new(),
             call_stack: Vec::new(),
             promise_stack: HashMap::new(),
+            code: HashMap::new()
         }
     }
 

@@ -2,21 +2,13 @@ use crate::common::{vec, Box, HashMap, String, Vec, BTreeMap};
 use crate::vm_core;
 
 #[derive(Debug, Clone)]
-pub struct Root {
-    pub modules: BTreeMap<String, AstNode>,
-    pub external_modules: BTreeMap<String, AstNode>
-}
-
-#[derive(Debug, Clone)]
 pub struct Module {
-    pub imports: Vec<String>,
+    pub imports: Vec<AstNode>,
     pub entity_defs: BTreeMap<String, AstNode>,
 }
 
 #[derive(Debug, Clone)]
 pub enum AstNode {
-    Root(Root),
-
     Module(Module),
 
     ImportModule(String),
@@ -214,12 +206,6 @@ pub trait AstNodeVisitor {
         walk(self, node);
     }
 
-    fn visit_root(&mut self, root: &mut Root) {
-        for (module_name, module) in root.modules.iter_mut() {
-            walk(self, module);
-        }
-    }
-
     fn visit_module(&mut self, module: &mut Module) {
         for (ename, edef) in module.entity_defs.iter_mut() {
             walk(self, edef);
@@ -293,7 +279,6 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
         AstNode::AssignmentNode(a, b) => visitor.visit_assignment(a, b),
         AstNode::Identifier(a) => visitor.visit_identifier(a),
 
-        AstNode::Root(a) => visitor.visit_root(a),
         AstNode::Module(a) => visitor.visit_module(a),
         AstNode::FunctionCall(a, b) => visitor.visit_function_call(a, b),
         x => {

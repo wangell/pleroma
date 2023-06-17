@@ -139,7 +139,10 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
             bytes.append(&mut encode_value(&a0));
         },
 
-        Op::ForeignCall(a0) => {},
+        Op::ForeignCall(a0) => {
+            bytes.push(SimpleOp::ForeignCall as u8);
+            bytes.extend_from_slice(&a0.to_be_bytes());
+        },
 
         Op::Call(a0, a1) => {
             bytes.push(SimpleOp::Call as u8);

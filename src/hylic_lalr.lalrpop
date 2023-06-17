@@ -1,6 +1,6 @@
 use crate::ast;
 use crate::lexer;
-use crate::ast::{AstNode, BinOp, Distance, PType, CType, Hvalue, EntityDef, Module, Root, Identifier, IdentifierTarget};
+use crate::ast::{AstNode, BinOp, Distance, PType, CType, Hvalue, EntityDef, Module, Identifier, IdentifierTarget};
 
 use crate::common::{HashMap, String, Box, str, FromStr, Vec, ToString};
 
@@ -74,8 +74,8 @@ Function: (String, Box<AstNode>) = {
     "δ" <f:Symbol> "(" <p:Comma<Inoc>> ")" <nn:ReturnType> <r:CType> "{" <b:Statement*> "}" => (f.clone(), Box::new(AstNode::Function{name: f, parameters: p, body: b, return_type: r}))
 }
 
-pub Import: String = {
-  "~" <s:Symbol> ";" => s
+pub Import: AstNode = {
+  "~" <s:Symbol> ";" => AstNode::ImportModule(s)
   //"►"
 }
 
