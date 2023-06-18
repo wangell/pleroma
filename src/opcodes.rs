@@ -24,8 +24,8 @@ pub enum Op {
     // Address + # of args
     Call(u64, u8),
 
-    // Address / Num args
-    ConstructEntity(u64, u8),
+    // Entity number / Num args
+    ConstructEntity(u32, u8),
 
     Lload(String),
     Lstore(String),
@@ -236,7 +236,7 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
         }
 
         SimpleOp::ConstructEntity => {
-            let (y0, a0) = read_u64_sz(&vblock[x..]);
+            let (y0, a0) = read_u32_sz(&vblock[x..]);
             let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
 
             return (x + y0 + y1, Op::ConstructEntity(a0, a1));

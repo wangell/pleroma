@@ -127,11 +127,16 @@ pub fn run_expr(
                     args.push(vat.op_stack.pop().unwrap());
                 }
 
-                let mut z = 0;
-                use crate::pbin;
-                use std::fs;
-                let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
-                let ent = vat.create_entity_code(0, &data_table[&0]);
+                let mut zz = 0;
+                let data_table = load_entity_data_table(&mut zz, &code[..]);
+
+                let mut qq = 0;
+                let inoc_table = load_entity_inoculation_table(&mut qq, &code[zz..]);
+
+                let mut xx = 0;
+                let table = load_entity_function_table(&mut xx, &code[qq + zz..]);
+
+                let ent = vat.create_entity_code(0, &data_table[&a0]);
 
                 let mut nf = StackFrame {
                     entity_id: ent.address.entity_id,
@@ -139,21 +144,18 @@ pub fn run_expr(
                     return_address: Some(x),
                 };
 
-                println!("{}", ent.address.entity_id);
-
                 // Push the new call stack and jump to next location
                 vat.call_stack.push(nf);
-                x = a0 as usize;
+                x = table[&a0][&0].0;
             },
             Op::Call(a0, a1) => {
+                // Get the target entity from stack
+                let target_entity = vat.op_stack.pop().unwrap();
                 // Pop off arguments from stack
                 let mut args = Vec::new();
                 for i in 0..a1 {
                     args.push(vat.op_stack.pop().unwrap());
                 }
-
-                // Get the target entity from stack
-                let target_entity = vat.op_stack.pop().unwrap();
 
                 let mut nf = StackFrame {
                     entity_id: 0,
@@ -161,13 +163,14 @@ pub fn run_expr(
                     return_address: Some(x),
                 };
 
+
                 if let Hvalue::EntityAddress(add) = target_entity {
                     nf.entity_id = add.entity_id;
                 } else {
                     panic!("Invalid entity address found on stack while doing call");
                 }
 
-                println!("Calling : {}", a0);
+                vat.op_stack.extend(args);
 
                 // Push the new call stack and jump to next location
                 vat.call_stack.push(nf);

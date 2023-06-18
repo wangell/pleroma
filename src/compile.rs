@@ -11,10 +11,21 @@ use crate::common::{BTreeMap, Box, HashMap, String, Vec};
 
 use std::fs;
 
-pub struct GenerateConstructors {
+pub struct ConstructSymbolTable {
+    pub entity_ids: HashMap<String, u32>,
+    pub current_id: u32,
 }
 
-impl AstNodeVisitor for GenerateConstructors {
+impl ConstructSymbolTable {
+    fn new() -> Self {
+        Self {
+            entity_ids: HashMap::new(),
+            current_id: 0
+        }
+    }
+}
+
+impl AstNodeVisitor for ConstructSymbolTable {
     fn visit_entity_def(
         &mut self,
         name: &String,
@@ -23,6 +34,8 @@ impl AstNodeVisitor for GenerateConstructors {
         functions: &mut HashMap<String, Box<AstNode>>,
         foreign_functions: &HashMap<u8, ast::ForeignFunc>,
     ) {
+        self.entity_ids.insert(name.clone(), self.current_id);
+        self.current_id += 1;
     }
 }
 
@@ -45,38 +58,6 @@ impl AstNodeVisitor for EmplaceEntityConstruction {
             None => ()
         }
     }
-}
-
-
-// Creates a table that maps from root symbol path -> unique integer
-pub fn build_entity_symbol_table(asts: &HashMap<String, ast::AstNode>) -> HashMap<String, u64> {
-    let mut i = 0;
-    let mut est: HashMap<String, u64> = HashMap::new();
-    for (mod_name, module) in asts {
-
-        let split_name : Vec<&str> = mod_name.split("/").collect();
-
-        let base_name = split_name.last().unwrap().replace(".plm", "");
-
-        if let ast::AstNode::Module(real_module) = module {
-            for (ent_name, ent_def) in &real_module.entity_defs {
-                let root_ent_name = format!("/root/{}/{}", base_name, ent_name);
-                est.insert(root_ent_name, i);
-                i += 1;
-            }
-        }
-    }
-    return est;
-}
-
-pub fn create_dependency_tree(asts: &HashMap<String, ast::AstNode>) -> HashMap<String, Vec<String>> {
-    let mut module_deps: HashMap<String, Vec<String>> = HashMap::new();
-
-    for module in asts {
-        module_deps.insert(String::from("test"), vec![String::from("test1"), String::from("test2")]);
-    }
-
-    return module_deps;
 }
 
 pub fn compile_from_files(files: Vec<String>, outpath: &str) {
@@ -106,11 +87,11 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
 
     let mut new_asts = asts.clone();
 
-    let ent_sym_table = build_entity_symbol_table(&new_asts);
-
     let mut root = &mut new_asts.get_mut("./blah/basic_entity.plm").unwrap();
 
-    let mut gen_con_visitor = GenerateConstructors {};
+    let mut ent_ids_visitor = ConstructSymbolTable::new();
+    let ent_ids_result = ast::walk(&mut ent_ids_visitor, root);
+
     let mut ec_visitor = EmplaceEntityConstruction {};
 
     let mut cg_visitor = codegen::GenCode {
@@ -124,6 +105,7 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
         absolute_entity_function_locations: BTreeMap::new(),
         function_num: HashMap::new(),
         relocations: Vec::new(),
+        entity_table: ent_ids_visitor.entity_ids.clone(),
     };
 
     let mut vf_visitor = codegen::VariableFlow {
@@ -133,10 +115,12 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
     };
 
     // Apply passes
-    let gen_con_result = ast::walk(&mut gen_con_visitor, root);
+    //let gen_con_result = ast::walk(&mut gen_con_visitor, root);
     let ec_result = ast::walk(&mut ec_visitor, root);
     let vf_result = ast::walk(&mut vf_visitor, root);
     let cg_result = ast::walk(&mut cg_visitor, root);
+
+    println!("Ent ids {:#?}", ent_ids_visitor.entity_ids);
 
     // TODO: these should be run inside GenCode automatically - add "pre/post" methods to all AstNodeVisitors
     cg_visitor.build_entity_data_table();

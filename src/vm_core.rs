@@ -176,7 +176,7 @@ impl Vat {
             code: code
         };
 
-        ent.data .insert(String::from("self"), Hvalue::EntityAddress(ent.address));
+        ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
 
         self.entities.insert(entity_id, ent);
 

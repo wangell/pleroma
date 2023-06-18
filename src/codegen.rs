@@ -26,7 +26,10 @@ pub struct GenCode {
     pub function_num: HashMap<String, u32>,
 
     pub absolute_entity_function_locations: BTreeMap<(u32, u32), usize>,
-    pub relocations: Vec<(u32, u32, u64)>
+    pub relocations: Vec<(u32, u32, u64)>,
+
+    // Stores entity root name -> unique u32
+    pub entity_table: HashMap<String, u32>
 }
 
 impl AstNodeVisitor for VariableFlow {
@@ -188,6 +191,7 @@ impl GenCode {
     }
 
     // Creates a table listing each entity function and the position-independent code for this object
+    // Ouputs entity ID -> (start, size)
     pub fn build_entity_function_location_table(&mut self) {
         let loc_offset = self.header.len();
 
@@ -402,8 +406,7 @@ impl AstNodeVisitor for GenCode {
 
         if fc.call_type == ast::CallType::NewEntity {
             let fnum = 0;
-            self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
-            self.emit_op(Op::ConstructEntity(0, fc.arguments.len() as u8));
+            self.emit_op(Op::ConstructEntity(self.entity_table[&fc.identifier.original_sym], fc.arguments.len() as u8));
         } else {
             // Entity, function, location
             self.visit_identifier(&mut fc.identifier);
