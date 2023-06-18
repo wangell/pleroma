@@ -40,6 +40,8 @@ pub enum Tok {
     Import,
     Comma,
 
+    VatSym,
+
     Dot,
 
     Await,
@@ -97,6 +99,7 @@ impl<'input> Iterator for Lexer<'input> {
             }
 
             match self.next_char {
+                Some((i, '$')) => { self.set_char = true; return Some(Ok((i, Tok::VatSym, i+1))); },
                 Some((i, ';')) => { self.set_char = true; return Some(Ok((i, Tok::Semicolon, i+1))); },
 
                 Some((i, '{')) => { self.set_char = true; return Some(Ok((i, Tok::LeftBracket, i+1)));},

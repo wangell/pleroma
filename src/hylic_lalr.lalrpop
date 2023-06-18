@@ -51,9 +51,9 @@ ExprOp: BinOp = {
 Expr: AstNode = {
     <e1:Expr> <o:ExprOp> <e2:Term> => AstNode::OperatorNode(Box::new(e1), o, Box::new(e2)),
     Num => AstNode::ValueNode(Hvalue::Hu8(<> as u8)),
-    <f:Symbol> "." <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, e),
-    <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, e),
-    <s:EntityIdentifier> "(" <e:Expr?> ")" => AstNode::EntityConstruction(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, Box::new(e)),
+    <f:Symbol> "." <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::FunctionCall{call_type: ast::CallType::Regular, identifier: ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, arguments: e}),
+    <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::FunctionCall{call_type: ast::CallType::Unknown, identifier: ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, arguments: e}),
+    "$" <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::FunctionCall{call_type: ast::CallType::NewVat, identifier: ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, arguments: e}),
     <s:Symbol> "!" <f:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, String::from(f), e),
     PString => <>,
     Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from(""), target: IdentifierTarget::Undecided}),
@@ -84,7 +84,7 @@ pub Module: AstNode = {
 }
 
 EntityDef: (String, AstNode) = {
-    "ε" <s:Symbol> <i:InocList> "{" <d:DataDec*> <f:Function*> "}"=> (s.clone(), AstNode::EntityDef(EntityDef{name: String::from("hi"), inoculation_list: i, data_declarations: d, functions: f.into_iter().collect(), foreign_functions: HashMap::new()}))
+    "ε" <s:Symbol> <i:InocList> "{" <d:DataDec*> <f:Function*> "}"=> (s.clone(), AstNode::EntityDef(EntityDef{name: String::from(s), inoculation_list: i, data_declarations: d, functions: f.into_iter().collect(), foreign_functions: HashMap::new()}))
 }
 
 PType: PType = {
@@ -134,6 +134,8 @@ extern {
 
         "⌜" => lexer::Tok::IndexLeft,
         "⌟" => lexer::Tok::IndexRight,
+
+        "$" => lexer::Tok::VatSym,
 
         "[" => lexer::Tok::LeftSquareBracket,
         "]" => lexer::Tok::RightSquareBracket,

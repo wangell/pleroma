@@ -6,7 +6,7 @@ use crate::ast;
 use crate::pbin;
 use crate::parser;
 
-use crate::{vm_core, monad, vm};
+use crate::{vm_core, monad, vm, node};
 
 pub fn hotplate(
     hp_rx_vat: crossbeam::channel::Receiver<vm_core::Vat>,
@@ -135,65 +135,49 @@ fn main_loop(
 }
 
 pub fn boot() {
-    //let (tx_ml_box, rx_ml_box) = unbounded::<vm_core::Msg>();
+    let (tx_ml_box, rx_ml_box) = unbounded::<vm_core::Msg>();
 
-    //// Main loop vat tx <-> hotplate vat rx, hotplate vat tx <-> main loop vat rx
-    //let (ml_vat_tx, ml_vat_rx) = unbounded::<vm_core::Vat>();
-    //let (hp_vat_tx, hp_vat_rx) = unbounded::<vm_core::Vat>();
+    // Main loop vat tx <-> hotplate vat rx, hotplate vat tx <-> main loop vat rx
+    let (ml_vat_tx, ml_vat_rx) = unbounded::<vm_core::Vat>();
+    let (hp_vat_tx, hp_vat_rx) = unbounded::<vm_core::Vat>();
 
-    //// Max concurrency
-    //let n_hotplates = 1;
+    // Max concurrency
+    let n_hotplates = 1;
 
-    //for n in 0..n_hotplates {
-    //    let (ptx, prx) = (ml_vat_tx.clone(), hp_vat_rx.clone());
-    //    let hp_msg_tx = tx_ml_box.clone();
+    for n in 0..n_hotplates {
+        let (ptx, prx) = (ml_vat_tx.clone(), hp_vat_rx.clone());
+        let hp_msg_tx = tx_ml_box.clone();
 
-    //    thread::spawn(move || hotplate(prx, ptx, hp_msg_tx));
-    //}
+        thread::spawn(move || hotplate(prx, ptx, hp_msg_tx));
+    }
 
-    //// Insert seminal message
-    //let msg = vm_core::Msg {
-    //    src_address: vm_core::EntityAddress::new(0, 0, 0),
-    //    dst_address: vm_core::EntityAddress::new(0, 0, 1),
-    //    contents: vm_core::MsgContents::BigBang{ function_id: 3, function_name: String::from("hi"), args: Vec::new() }
-    //};
-    //tx_ml_box.send(msg).unwrap();
+    // Insert seminal message
+    let msg = vm_core::Msg {
+        src_address: vm_core::EntityAddress::new(0, 0, 0),
+        dst_address: vm_core::EntityAddress::new(0, 0, 1),
+        contents: vm_core::MsgContents::BigBang{ function_id: 3, args: Vec::new() }
+    };
+    tx_ml_box.send(msg).unwrap();
 
-    //let mut sleeping_vats: Vec<vm_core::Vat> = Vec::new();
-    //let mut vat_inboxes: HashMap<u32, Vec<vm_core::Msg>> = HashMap::new();
+    let mut sleeping_vats: Vec<vm_core::Vat> = Vec::new();
+    let mut vat_inboxes: HashMap<u32, Vec<vm_core::Msg>> = HashMap::new();
 
-    //vat_inboxes.insert(0, Vec::new());
-    //let mut vat = vm_core::Vat::new();
-
-    //let mut node = kernel::Node::new();
+    vat_inboxes.insert(0, Vec::new());
+    let mut vat = vm_core::Vat::new();
+    let mut node = node::Node::new();
 
     compile::compile_from_files(vec![String::from("./blah/basic_entity.plm")], "kernel.plmb");
-    //vat.code.insert(0, fs::read("kernel.plmb").unwrap());
-    //let mut z = 0;
-    //let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
-    //vat.create_entity_code(0, &data_table[&0]);
-    ////vat.create_entity_code(0, &data_table[&0]);
 
-    //let nodeman = kernel::Nodeman::new(&mut node);
-    //kernel::load_nodeman(&nodeman);
-    //vat.code.insert(1, fs::read("io.plmb").unwrap());
-    //z = 0;
-    //let data_table_io = pbin::load_entity_data_table(&mut z, &fs::read("io.plmb").unwrap());
-    //println!("dat {:#?}", data_table_io);
-    //vat.create_entity_code(1, &data_table_io[&0]);
-    //// Create Monad/Nodeman
-    //// Create Io
-    //// Create user script
-    //// Push_message(start_program(user_script))
+    monad::load_monad("kernel.plmb", &mut vat);
 
-    //ml_vat_tx.send(vat);
+    ml_vat_tx.send(vat);
 
-    //main_loop(
-    //    &hp_vat_tx,
-    //    &ml_vat_rx,
-    //    &tx_ml_box,
-    //    &rx_ml_box,
-    //    &mut sleeping_vats,
-    //    &mut vat_inboxes,
-    //);
+    main_loop(
+        &hp_vat_tx,
+        &ml_vat_rx,
+        &tx_ml_box,
+        &rx_ml_box,
+        &mut sleeping_vats,
+        &mut vat_inboxes,
+    );
 }

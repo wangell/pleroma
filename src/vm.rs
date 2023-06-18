@@ -5,7 +5,9 @@ use crate::vm_core;
 use core;
 
 use crate::opcodes::{decode_instruction, Op};
-use crate::pbin::{disassemble, load_entity_data_table, load_entity_function_table, load_entity_inoculation_table};
+use crate::pbin::{
+    disassemble, load_entity_data_table, load_entity_function_table, load_entity_inoculation_table,
+};
 use crate::vm_core::{Msg, StackFrame, Vat};
 
 pub fn run_expr(
@@ -41,7 +43,7 @@ pub fn run_expr(
                 let (a0, a1) = (vat.op_stack.pop().unwrap(), vat.op_stack.pop().unwrap());
                 if let (Hvalue::Hu8(b0), Hvalue::Hu8(b1)) = (a0.clone(), a1.clone()) {
                     let res = b0 + b1;
-                                        println!("Calling add {} + {} : {}", b0, b1, res);
+                    println!("Calling add {} + {} : {}", b0, b1, res);
 
                     vat.op_stack.push(Hvalue::Hu8(res));
                 } else {
@@ -146,14 +148,16 @@ pub fn run_expr(
                         args: args,
                         // TODO: u64
                         function_id: a0 as u32,
-                        function_name: String::from("main"),
-                        src_promise: Some(next_prom_id.into())
+                        src_promise: Some(next_prom_id.into()),
                     },
                 };
 
                 let ent_addr = msg.src_address.clone();
                 tx_msg.send(out_msg).unwrap();
-                vat.promise_stack.insert(next_prom_id, vm_core::Promise::new(src_promise_id, Some(ent_addr)));
+                vat.promise_stack.insert(
+                    next_prom_id,
+                    vm_core::Promise::new(src_promise_id, Some(ent_addr)),
+                );
                 vat.op_stack.push(Hvalue::Promise(next_prom_id));
             }
             Op::Await => {
@@ -236,7 +240,6 @@ pub fn run_msg(
         vm_core::MsgContents::Request {
             args,
             function_id,
-            function_name,
             src_promise,
         } => {
             let mut z = 0;
@@ -246,7 +249,7 @@ pub fn run_msg(
             let inoc_table = load_entity_inoculation_table(&mut q, &code[z..]);
 
             let mut x = 0;
-            let table = load_entity_function_table(&mut x, &code[q + z ..]);
+            let table = load_entity_function_table(&mut x, &code[q + z..]);
 
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
@@ -303,28 +306,29 @@ pub fn run_msg(
                     let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
 
                     // If this message has a promise that it needs to respond to, do it
-                    if let (Some(res), Some(src_prom_real)) = (poss_res.clone(), promise.src_promise) {
+                    if let (Some(res), Some(src_prom_real)) =
+                        (poss_res.clone(), promise.src_promise)
+                    {
                         //println!("{:#?}", vat);
-                        println!("Sending back res: {:?} to {:?}", res, promise.src_entity.unwrap());
+                        println!(
+                            "Sending back res: {:?} to {:?}",
+                            res,
+                            promise.src_entity.unwrap()
+                        );
                         out_msg = Some(Msg {
                             src_address: msg.dst_address,
                             dst_address: promise.src_entity.unwrap(),
                             contents: vm_core::MsgContents::Response {
                                 result: res,
-                                dst_promise: promise.src_promise
+                                dst_promise: promise.src_promise,
                             },
                         });
                         println!("Final msg: {:#?}", out_msg);
                     }
                 }
-
             }
         }
-        vm_core::MsgContents::BigBang {
-            args,
-            function_id,
-            function_name,
-        } => {
+        vm_core::MsgContents::BigBang { args, function_id } => {
             let mut z = 0;
             let data_table = load_entity_data_table(&mut z, &code[..]);
 
@@ -332,7 +336,7 @@ pub fn run_msg(
             let inoc_table = load_entity_inoculation_table(&mut q, &code[z..]);
 
             let mut x = 0;
-            let table = load_entity_function_table(&mut x, &code[q + z ..]);
+            let table = load_entity_function_table(&mut x, &code[q + z..]);
 
             vat.call_stack.push(StackFrame {
                 locals: HashMap::new(),
@@ -341,7 +345,8 @@ pub fn run_msg(
 
             z = table[&0][&function_id].0 as usize;
 
-            run_expr(z, vat, msg, tx_msg, code, None);
+            let rt_bb = run_expr(z, vat, msg, tx_msg, code, None);
+            println!("{:#?}", rt_bb);
         }
     }
 

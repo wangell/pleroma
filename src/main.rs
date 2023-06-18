@@ -61,6 +61,7 @@ pub mod pbin;
 pub mod opcodes;
 pub mod common;
 pub mod bin_helpers;
+pub mod node;
 
 #[cfg(feature = "hosted")]
 fn main() {

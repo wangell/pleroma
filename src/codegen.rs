@@ -121,19 +121,10 @@ impl GenCode {
         l.push(v);
     }
 
-    pub fn relocate_functions(&mut self) {
-        for (ent_id, func_id, loc) in &self.relocations {
-            let new_loc = self.absolute_entity_function_locations[&(*ent_id, *func_id)];
-            // TODO: what is 8?
-            self.code.splice(*loc as usize..(loc+8) as usize, new_loc.to_be_bytes());
-        }
-    }
-
+    // Creates a table listing each inoculation value
     pub fn build_entity_inoculation_table(&mut self) {
         // Outputs binary: size (u8) + each(entity) -> entity_id, name, type
         let mut sz = 0;
-
-        println!("Inoc {:#?}", self.entity_inoculation_values);
 
         for (ent_id, ftab) in &self.entity_inoculation_values {
             for (data_id, val) in ftab {
@@ -160,6 +151,7 @@ impl GenCode {
         self.header.append(&mut edt);
     }
 
+    // Creates a table for each entity that lists all data values and any compile-time constants assigned
     pub fn build_entity_data_table(&mut self) {
         let mut sz = 0;
 
@@ -188,6 +180,7 @@ impl GenCode {
         self.header.append(&mut edt);
     }
 
+    // Creates a table listing each entity function and the position-independent code for this object
     pub fn build_entity_function_location_table(&mut self) {
         let loc_offset = self.header.len();
 
@@ -227,6 +220,21 @@ impl GenCode {
     }
 }
 
+use core::cmp::Ordering;
+
+// Sort functions so that the constructor always comes first
+fn compare_function_names(a: &(&String, &mut Box<AstNode>), b: &(&String, &mut Box<AstNode>)) -> Ordering {
+    if a.0 == "create" {
+        return Ordering::Less;
+    }
+
+    if b.0 == "create" {
+        return Ordering::Greater;
+    }
+
+    return a.0.cmp(b.0);
+}
+
 impl AstNodeVisitor for GenCode {
     fn visit_entity_def(
         &mut self,
@@ -254,7 +262,8 @@ impl AstNodeVisitor for GenCode {
         {
             let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> =
                 functions.iter_mut().collect();
-            sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
+            sorted_functions.sort_by(compare_function_names);
+
             let mut fid = 0;
             for (func_name, func_def) in sorted_functions {
                 self.function_num.insert(func_name.clone(), fid);
@@ -264,7 +273,8 @@ impl AstNodeVisitor for GenCode {
 
         let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> =
             functions.iter_mut().collect();
-        sorted_functions.sort_by(|a, b| a.0.cmp(b.0));
+        sorted_functions.sort_by(compare_function_names);
+
         for (func_name, func_def) in sorted_functions {
             walk(self, func_def);
         }
@@ -377,16 +387,22 @@ impl AstNodeVisitor for GenCode {
         }
     }
 
-    fn visit_function_call(&mut self, identifier: &mut Identifier, arguments: &mut Vec<AstNode>) {
-        for arg in arguments.iter_mut() {
+    fn visit_function_call(&mut self, fc: &mut ast::FunctionCall) {
+        for arg in fc.arguments.iter_mut() {
             walk(self, arg);
         }
-        let fnum = self.function_num[&identifier.original_sym];
         //let floc = self.entity_function_locations[&self.current_entity_id][&fnum].0 as u64;
 
-        // Entity, function, location
-        self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
-        self.emit_op(Op::Call(0, arguments.len() as u8));
+        if fc.call_type == ast::CallType::NewEntity {
+            let fnum = 0;
+            self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
+            self.emit_op(Op::Call(0, fc.arguments.len() as u8));
+        } else {
+            // Entity, function, location
+            let fnum = self.function_num[&fc.identifier.original_sym];
+            self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
+            self.emit_op(Op::Call(0, fc.arguments.len() as u8));
+        }
     }
 
     fn visit_print(&mut self, node: &mut AstNode) {

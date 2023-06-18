@@ -42,7 +42,6 @@ pub enum MsgContents {
     Request {
         args: Vec<Hvalue>,
         function_id: u32,
-        function_name: String,
         src_promise: Option<u32>,
     },
     Response {
@@ -54,7 +53,6 @@ pub enum MsgContents {
     BigBang {
         args: Vec<Hvalue>,
         function_id: u32,
-        function_name: String,
     },
 }
 
@@ -177,16 +175,7 @@ impl Vat {
             code: code
         };
 
-        ent.data
-            .insert(String::from("self"), Hvalue::EntityAddress(ent.address));
-        ent.data.insert(
-            String::from("io"),
-            Hvalue::EntityAddress(EntityAddress {
-                node_id: 0,
-                vat_id: 0,
-                entity_id: 1,
-            }),
-        );
+        ent.data .insert(String::from("self"), Hvalue::EntityAddress(ent.address));
 
         self.entities.insert(entity_id, ent);
 

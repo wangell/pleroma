@@ -7,6 +7,21 @@ pub struct Module {
     pub entity_defs: BTreeMap<String, AstNode>,
 }
 
+#[derive(Debug, Clone, PartialEq)]
+pub enum CallType {
+    Unknown,
+    Regular,
+    NewEntity,
+    NewVat
+}
+
+#[derive(Debug, Clone)]
+pub struct FunctionCall {
+    pub call_type: CallType,
+    pub identifier: Identifier,
+    pub arguments: Vec<AstNode>
+}
+
 #[derive(Debug, Clone)]
 pub enum AstNode {
     Module(Module),
@@ -25,12 +40,12 @@ pub enum AstNode {
     DefinitionNode(Identifier, Box<AstNode>),
     AssignmentNode(Identifier, Box<AstNode>),
 
-    FunctionCall(Identifier, Vec<AstNode>),
+    FunctionCall(FunctionCall),
     Message(Identifier, String, Vec<AstNode>),
 
     ForeignCall(ForeignFunc, Vec<AstNode>),
 
-    EntityConstruction(Identifier, Box<Option<AstNode>>),
+    EntityConstruction(Identifier, Vec<AstNode>),
 
     Return(Box<AstNode>),
 
@@ -234,11 +249,11 @@ pub trait AstNodeVisitor {
         }
     }
 
-    fn visit_function_call(&mut self, identifier: &mut Identifier, arguments: &mut Vec<AstNode>) {
-        for arg in arguments.iter_mut() {
+    fn visit_function_call(&mut self, fc: &mut FunctionCall) {
+        for arg in fc.arguments.iter_mut() {
             walk(self, arg);
         }
-        self.visit_identifier(identifier);
+        self.visit_identifier(&mut fc.identifier);
     }
 }
 
@@ -280,7 +295,7 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
         AstNode::Identifier(a) => visitor.visit_identifier(a),
 
         AstNode::Module(a) => visitor.visit_module(a),
-        AstNode::FunctionCall(a, b) => visitor.visit_function_call(a, b),
+        AstNode::FunctionCall(a) => visitor.visit_function_call(a),
         x => {
             println!("{:?}", x);
             panic!()
