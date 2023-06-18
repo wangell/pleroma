@@ -142,6 +142,7 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
     cg_visitor.build_entity_data_table();
     cg_visitor.build_entity_inoculation_table();
     cg_visitor.build_entity_function_location_table();
+    cg_visitor.relocate_functions();
 
     // We gather all code, relocations, data, and inoculation tables, combine them, rename/number symbols, and relocate all functions
 

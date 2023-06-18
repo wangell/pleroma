@@ -20,7 +20,12 @@ pub enum Op {
 
     // Function #, # of args
     Message(u64, u8),
+
+    // Address + # of args
     Call(u64, u8),
+
+    // Address / Num args
+    ConstructEntity(u64, u8),
 
     Lload(String),
     Lstore(String),
@@ -47,6 +52,7 @@ pub enum SimpleOp {
     ForeignCall,
     Call,
     Message,
+    ConstructEntity,
 
     Lload,
     Lstore,
@@ -172,13 +178,20 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
             bytes.push(SimpleOp::Lstore as u8);
             bytes.extend_from_slice(s0.as_bytes());
             bytes.push(0x0);
-        }
+        },
 
         Op::Estore(s0) => {
             bytes.push(SimpleOp::Estore as u8);
             bytes.extend_from_slice(s0.as_bytes());
             bytes.push(0x0);
+        },
+
+        Op::ConstructEntity(a0, a1) => {
+            bytes.push(SimpleOp::ConstructEntity as u8);
+            bytes.extend_from_slice(&a0.to_be_bytes());
+            bytes.extend_from_slice(&a1.to_be_bytes());
         }
+
 
         _ => panic!()
     }
@@ -220,6 +233,13 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
             let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
 
             return (x + y0 + y1, Op::Call(a0, a1));
+        }
+
+        SimpleOp::ConstructEntity => {
+            let (y0, a0) = read_u64_sz(&vblock[x..]);
+            let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
+
+            return (x + y0 + y1, Op::ConstructEntity(a0, a1));
         }
 
         SimpleOp::Lload => {

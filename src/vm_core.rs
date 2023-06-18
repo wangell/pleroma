@@ -65,7 +65,7 @@ pub struct Msg {
 
 #[derive(Debug)]
 pub struct Entity {
-    address: EntityAddress,
+    pub address: EntityAddress,
     pub data: BTreeMap<String, Hvalue>,
     pub code: u32
 }
@@ -126,6 +126,7 @@ pub struct EvalContext<'a> {
 
 #[derive(Debug, Clone)]
 pub struct StackFrame {
+    pub entity_id: u32,
     pub locals: HashMap<String, Hvalue>,
     pub return_address: Option<usize>,
     // Store source promise in here

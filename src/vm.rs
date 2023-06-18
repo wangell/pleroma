@@ -22,6 +22,10 @@ pub fn run_expr(
 
     let mut yield_op = false;
 
+    if !vat.entities.contains_key(&msg.dst_address.entity_id) {
+        panic!("Attempted to run expr on entity {}, but entity doesn't exist in vat {}", msg.dst_address.entity_id, vat.vat_id);
+    }
+
     loop {
         // TODO: this should never happen, need implicit return
         if x >= code.len() {
@@ -99,30 +103,73 @@ pub fn run_expr(
                 vat.store_local(&s0, &store_val);
             }
             Op::Eload(s0) => {
-                let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
+                // Load an entity variable from the current entity onto the op stack
+
+                let current_entity_id = vat.call_stack.last().unwrap().entity_id;
+
+                let mut target_entity = vat.entities.get_mut(&current_entity_id).unwrap();
                 let local_var = target_entity.data[&s0].clone();
                 vat.op_stack.push(local_var);
             }
             Op::Estore(s0) => {
-                let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
+                // Stores an entity variable to the current entity from the op stack
+
+                let current_entity_id = vat.call_stack.last().unwrap().entity_id;
+
+                let mut target_entity = vat.entities.get_mut(&current_entity_id).unwrap();
                 let store_val = vat.op_stack.pop().unwrap();
                 target_entity.data.insert(s0, store_val);
             }
-            Op::Call(a0, a1) => {
-                // #a1 rguments should already be on the stack
+            Op::ConstructEntity(a0, a1) => {
+                // Pop off arguments from stack
+                let mut args = Vec::new();
+                for i in 0..a1 {
+                    args.push(vat.op_stack.pop().unwrap());
+                }
+
+                let mut z = 0;
+                use crate::pbin;
+                use std::fs;
+                let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
+                let ent = vat.create_entity_code(0, &data_table[&0]);
+
                 let mut nf = StackFrame {
+                    entity_id: ent.address.entity_id,
                     locals: HashMap::new(),
                     return_address: Some(x),
                 };
 
-                // TODO: Add back once we remove the argument/op stack method
+                println!("{}", ent.address.entity_id);
+
+                // Push the new call stack and jump to next location
+                vat.call_stack.push(nf);
+                x = a0 as usize;
+            },
+            Op::Call(a0, a1) => {
+                // Pop off arguments from stack
+                let mut args = Vec::new();
                 for i in 0..a1 {
-                    //let tv = vat.op_stack.pop();
-                    //nf.locals.insert(String::from("f"), tv.unwrap());
+                    args.push(vat.op_stack.pop().unwrap());
                 }
 
-                // Need to load / store current entity in StackFrame
+                // Get the target entity from stack
+                let target_entity = vat.op_stack.pop().unwrap();
 
+                let mut nf = StackFrame {
+                    entity_id: 0,
+                    locals: HashMap::new(),
+                    return_address: Some(x),
+                };
+
+                if let Hvalue::EntityAddress(add) = target_entity {
+                    nf.entity_id = add.entity_id;
+                } else {
+                    panic!("Invalid entity address found on stack while doing call");
+                }
+
+                println!("Calling : {}", a0);
+
+                // Push the new call stack and jump to next location
                 vat.call_stack.push(nf);
                 x = a0 as usize;
             }
@@ -252,6 +299,7 @@ pub fn run_msg(
             let table = load_entity_function_table(&mut x, &code[q + z..]);
 
             vat.call_stack.push(StackFrame {
+                entity_id: 0,
                 locals: HashMap::new(),
                 return_address: None,
                 // remove this
@@ -339,6 +387,7 @@ pub fn run_msg(
             let table = load_entity_function_table(&mut x, &code[q + z..]);
 
             vat.call_stack.push(StackFrame {
+                entity_id: msg.dst_address.entity_id,
                 locals: HashMap::new(),
                 return_address: None,
             });

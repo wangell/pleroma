@@ -154,8 +154,8 @@ pub fn boot() {
     // Insert seminal message
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
-        dst_address: vm_core::EntityAddress::new(0, 0, 1),
-        contents: vm_core::MsgContents::BigBang{ function_id: 3, args: Vec::new() }
+        dst_address: vm_core::EntityAddress::new(0, 0, 0),
+        contents: vm_core::MsgContents::BigBang{ function_id: 1, args: Vec::new() }
     };
     tx_ml_box.send(msg).unwrap();
 

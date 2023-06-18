@@ -19,6 +19,7 @@ pub enum CallType {
 pub struct FunctionCall {
     pub call_type: CallType,
     pub identifier: Identifier,
+    pub func_name: String,
     pub arguments: Vec<AstNode>
 }
 

@@ -121,6 +121,13 @@ impl GenCode {
         l.push(v);
     }
 
+    pub fn relocate_functions(&mut self) {
+        for (ent_id, func_id, loc) in &self.relocations {
+            let new_loc = self.absolute_entity_function_locations[&(*ent_id, *func_id)];
+            self.code.splice(*loc as usize..(loc+8) as usize, new_loc.to_be_bytes());
+        }
+    }
+
     // Creates a table listing each inoculation value
     pub fn build_entity_inoculation_table(&mut self) {
         // Outputs binary: size (u8) + each(entity) -> entity_id, name, type
@@ -396,10 +403,11 @@ impl AstNodeVisitor for GenCode {
         if fc.call_type == ast::CallType::NewEntity {
             let fnum = 0;
             self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
-            self.emit_op(Op::Call(0, fc.arguments.len() as u8));
+            self.emit_op(Op::ConstructEntity(0, fc.arguments.len() as u8));
         } else {
             // Entity, function, location
-            let fnum = self.function_num[&fc.identifier.original_sym];
+            self.visit_identifier(&mut fc.identifier);
+            let fnum = self.function_num[&fc.func_name];
             self.relocations.push((self.current_entity_id, fnum, (self.code.len() + 1) as u64));
             self.emit_op(Op::Call(0, fc.arguments.len() as u8));
         }
