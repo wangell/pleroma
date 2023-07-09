@@ -6,6 +6,25 @@ use crate::vm_core;
 
 use crate::common::{Box, HashMap, String, Vec, BTreeMap};
 
+pub fn derive_type(node: &AstNode) -> CType {
+    println!("{:?}", node);
+    let stype = match node {
+        AstNode::FunctionCall(ast::FunctionCall{call_type, identifier, func_name, arguments}) => match call_type {
+            ast::CallType::NewEntity => CType::Loc(ast::PType::Entity(identifier.original_sym.clone())),
+            _ => panic!()
+        }
+        _ => CType::Void
+    };
+
+    return stype;
+}
+
+// This pass gathers all Entity types + function parameter/return types
+pub struct GatherModuleTypes {
+    pub entity_function_types: HashMap<String, HashMap<String, (Vec<CType>, CType)>>,
+    pub entities_and_functions: HashMap<String, HashMap<String, u32>>
+}
+
 pub struct VariableFlow {
     pub inoc_vars: HashMap<String, ()>,
     pub entity_vars: HashMap<String, ()>,
@@ -16,20 +35,58 @@ pub struct GenCode {
     pub header: Vec<u8>,
     pub code: Vec<u8>,
 
+    pub entities_and_functions: HashMap<String, HashMap<String, u32>>,
+
     pub entity_function_locations: BTreeMap<u32, HashMap<u32, (usize, usize)>>,
     pub entity_data_values: HashMap<u32, HashMap<String, Hvalue>>,
     pub entity_inoculation_values: HashMap<u32, HashMap<String, Hvalue>>,
+
+    pub entity_function_types: HashMap<String, HashMap<String, (Vec<CType>, CType)>>,
 
     pub current_entity_id: u32,
     pub current_func_id: u32,
 
     pub function_num: HashMap<String, u32>,
 
+    pub symbol_table: HashMap<String, CType>,
+
     pub absolute_entity_function_locations: BTreeMap<(u32, u32), usize>,
     pub relocations: Vec<(u32, u32, u64)>,
 
     // Stores entity root name -> unique u32
     pub entity_table: HashMap<String, u32>
+}
+
+impl AstNodeVisitor for GatherModuleTypes {
+    fn visit_entity_def(
+        &mut self,
+        entity_name: &String,
+        data_declarations: &Vec<(String, ast::CType)>,
+        inoculation_list: &Vec<(String, ast::CType)>,
+        functions: &mut HashMap<String, Box<AstNode>>,
+        foreign_functions: &HashMap<u8, ast::ForeignFunc>,
+    ) {
+        self.entity_function_types.insert(entity_name.clone(), HashMap::new());
+        self.entities_and_functions.insert(entity_name.clone(), HashMap::new());
+
+        for (func_name, func_def) in functions.iter_mut() {
+            if let ast::AstNode::Function{name, parameters, return_type, body} = &**func_def {
+                self.entity_function_types.get_mut(entity_name).unwrap().insert(func_name.clone(), (Vec::new(), return_type.clone()));
+            }
+            walk(self, func_def);
+        }
+
+        {
+            let mut sorted_functions: Vec<(&String, &mut Box<AstNode>)> = functions.iter_mut().collect();
+            sorted_functions.sort_by(compare_function_names);
+
+            let mut fid = 0;
+            for (func_name, func_def) in sorted_functions {
+                self.entities_and_functions.get_mut(entity_name).unwrap().insert(func_name.clone(), fid);
+                fid += 1;
+            }
+        }
+    }
 }
 
 impl AstNodeVisitor for VariableFlow {
@@ -343,12 +400,20 @@ impl AstNodeVisitor for GenCode {
         for arg in args.iter_mut() {
             walk(self, arg);
         }
-        self.emit_op(Op::Message(self.function_num[func_name].into(), args.len() as u8));
+
+        let entity_type = self.symbol_table.get(&id.original_sym).unwrap();
+
+        if let ast::CType::Loc(ast::PType::Entity(ename)) = entity_type {
+            // We have the entity type + function name, now we need to find which number function to message
+
+            let fid = self.entities_and_functions.get(ename).unwrap().get(func_name).unwrap();
+            let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
+
+            self.emit_op(Op::Message(*fid as u64, f_args as u8));
+        }
     }
 
     fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {
-        //left.visit(self);
-        //right.visit(self);
 
         walk(self, left);
         walk(self, right);
@@ -368,6 +433,9 @@ impl AstNodeVisitor for GenCode {
 
     fn visit_definition(&mut self, symbol: &mut Identifier, expr: &mut AstNode) {
         walk(self, expr);
+
+        self.symbol_table.insert(symbol.original_sym.clone(), derive_type(expr));
+        println!("{:?}", self.symbol_table);
 
         if let IdentifierTarget::LocalVar = symbol.target {
             self.emit_op(Op::Lstore(symbol.original_sym.clone()));

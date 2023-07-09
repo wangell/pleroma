@@ -136,7 +136,7 @@ pub fn run_expr(
                 let mut xx = 0;
                 let table = load_entity_function_table(&mut xx, &code[qq + zz..]);
 
-                let ent = vat.create_entity_code(0, &data_table[&a0]);
+                let ent = vat.create_entity_code(a0, 0, &data_table[&a0]);
 
                 let mut nf = StackFrame {
                     entity_id: ent.address.entity_id,
@@ -301,6 +301,7 @@ pub fn run_msg(
             let mut x = 0;
             let table = load_entity_function_table(&mut x, &code[q + z..]);
 
+            // FIXME: Why is this zero and does that matter?
             vat.call_stack.push(StackFrame {
                 entity_id: 0,
                 locals: HashMap::new(),
@@ -312,7 +313,9 @@ pub fn run_msg(
                 vat.op_stack.push(i.clone());
             }
 
-            z = table[&0][&function_id].0 as usize;
+            let entity_type_id = vat.entities.get(&msg.dst_address.entity_id).unwrap().entity_type;
+
+            z = table[&entity_type_id][&function_id].0 as usize;
 
             let poss_res = run_expr(z, vat, msg, tx_msg, code, src_promise.clone());
 

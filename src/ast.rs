@@ -151,13 +151,15 @@ pub enum Distance {
 #[derive(Clone, Debug)]
 pub enum PType {
     Void,
+
+    Pu8,
     Pu32,
 
     Pi32,
 
     Pstr,
     Pbool,
-    Entity,
+    Entity(String),
     List(Box<CType>),
     Promise(Box<CType>),
 }
@@ -301,5 +303,15 @@ pub fn walk<V: AstNodeVisitor + ?Sized>(visitor: &mut V, node: &mut AstNode) {
             println!("{:?}", x);
             panic!()
         }
+    }
+}
+
+pub fn derive_type(node: AstNode) -> PType {
+    match node {
+        AstNode::ValueNode(v) => match v {
+            Hvalue::Hu8(_) => PType::Pu8,
+            _ => PType::Void
+        }
+        _ => PType::Void
     }
 }

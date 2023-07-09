@@ -67,7 +67,8 @@ pub struct Msg {
 pub struct Entity {
     pub address: EntityAddress,
     pub data: BTreeMap<String, Hvalue>,
-    pub code: u32
+    pub code: u32,
+    pub entity_type: u32
 }
 
 #[derive(Debug, Clone)]
@@ -164,7 +165,7 @@ impl Vat {
         last_frame.locals.insert(s.clone(), val.clone());
     }
 
-    pub fn create_entity_code(&mut self, code: u32, data: &BTreeMap<String, Hvalue>) -> &Entity {
+    pub fn create_entity_code(&mut self, entity_type: u32, code: u32, data: &BTreeMap<String, Hvalue>) -> &Entity {
         let entity_id = self.last_entity_id;
         let mut ent = Entity {
             address: EntityAddress {
@@ -173,35 +174,14 @@ impl Vat {
                 entity_id: entity_id,
             },
             data: data.clone(),
-            code: code
+            code: code,
+            entity_type: entity_type
         };
 
         ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
 
         self.entities.insert(entity_id, ent);
 
-        self.last_entity_id += 1;
-
-        &self.entities[&entity_id]
-    }
-
-    pub fn create_entity(&mut self, def: &EntityDef) -> &Entity {
-        // Needs ref to underlying code
-        let entity_id = self.last_entity_id;
-
-        let mut ent = Entity {
-            address: EntityAddress {
-                node_id: 0,
-                vat_id: self.vat_id,
-                entity_id: entity_id,
-            },
-            data: BTreeMap::new(),
-            code: 0
-        };
-
-        ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
-
-        self.entities.insert(entity_id, ent);
         self.last_entity_id += 1;
 
         &self.entities[&entity_id]

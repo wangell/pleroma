@@ -90,7 +90,7 @@ EntityDef: (String, AstNode) = {
 PType: PType = {
   "u32" => PType::Pu32,
   "[" <c:CType> "]" => PType::List(Box::new(c)),
-  <s:EntityIdentifier> => PType::Entity
+  <s:EntityIdentifier> => PType::Entity(s)
 }
 
 CType: CType = {

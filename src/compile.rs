@@ -94,12 +94,31 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
 
     let mut ec_visitor = EmplaceEntityConstruction {};
 
+    let mut eft_visitor = codegen::GatherModuleTypes {
+        entity_function_types: HashMap::new(),
+        entities_and_functions: HashMap::new()
+    };
+
+    let ec_result = ast::walk(&mut ec_visitor, root);
+
+    let mut vf_visitor = codegen::VariableFlow {
+        local_vars: HashMap::new(),
+        entity_vars: HashMap::new(),
+        inoc_vars: HashMap::new(),
+    };
+    let vf_result = ast::walk(&mut vf_visitor, root);
+
+    let eft_result = ast::walk(&mut eft_visitor, root);
+
     let mut cg_visitor = codegen::GenCode {
         header: Vec::new(),
         code: Vec::new(),
+        symbol_table: HashMap::new(),
+        entities_and_functions: eft_visitor.entities_and_functions,
         entity_function_locations: BTreeMap::new(),
         entity_data_values: HashMap::new(),
         entity_inoculation_values: HashMap::new(),
+        entity_function_types: eft_visitor.entity_function_types,
         current_entity_id: 0,
         current_func_id: 0,
         absolute_entity_function_locations: BTreeMap::new(),
@@ -108,16 +127,9 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
         entity_table: ent_ids_visitor.entity_ids.clone(),
     };
 
-    let mut vf_visitor = codegen::VariableFlow {
-        local_vars: HashMap::new(),
-        entity_vars: HashMap::new(),
-        inoc_vars: HashMap::new(),
-    };
 
     // Apply passes
     //let gen_con_result = ast::walk(&mut gen_con_visitor, root);
-    let ec_result = ast::walk(&mut ec_visitor, root);
-    let vf_result = ast::walk(&mut vf_visitor, root);
     let cg_result = ast::walk(&mut cg_visitor, root);
 
     println!("Ent ids {:#?}", ent_ids_visitor.entity_ids);
