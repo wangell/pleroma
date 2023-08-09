@@ -87,7 +87,7 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
 
     let mut new_asts = asts.clone();
 
-    let mut root = &mut new_asts.get_mut("./blah/basic_entity.plm").unwrap();
+    let mut root = &mut new_asts.get_mut("sys/kernel.plm").unwrap();
 
     let mut ent_ids_visitor = ConstructSymbolTable::new();
     let ent_ids_result = ast::walk(&mut ent_ids_visitor, root);
@@ -126,7 +126,6 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
         relocations: Vec::new(),
         entity_table: ent_ids_visitor.entity_ids.clone(),
     };
-
 
     // Apply passes
     //let gen_con_result = ast::walk(&mut gen_con_visitor, root);

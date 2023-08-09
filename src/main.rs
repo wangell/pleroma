@@ -45,8 +45,10 @@ cfg_if::cfg_if! {
         pub mod pnet;
         pub mod hosted;
         pub mod monad;
+        pub mod nodeman;
         pub mod compile;
         pub mod system;
+        pub mod vm;
     }
 }
 
@@ -55,7 +57,6 @@ pub mod parser;
 pub mod sem;
 pub mod codegen;
 pub mod vm_core;
-pub mod vm;
 pub mod ast;
 pub mod pbin;
 pub mod opcodes;

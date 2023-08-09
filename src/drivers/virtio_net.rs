@@ -19,6 +19,8 @@ use x86_64::PhysAddr;
 use crate::memory::BootInfoAllocatorTrait;
 use crate::memory;
 
+use crate::architecture::x86_64::cpu::{io_read_le_u16, io_read_le_u8};
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 #[repr(u32)]
 enum NetDevFlags {

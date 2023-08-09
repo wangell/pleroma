@@ -9,6 +9,7 @@ use crate::vm_core;
 use crate::vm_core::Vat;
 use crate::common::BTreeMap;
 use crate::common::HashMap;
+use crate::common::Arc;
 
 use std::fs;
 
@@ -40,8 +41,9 @@ impl Monad {
 }
 
 pub fn load_monad(monad_path: &str, vat: &mut Vat) {
-    vat.code.insert(0, fs::read("kernel.plmb").unwrap());
+    //vat.code.insert(0, fs::read("bsys/kernel.plmb").unwrap());
+    vat.code = Arc::new(fs::read("bsys/kernel.plmb").unwrap());
     let mut z = 0;
-    let data_table = pbin::load_entity_data_table(&mut z, &fs::read("kernel.plmb").unwrap());
+    let data_table = pbin::load_entity_data_table(&mut z, &fs::read("bsys/kernel.plmb").unwrap());
     vat.create_entity_code(0, 0, &data_table[&0]);
 }

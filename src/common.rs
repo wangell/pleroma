@@ -11,6 +11,7 @@ cfg_if::cfg_if! {
         pub use std::str;
         pub use std::str::FromStr;
         pub use std::string::ToString;
+        pub use std::sync::Arc;
     }
 }
 
@@ -27,6 +28,7 @@ cfg_if::cfg_if! {
         pub use alloc::str;
         pub use alloc::str::FromStr;
         pub use alloc::string::ToString;
+        pub use alloc::sync::Arc;
 
         pub fn ceil(value: f64) -> f64 {
             let integer_part = value as i64;

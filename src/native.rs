@@ -11,7 +11,6 @@ use crate::native_util;
 use crate::palloc;
 use crate::pbin;
 use crate::pci;
-use crate::vm;
 use crate::vm_core;
 use crate::vm_core::{Msg, Vat};
 use core::mem;
@@ -217,6 +216,7 @@ fn vat_runner() {
 
 #[panic_handler]
 fn rust_panic(info: &core::panic::PanicInfo) -> ! {
+
     println!("{}", info);
     native_util::hcf();
 }

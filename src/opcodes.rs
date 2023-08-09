@@ -2,6 +2,7 @@ use crate::ast;
 use crate::ast::Hvalue;
 use crate::bin_helpers::{read_u64_sz, read_u32_sz, read_u16_sz, read_u8_sz, read_utf8_str_sz};
 use crate::vm_core;
+use crate::common::{Vec, String, vec};
 
 #[derive(Debug)]
 pub enum Op {

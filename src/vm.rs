@@ -2,6 +2,7 @@ use crate::ast;
 use crate::ast::Hvalue;
 use crate::common::{vec, Box, HashMap, String, Vec};
 use crate::vm_core;
+use crate::common::Arc;
 use core;
 
 use crate::opcodes::{decode_instruction, Op};
@@ -15,9 +16,12 @@ pub fn run_expr(
     vat: &mut Vat,
     msg: &Msg,
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
-    code: &Vec<u8>,
     src_promise_id: Option<u32>,
 ) -> Option<Hvalue> {
+
+    // TODO: code can just be referenced from the vat instead of cloning the ref
+    let code = vat.code.clone();
+
     let mut x = start_addr;
 
     let mut yield_op = false;
@@ -277,7 +281,6 @@ pub fn run_expr(
 }
 
 pub fn run_msg(
-    code: &Vec<u8>,
     vat: &mut Vat,
     msg: &Msg,
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
@@ -286,12 +289,16 @@ pub fn run_msg(
     println!("Message {:?}", msg);
     println!("");
 
+    let code = &*vat.code;
+
     match &msg.contents {
         vm_core::MsgContents::Request {
             args,
             function_id,
             src_promise,
         } => {
+
+
             let mut z = 0;
             let data_table = load_entity_data_table(&mut z, &code[..]);
 
@@ -301,7 +308,7 @@ pub fn run_msg(
             let mut x = 0;
             let table = load_entity_function_table(&mut x, &code[q + z..]);
 
-            // FIXME: Why is this zero and does that matter?
+            // FIXME: Why is entity ID zero and does that matter?
             vat.call_stack.push(StackFrame {
                 entity_id: 0,
                 locals: HashMap::new(),
@@ -317,7 +324,7 @@ pub fn run_msg(
 
             z = table[&entity_type_id][&function_id].0 as usize;
 
-            let poss_res = run_expr(z, vat, msg, tx_msg, code, src_promise.clone());
+            let poss_res = run_expr(z, vat, msg, tx_msg, src_promise.clone());
 
             if let Some(res) = poss_res {
                 out_msg = Some(Msg {
@@ -357,7 +364,7 @@ pub fn run_msg(
                     vat.call_stack = promise.save_point.1.clone();
 
                     vat.store_local(&promise.var_names[0], result);
-                    let poss_res = run_expr(i, vat, msg, tx_msg, code, promise.src_promise);
+                    let poss_res = run_expr(i, vat, msg, tx_msg, promise.src_promise);
 
                     // If this message has a promise that it needs to respond to, do it
                     if let (Some(res), Some(src_prom_real)) =
@@ -400,7 +407,7 @@ pub fn run_msg(
 
             z = table[&0][&function_id].0 as usize;
 
-            let rt_bb = run_expr(z, vat, msg, tx_msg, code, None);
+            let rt_bb = run_expr(z, vat, msg, tx_msg, None);
             println!("{:#?}", rt_bb);
         }
     }
