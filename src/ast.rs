@@ -44,7 +44,7 @@ pub enum AstNode {
     FunctionCall(FunctionCall),
     Message(Identifier, String, Vec<AstNode>),
 
-    ForeignCall(ForeignFunc, Vec<AstNode>),
+    ForeignCall(ForeignFunc, Vec<(String, CType)>),
 
     EntityConstruction(Identifier, Vec<AstNode>),
 
@@ -65,9 +65,12 @@ pub enum AstNode {
     Error,
 }
 
+pub type RawFF = fn(&mut vm_core::Vat, u32, Hvalue) -> Hvalue;
+pub type ParameterList = Vec<(String, CType)>;
+
 #[derive(Clone)]
 pub struct ForeignFunc {
-    pub fc_fn: fn(&mut vm_core::Entity, Hvalue) -> Hvalue
+    pub fc_fn: RawFF
 }
 
 #[derive(Clone, Debug)]
@@ -99,7 +102,7 @@ use core::fmt;
 use core::fmt::Debug;
 impl Debug for ForeignFunc {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Hi")
+        write!(f, "RawFF")
     }
 }
 
@@ -107,7 +110,8 @@ impl EntityDef {
     pub fn register_foreign_function(
         &mut self,
         name: &String,
-        func: fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
+        func: RawFF,
+        params: Vec<(String, CType)>
     ) {
         let idx = self.foreign_functions.len() as u8;
         self.foreign_functions.insert(idx, ForeignFunc{fc_fn: func});
@@ -115,9 +119,9 @@ impl EntityDef {
             name.clone(),
             Box::new(AstNode::Function {
                 name: name.clone(),
-                parameters: Vec::new(),
+                parameters: params.clone(),
                 return_type: CType::Loc(PType::Pu32),
-                body: vec![Box::new(AstNode::ForeignCall(ForeignFunc{fc_fn: func}, Vec::new()))],
+                body: vec![Box::new(AstNode::ForeignCall(ForeignFunc{fc_fn: func}, params.clone()))],
             }),
         );
     }
@@ -244,12 +248,9 @@ pub trait AstNodeVisitor {
 
     fn visit_foreign_call(
         &mut self,
-        func: &fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
-        params: &mut Vec<AstNode>,
+        func: &RawFF,
+        params: &mut Vec<(String, CType)>,
     ) {
-        for p in params.iter_mut() {
-            walk(self, p);
-        }
     }
 
     fn visit_function_call(&mut self, fc: &mut FunctionCall) {

@@ -1,0 +1,25 @@
+~B;
+
+ε Nodeman { io : u32 } {
+
+  ourblah: u32;
+
+  δ darth() → loc u32 {
+    let n: u32 = self ! karth();
+		await n;
+
+    ↵ n;
+  }
+
+  δ karth() → loc u32 {
+    ↵ 4;
+  }
+
+  δ alabama() → loc u32 {
+    let c: u32 = io ! darth();
+		await c;
+
+    ↵ c;
+  }
+
+}

@@ -11,6 +11,8 @@ use crate::pbin::{
 };
 use crate::vm_core::{Msg, StackFrame, Vat};
 
+const debug_msg_flow : bool = false;
+
 pub fn run_expr(
     start_addr: usize,
     vat: &mut Vat,
@@ -245,13 +247,19 @@ pub fn run_expr(
                     break;
                 }
             }
-            Op::ForeignCall(a0) => {
+            Op::ForeignCall(a0, a1) => {
                 // TODO: if kernel is recompiled, this won't point to the right memory address - need to create a table for sys modules
                 let ptr = a0 as *const ();
-                // TODO: create a type FFI for this
-                let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
-                let foreign_func: vm_core::SystemFunction = unsafe { core::mem::transmute(ptr) };
-                let res = foreign_func(target_entity, Hvalue::None);
+
+                let mut args = Vec::new();
+                for i in 0..a1 {
+                    let local_var = vat.load_local(&("p".to_owned() + &i.to_string()));
+                    args.push(ast::AstNode::ValueNode(local_var));
+                }
+
+                //let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
+                let foreign_func: ast::RawFF = unsafe { core::mem::transmute(ptr) };
+                let res = foreign_func(vat, msg.dst_address.entity_id, Hvalue::List(args));
 
                 //let res = target_entity.def.foreign_functions[&a0](ast::Hvalue::None);
                 vat.op_stack.push(res);
@@ -286,8 +294,11 @@ pub fn run_msg(
     tx_msg: &mut crossbeam::channel::Sender<vm_core::Msg>,
 ) -> Option<Msg> {
     let mut out_msg: Option<Msg> = None;
-    println!("Message {:?}", msg);
-    println!("");
+
+    if debug_msg_flow {
+        println!("Message {:?}", msg);
+        println!("");
+    }
 
     let code = &*vat.code;
 
@@ -408,7 +419,7 @@ pub fn run_msg(
             z = table[&0][&function_id].0 as usize;
 
             let rt_bb = run_expr(z, vat, msg, tx_msg, None);
-            println!("{:#?}", rt_bb);
+            //println!("{:#?}", rt_bb);
         }
     }
 

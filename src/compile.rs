@@ -60,14 +60,30 @@ impl AstNodeVisitor for EmplaceEntityConstruction {
     }
 }
 
-pub fn compile_from_files(files: Vec<String>, outpath: &str) {
+pub fn compile_from_files(files: Vec<String>, outpath: &str, ffsub: HashMap<String, HashMap<String, (ast::RawFF, ast::ParameterList)>>) -> Vec<u8> {
     let mut asts: HashMap<String, ast::AstNode> = HashMap::new();
     for file in files {
         let mod_str = fs::read_to_string(file.clone()).unwrap();
         asts.insert(file.clone(), parser::parse_module(&mod_str));
     }
 
-    compile_from_ast(&asts, outpath);
+    // Substitute FFs
+
+    for (fname, ast) in asts.iter_mut() {
+        if let ast::AstNode::Module(ast::Module{imports, entity_defs}) = ast {
+            for (ename, edef) in entity_defs.iter_mut() {
+                if let ast::AstNode::EntityDef(ref mut realdef) = edef {
+                    if ffsub.contains_key(ename) {
+                        for (k, v) in &ffsub[ename] {
+                            realdef.register_foreign_function(&k, v.0, v.1.clone());
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    compile_from_ast(&asts, outpath)
 }
 
 //pub fn link_objects(objects: Vec<(Vec<u8>, Vec)>) {
@@ -83,7 +99,7 @@ pub fn compile_from_files(files: Vec<String>, outpath: &str) {
 // 3. Replace each symbol with the root-based reference -> import foo; foo.bar; -> import root.foo; root.foo.bar
 // 4.
 
-pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
+pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) -> Vec<u8>{
 
     let mut new_asts = asts.clone();
 
@@ -131,8 +147,6 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
     //let gen_con_result = ast::walk(&mut gen_con_visitor, root);
     let cg_result = ast::walk(&mut cg_visitor, root);
 
-    println!("Ent ids {:#?}", ent_ids_visitor.entity_ids);
-
     // TODO: these should be run inside GenCode automatically - add "pre/post" methods to all AstNodeVisitors
     cg_visitor.build_entity_data_table();
     cg_visitor.build_entity_inoculation_table();
@@ -147,4 +161,6 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) {
     pbin::disassemble(&complete_output);
 
     fs::write(outpath, &complete_output).unwrap();
+
+    complete_output
 }

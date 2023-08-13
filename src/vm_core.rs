@@ -28,8 +28,6 @@ pub struct EntityAddress {
     pub entity_id: u32,
 }
 
-pub type SystemFunction = fn(&mut Entity, Hvalue) -> Hvalue;
-
 impl EntityAddress {
     pub fn new(node_id: u32, vat_id: u32, entity_id: u32) -> EntityAddress {
         EntityAddress {

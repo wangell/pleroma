@@ -5,6 +5,9 @@ all: run-hosted
 build-native:
 	cargo build --features native --config .cargo/config.native.toml
 
+test-native:
+	cargo test --features native --config .cargo/config.native.toml
+
 run-native:
 	cargo run --features native --config .cargo/config.native.toml
 

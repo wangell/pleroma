@@ -135,17 +135,6 @@ fn main_loop(
 
 pub fn boot() {
 
-    println!(r#"
-            ,,
-`7MM"""Mq.`7MM
-  MM   `MM. MM
-  MM   ,M9  MM  .gP"Ya `7Mb,od8 ,pW"Wq.`7MMpMMMb.pMMMb.   ,6"Yb.
-  MMmmdM9   MM ,M'   Yb  MM' "'6W'   `Wb MM    MM    MM  8)   MM
-  MM        MM 8M""""""  MM    8M     M8 MM    MM    MM   ,pm9MM
-  MM        MM YM.    ,  MM    YA.   ,A9 MM    MM    MM  8M   MM
-.JMML.    .JMML.`Mbmmd'.JMML.   `Ybmd9'.JMML  JMML  JMML.`Moo9^Yo.
-"#);
-
     let (tx_ml_box, rx_ml_box) = unbounded::<vm_core::Msg>();
 
     // Main loop vat tx <-> hotplate vat rx, hotplate vat tx <-> main loop vat rx
@@ -178,9 +167,7 @@ pub fn boot() {
     let mut vat = vm_core::Vat::new();
     let mut node = node::Node::new();
 
-    compile::compile_from_files(vec![String::from("sys/kernel.plm")], "bsys/kernel.plmb");
-
-    monad::load_monad("bsys/kernel.plmb", &mut vat);
+    monad::load_monad("sys/kernel.plm", &mut vat);
 
     let mut our_node = node::Node::new();
     let mut our_nodeman = nodeman::load_nodeman(our_node, "bsys/kernel.plmb");

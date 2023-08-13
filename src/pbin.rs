@@ -95,31 +95,31 @@ pub fn load_entity_function_table(location: &mut usize, vblock: &[u8]) -> BTreeM
 }
 
 pub fn disassemble(binary_code: &Vec<u8>) {
-    println!("Disassembly:");
+    //println!("Disassembly:");
     let mut x = 0;
     let data_table = load_entity_data_table(&mut x, &binary_code[0..]);
-    println!("Data table: {:?}", data_table);
+    //println!("Data table: {:?}", data_table);
 
     let mut q = 0;
     let inoc_table = load_entity_inoculation_table(&mut q, &binary_code[x..]);
-    println!("Inoc table({}): {:?}", q, inoc_table);
+    //println!("Inoc table({}): {:?}", q, inoc_table);
 
     let mut z = 0;
     let table = load_entity_function_table(&mut z, &binary_code[x + q..]);
-    println!("Function table: {:?}", table);
+    //println!("Function table: {:?}", table);
 
     for (eid, funcs) in &table {
-        println!("EID: {}", eid);
+        //println!("EID: {}", eid);
         for (fid, (loc, sz)) in &table[&eid] {
-            println!("\tFID (sz: {}): {}", sz, *fid);
+            //println!("\tFID (sz: {}): {}", sz, *fid);
             x = *loc;
             let loc_end = *sz + *loc;
             while x < loc_end {
                 let inst = decode_instruction(x, &binary_code[..]);
-                println!("\t\t{:?}", inst.1);
+                //println!("\t\t{:?}", inst.1);
                 x = inst.0;
             }
-            println!();
+            //println!();
         }
     }
 }

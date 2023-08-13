@@ -120,8 +120,24 @@ pub fn boot() -> ! {
     use crate::framebuffer;
     let mut our_fb = framebuffer::Framebuffer::new(fb);
 
-    our_fb.write_str("Welcome to Pleroma!", 1, 2);
+    //let bytes = include_bytes!("cool.ppm");
+
+    //let mut x = 0;
+    //let mut y = 0;
+    //for k in (0..bytes.len() - 1).step_by(3) {
+    //    our_fb.draw_pixel(x, y, bytes[k], bytes[k+1], bytes[k+2]);
+
+    //    x += 1;
+
+    //    if x == 150 {
+    //        x = 0;
+    //        y += 1;
+    //    }
+    //}
+
+    //our_fb.write_str("Welcome to Pleroma!", 1, 2);
     //our_fb.swap_buffer();
+    //x86_64::instructions::hlt();
 
     // Wait for first interrupt to trigger scheduler
 

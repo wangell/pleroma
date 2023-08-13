@@ -1,0 +1,35 @@
+~B;
+
+ε Monad { io : u32 } {
+
+  nahnah: u32;
+
+  δ create() → loc u32 {
+    ↵ self;
+  }
+
+  δ ala() → loc u32 {
+    let z: u32 = self ! hello();
+    await z;
+
+    let r: u32 = self ! kprint("this is a test");
+    await r;
+    ↵ 9;
+  }
+
+  δ baba() → loc u32 {
+    ↵ 2;
+  }
+
+  δ qala(i: u32) → loc u32 {
+    ↵ 99;
+  }
+
+  δ hello() → loc u32 {
+    ↵ 9;
+  }
+
+  δ kprint() → loc u32 {
+    ↵ 0;
+  }
+}

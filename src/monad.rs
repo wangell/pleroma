@@ -21,7 +21,9 @@ pub struct Program {
 pub struct Monad {
     pub programs: HashMap<String, Program>,
     pub def: ast::EntityDef,
+
 }
+
 
 impl Monad {
     pub fn new() -> Monad {
@@ -38,12 +40,51 @@ impl Monad {
 
         n
     }
+
+    fn kprint(vat: &mut vm_core::Vat, entity_id: u32, args: ast::Hvalue) -> ast::Hvalue {
+
+        if let ast::Hvalue::List(ls) = args {
+            for n in ls {
+                let out_str = match n {
+                    ast::AstNode::ValueNode(ast::Hvalue::PString(s)) => s,
+                    _ => todo!()
+                };
+                println!("[Monad => kprint] {:?}", out_str);
+            }
+        }
+        return ast::Hvalue::None;
+    }
+
+    fn hello(vat: &mut vm_core::Vat, entity_id: u32, args: ast::Hvalue) -> ast::Hvalue {
+        println!(r#"
+            ,,
+`7MM"""Mq.`7MM
+  MM   `MM. MM
+  MM   ,M9  MM  .gP"Ya `7Mb,od8 ,pW"Wq.`7MMpMMMb.pMMMb.   ,6"Yb.
+  MMmmdM9   MM ,M'   Yb  MM' "'6W'   `Wb MM    MM    MM  8)   MM
+  MM        MM 8M""""""  MM    8M     M8 MM    MM    MM   ,pm9MM
+  MM        MM YM.    ,  MM    YA.   ,A9 MM    MM    MM  8M   MM
+.JMML.    .JMML.`Mbmmd'.JMML.   `Ybmd9'.JMML  JMML  JMML.`Moo9^Yo.
+"#);
+
+        println!("Hello from Pleroma.");
+
+        return ast::Hvalue::None;
+    }
 }
 
 pub fn load_monad(monad_path: &str, vat: &mut Vat) {
-    //vat.code.insert(0, fs::read("bsys/kernel.plmb").unwrap());
-    vat.code = Arc::new(fs::read("bsys/kernel.plmb").unwrap());
+
+    let mut fmap = HashMap::new();
+    fmap.insert("hello".to_string(), (Monad::hello as ast::RawFF, Vec::new()));
+    fmap.insert("kprint".to_string(), (Monad::kprint as ast::RawFF, vec![(String::from("p0"), ast::CType::Void)]));
+
+    let mut monmap = HashMap::new();
+    monmap.insert("Monad".to_string(), fmap);
+
+    let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "bsys/kernel.plmb", monmap);
+    vat.code = Arc::new(monad_code.clone());
     let mut z = 0;
-    let data_table = pbin::load_entity_data_table(&mut z, &fs::read("bsys/kernel.plmb").unwrap());
+    let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
     vat.create_entity_code(0, 0, &data_table[&0]);
 }

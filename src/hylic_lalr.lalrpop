@@ -55,14 +55,10 @@ Expr: AstNode = {
     <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::FunctionCall{call_type: ast::CallType::NewEntity, identifier: ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, func_name: String::from(""), arguments: e}),
     "$" <s:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::FunctionCall(ast::FunctionCall{call_type: ast::CallType::NewVat, identifier: ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, func_name: String::from("create"), arguments: e}),
     <s:Symbol> "!" <f:Symbol> "(" <e:Comma<Expr>> ")" => AstNode::Message(ast::Identifier{original_sym: String::from(s), unique_sym: String::from(""), target: IdentifierTarget::Undecided}, String::from(f), e),
-    PString => <>,
+    StringToken => AstNode::ValueNode(Hvalue::PString(<>)),
     Symbol => AstNode::Identifier(Identifier{original_sym: String::from(<>), unique_sym: String::from(""), target: IdentifierTarget::Undecided}),
     <e1:Expr> "⌜" <e2:Expr> "⌟" => AstNode::Index(Box::new(e1), Box::new(e2)),
     "[" <v:Comma<Expr>> "]" => AstNode::ValueNode(Hvalue::List(v)),
-}
-
-PString: AstNode = {
-    "\"" <s:Symbol> "\"" => AstNode::ValueNode(Hvalue::PString(s))
 }
 
 Term: AstNode = {
@@ -153,7 +149,7 @@ extern {
         "\n" => lexer::Tok::Linefeed,
         EntityIdentifier => lexer::Tok::EntityIdentifier { value: <String> },
         Symbol => lexer::Tok::Symbol { value: <String> },
-        "[a-z][a-zA-Z]*" => lexer::Tok::StringToken { value: <String> },
+        StringToken => lexer::Tok::StringToken { value: <String> },
         "[0-9]+" => lexer::Tok::Number,
 
         "u8" => lexer::Tok::Pu8,

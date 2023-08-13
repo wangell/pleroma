@@ -148,6 +148,29 @@ impl<'input> Iterator for Lexer<'input> {
                     return Some(Ok((start_i, Tok::Hu8 { value: parsed_val.try_into().unwrap() }, last_i)));
                 },
 
+                Some((i, ch)) if ch == '"' => {
+                    let mut sym = String::new();
+                    let start_i = i;
+                    let mut last_i = start_i;
+                    //self.chars.advance_by(1);
+                    self.next_char = self.chars.next();
+
+                    loop {
+                        let Some((i2, ch2)) = self.next_char else {panic!()};
+                        if ch2 != '"' {
+                            sym.push(ch2);
+                            last_i += 1;
+                            self.next_char = self.chars.next();
+                        } else {
+                            self.next_char = self.chars.next();
+                            self.set_char = false;
+                            break;
+                        }
+                    }
+
+                    return Some(Ok((start_i, Tok::StringToken { value: sym }, last_i)));
+                },
+
                 Some((i, ch)) if ch.is_alphabetic() => {
                     let mut sym = ch.to_string();
                     let start_i = i;

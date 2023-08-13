@@ -17,7 +17,7 @@ pub enum Op {
 
     Push(ast::Hvalue),
 
-    ForeignCall(u64),
+    ForeignCall(u64, u8),
 
     // Function #, # of args
     Message(u64, u8),
@@ -83,7 +83,13 @@ pub fn decode_value(vblock: &[u8]) -> (usize, Hvalue) {
             let (y2, entity_id) = read_u32_sz(&vblock[x+1+y0+y1..]);
 
             return (1 + y0 + y1 + y2, Hvalue::EntityAddress(vm_core::EntityAddress{node_id, vat_id, entity_id}));
+        },
+        0x04 => {
+            //TODO double check this math
+            let (y, a0) = read_utf8_str_sz(&vblock[x+1..]);
+            return (1 + y, Hvalue::PString(a0));
         }
+
         _ => panic!()
     }
 }
@@ -105,7 +111,12 @@ pub fn encode_value(val: &ast::Hvalue) -> Vec<u8> {
             bytes.extend_from_slice(&address.node_id.to_be_bytes());
             bytes.extend_from_slice(&address.vat_id.to_be_bytes());
             bytes.extend_from_slice(&address.entity_id.to_be_bytes());
-        }
+        },
+        Hvalue::PString(a0) => {
+            bytes.push(0x04);
+            bytes.extend_from_slice(a0.as_bytes());
+            bytes.push(0x0);
+        },
         _ => panic!()
     }
 
@@ -146,9 +157,10 @@ pub fn encode_instruction(op: &Op) -> Vec<u8> {
             bytes.append(&mut encode_value(&a0));
         },
 
-        Op::ForeignCall(a0) => {
+        Op::ForeignCall(a0, a1) => {
             bytes.push(SimpleOp::ForeignCall as u8);
             bytes.extend_from_slice(&a0.to_be_bytes());
+            bytes.extend_from_slice(&a1.to_be_bytes());
         },
 
         Op::Call(a0, a1) => {
@@ -260,9 +272,10 @@ pub fn decode_instruction(x: usize, vblock: &[u8]) -> (usize, Op) {
             return (x + y, Op::Lstore(a0));
         }
         SimpleOp::ForeignCall => {
-            let (y, a0) = read_u64_sz(&vblock[x..]);
+            let (y0, a0) = read_u64_sz(&vblock[x..]);
+            let (y1, a1) = read_u8_sz(&vblock[x+y0..]);
 
-            return (x + y, Op::ForeignCall(a0));
+            return (x + y0 + y1, Op::ForeignCall(a0, a1));
         }
         SimpleOp::Push => {
             let (y, a0) = decode_value(&vblock[x..]);

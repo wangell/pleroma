@@ -7,7 +7,7 @@ use crate::vm_core;
 use crate::common::{Box, HashMap, String, Vec, BTreeMap};
 
 pub fn derive_type(node: &AstNode) -> CType {
-    println!("{:?}", node);
+    //println!("{:?}", node);
     let stype = match node {
         AstNode::FunctionCall(ast::FunctionCall{call_type, identifier, func_name, arguments}) => match call_type {
             ast::CallType::NewEntity => CType::Loc(ast::PType::Entity(identifier.original_sym.clone())),
@@ -352,10 +352,16 @@ impl AstNodeVisitor for GenCode {
 
     fn visit_foreign_call(
         &mut self,
-        func: &fn(&mut vm_core::Entity, Hvalue) -> Hvalue,
-        params: &mut Vec<AstNode>,
+        func: &ast::RawFF,
+        params: &mut Vec<(String, CType)>,
     ) {
-        self.emit_op(Op::ForeignCall(*func as u64));
+        //let mut q = 0;
+        //for p in params {
+        //    self.emit_op(Op::Lload(p.0.clone()));
+        //    q += 1;
+        //}
+
+        self.emit_op(Op::ForeignCall(*func as u64, params.len() as u8));
         self.emit_op(Op::Ret);
     }
 
@@ -396,21 +402,29 @@ impl AstNodeVisitor for GenCode {
         func_name: &mut String,
         args: &mut Vec<AstNode>,
     ) {
+        let mut f_args = 0;
         self.visit_identifier(id);
         for arg in args.iter_mut() {
             walk(self, arg);
+            f_args += 1;
         }
 
-        let entity_type = self.symbol_table.get(&id.original_sym).unwrap();
+        // We have the entity type + function name, now we need to find which number function to message
+        //if let ast::CType::Loc(ast::PType::Entity(ename)) = entity_type {
 
-        if let ast::CType::Loc(ast::PType::Entity(ename)) = entity_type {
-            // We have the entity type + function name, now we need to find which number function to message
+        //    let fid = self.entities_and_functions.get(ename).unwrap().get(func_name).unwrap();
+        //    //let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
+
+        //    self.emit_op(Op::Message(*fid as u64, f_args as u8));
+
+        //}
+
+        let ename = "Monad";
 
             let fid = self.entities_and_functions.get(ename).unwrap().get(func_name).unwrap();
-            let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
+            //let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
 
             self.emit_op(Op::Message(*fid as u64, f_args as u8));
-        }
     }
 
     fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {
@@ -435,7 +449,6 @@ impl AstNodeVisitor for GenCode {
         walk(self, expr);
 
         self.symbol_table.insert(symbol.original_sym.clone(), derive_type(expr));
-        println!("{:?}", self.symbol_table);
 
         if let IdentifierTarget::LocalVar = symbol.target {
             self.emit_op(Op::Lstore(symbol.original_sym.clone()));
