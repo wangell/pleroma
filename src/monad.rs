@@ -86,11 +86,9 @@ pub fn load_monad(monad_path: &str) -> Vat {
 
 
     let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "sys/kernel.plmb", monad_bindings);
-    let mut z = 0;
-    let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
 
     let mut vat = vm_core::Vat::new(1, Arc::new(monad_code.clone()));
-    vat.create_entity_code(0, 0, &data_table[&0]);
+    vat.create_entity_code(0, 0);
 
     vat
 }

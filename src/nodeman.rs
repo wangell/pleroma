@@ -123,7 +123,7 @@ pub fn load_nodeman(node: Node, nodeman_path: &str, new_vat_queue: crossbeam::ch
     nman.load_code_bytes(&nm_code);
 
     let mut vat = vm_core::Vat::new(0, Arc::new(nm_code.clone()));
-    vat.create_entity(0, 0, &BTreeMap::new(), Some(Box::new(nman)));
+    vat.create_entity(0, 0, Some(Box::new(nman)));
 
     vat
 }

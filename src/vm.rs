@@ -142,7 +142,7 @@ pub fn run_expr(
                 let mut xx = 0;
                 let table = load_entity_function_table(&mut xx, &code[qq + zz..]);
 
-                let ent = vat.create_entity_code(a0, 0, &data_table[&a0]);
+                let ent = vat.create_entity_code(a0, 0);
 
                 let mut nf = StackFrame {
                     entity_id: ent.address.entity_id,

@@ -1,3 +1,5 @@
+use crate::pbin;
+
 cfg_if::cfg_if! {
     if #[cfg(feature = "hosted")] {
         use std::collections::HashMap as HashMap;
@@ -169,11 +171,21 @@ impl Vat {
         last_frame.locals.insert(s.clone(), val.clone());
     }
 
-    pub fn create_entity_code(&mut self, entity_type: u32, code: u32, data: &BTreeMap<String, Hvalue>) -> &Entity {
-        self.create_entity(entity_type, code, data, None)
+    pub fn create_entity_code(&mut self, entity_type: u32, code: u32) -> &Entity {
+        self.create_entity(entity_type, code, None)
     }
 
-    pub fn create_entity(&mut self, entity_type: u32, code: u32, data: &BTreeMap<String, Hvalue>, bound_entity: Option<Box<dyn ffi::BoundEntity>>) -> &Entity {
+    pub fn create_entity(&mut self, entity_type: u32, code: u32, bound_entity: Option<Box<dyn ffi::BoundEntity>>) -> &Entity {
+
+        let mut z = 0;
+        let data_table = pbin::load_entity_data_table(&mut z, &self.code);
+
+        let empty_dt = BTreeMap::new();
+        let data = match data_table.get(&entity_type) {
+            Some(dt) => dt,
+            None => &empty_dt
+        };
+
         let entity_id = self.last_entity_id;
         let mut ent = Entity {
             address: EntityAddress {
