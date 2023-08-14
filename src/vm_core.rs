@@ -140,7 +140,7 @@ pub struct StackFrame {
 pub struct PleromaNode {}
 
 impl Vat {
-    pub fn new(vat_id: u32) -> Vat {
+    pub fn new(vat_id: u32, code: Arc<Vec<u8>>) -> Vat {
         Vat {
             inbox: Vec::new(),
             outbox: Vec::new(),
@@ -152,7 +152,7 @@ impl Vat {
             op_stack: Vec::new(),
             call_stack: Vec::new(),
             promise_stack: HashMap::new(),
-            code: Arc::new(Vec::new())
+            code
         }
     }
 

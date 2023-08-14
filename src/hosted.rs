@@ -202,15 +202,13 @@ pub fn boot() {
     vat_inboxes.insert(0, Vec::new());
     vat_inboxes.insert(1, Vec::new());
 
-    let mut nm_vat = vm_core::Vat::new(0);
-    let mut monad_vat = vm_core::Vat::new(1);
+    let mut our_node = node::Node::new();
+    let mut nm_vat = nodeman::load_nodeman(our_node, "sys/nodeman.plm", node_control_tx);
+    let mut monad_vat = monad::load_monad("sys/kernel.plm");
 
     // Load Monad, which loads Nodeman
     //monad::load_monad("sys/kernel.plm", &mut monad_vat);
-    monad::load_monad("sys/kernel.plm", &mut monad_vat);
 
-    let mut our_node = node::Node::new();
-    let mut our_nodeman = nodeman::load_nodeman(our_node, "bsys/nodeman.plmb", &mut nm_vat, node_control_tx);
 
     ml_vat_tx.send(nm_vat);
     ml_vat_tx.send(monad_vat);

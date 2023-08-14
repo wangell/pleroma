@@ -78,7 +78,7 @@ impl Nodeman {
     fn nmup(vat: &mut vm_core::Vat, entity_id: u32, args: ast::Hvalue) -> ast::Hvalue {
         let nman: &mut Nodeman = Self::get_entity(vat, entity_id);
 
-        nman.new_vat();
+        nman.new_vat(0, 0);
 
         //vat.send_msg();
         vat.send_msg(1);
@@ -86,27 +86,27 @@ impl Nodeman {
         return ast::Hvalue::None;
     }
 
-    pub fn new_vat(&mut self) {
+    pub fn new_vat(&mut self, code_idx: u64, entity_idx: u64) {
         println!("Running from inside a bound entity!");
 
-        let mut monad_vat = vm_core::Vat::new(self.last_vat_id + 1);
+        let mut vat = vm_core::Vat::new(self.last_vat_id + 1, self.code[&code_idx].clone());
         self.last_vat_id += 1;
 
-        monad::load_monad("sys/kernel.plm", &mut monad_vat);
         //self.new_vat_queue.send(monad_vat).unwrap();
-        self.node_control_queue.send(NodeControlMsg::CreateVat(monad_vat)).unwrap();
+        self.node_control_queue.send(NodeControlMsg::CreateVat(vat)).unwrap();
     }
 
-    pub fn load_code_bytes(&mut self, code: Vec<u8>) -> u64 {
+    pub fn load_code_bytes(&mut self, code: &Vec<u8>) -> u64 {
         let code_idx = self.next_code_idx;
         self.code.insert(code_idx, Arc::new(code.clone()));
         self.next_code_idx += 1;
-        return code_idx;
+
+        code_idx
     }
 
 }
 
-pub fn load_nodeman(node: Node, nodeman_path: &str, vat: &mut Vat, new_vat_queue: crossbeam::channel::Sender<NodeControlMsg>) {
+pub fn load_nodeman(node: Node, nodeman_path: &str, new_vat_queue: crossbeam::channel::Sender<NodeControlMsg>) -> Vat {
 
     let mut fmap = HashMap::new();
     fmap.insert("nmup".to_string(), (Nodeman::nmup as ast::RawFF, Vec::new()));
@@ -114,12 +114,14 @@ pub fn load_nodeman(node: Node, nodeman_path: &str, vat: &mut Vat, new_vat_queue
     let mut monmap = HashMap::new();
     monmap.insert("Nodeman".to_string(), fmap);
 
-    let monad_code = compile::compile_from_files(vec![String::from("sys/nodeman.plm")], "sys/nodeman.plmb", monmap);
-    vat.code = Arc::new(monad_code.clone());
-    let mut z = 0;
-    let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
+    let mut nman = Nodeman::new(node, new_vat_queue);
 
-    let nman = Nodeman::new(node, new_vat_queue);
+    let nm_code = compile::compile_from_files(vec![String::from("sys/nodeman.plm")], "sys/nodeman.plmb", monmap);
 
+    nman.load_code_bytes(&nm_code);
+
+    let mut vat = vm_core::Vat::new(0, Arc::new(nm_code.clone()));
     vat.create_entity(0, 0, &BTreeMap::new(), Some(Box::new(nman)));
+
+    vat
 }

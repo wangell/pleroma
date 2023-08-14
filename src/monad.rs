@@ -74,7 +74,7 @@ impl Monad {
     }
 }
 
-pub fn load_monad(monad_path: &str, vat: &mut Vat) {
+pub fn load_monad(monad_path: &str) -> Vat {
 
     let mut fmap = HashMap::new();
     fmap.insert("hello".to_string(), (Monad::hello as ast::RawFF, Vec::new()));
@@ -84,8 +84,11 @@ pub fn load_monad(monad_path: &str, vat: &mut Vat) {
     monmap.insert("Monad".to_string(), fmap);
 
     let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "sys/kernel.plmb", monmap);
-    vat.code = Arc::new(monad_code.clone());
     let mut z = 0;
     let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
+
+    let mut vat = vm_core::Vat::new(1, Arc::new(monad_code.clone()));
     vat.create_entity_code(0, 0, &data_table[&0]);
+
+    vat
 }
