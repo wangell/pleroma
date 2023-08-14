@@ -31,11 +31,13 @@ pub struct Nodeman {
 
     pub code: HashMap<u64, Arc::<Vec<u8>>>,
     pub next_code_idx: u64,
-    pub node_control_queue: crossbeam::channel::Sender<NodeControlMsg>
+    pub node_control_queue: crossbeam::channel::Sender<NodeControlMsg>,
+
+    pub last_vat_id: u32
 }
 
 impl ffi::BoundEntity for Nodeman {
-    fn as_any(&self) -> &dyn Any {
+    fn as_any(&mut self) -> &mut dyn Any {
         self
     }
 }
@@ -54,6 +56,8 @@ impl Nodeman {
                 foreign_functions: HashMap::new(),
             },
 
+            // Leave the first 100 for system vats
+            last_vat_id: 100,
             node_control_queue
 
         };
@@ -61,10 +65,10 @@ impl Nodeman {
         n
     }
 
-    fn get_entity(vat: &mut vm_core::Vat, entity_id: u32) -> &Self {
+    fn get_entity(vat: &mut vm_core::Vat, entity_id: u32) -> &mut Self {
         let mut target_entity = vat.entities.get_mut(&entity_id).unwrap();
-        let binding = target_entity.bound_entity.as_ref().unwrap();
-        let nman: &Self = match binding.as_any().downcast_ref::<Self>() {
+        let binding = target_entity.bound_entity.as_mut().unwrap();
+        let nman: &mut Self = match binding.as_any().downcast_mut::<Self>() {
             Some(b) => b,
             None => panic!("&a isn't a B!"),
         };
@@ -72,7 +76,7 @@ impl Nodeman {
     }
 
     fn nmup(vat: &mut vm_core::Vat, entity_id: u32, args: ast::Hvalue) -> ast::Hvalue {
-        let nman = Self::get_entity(vat, entity_id);
+        let nman: &mut Nodeman = Self::get_entity(vat, entity_id);
 
         nman.new_vat();
 
@@ -82,9 +86,12 @@ impl Nodeman {
         return ast::Hvalue::None;
     }
 
-    pub fn new_vat(&self) {
+    pub fn new_vat(&mut self) {
         println!("Running from inside a bound entity!");
-        let mut monad_vat = vm_core::Vat::new(2);
+
+        let mut monad_vat = vm_core::Vat::new(self.last_vat_id + 1);
+        self.last_vat_id += 1;
+
         monad::load_monad("sys/kernel.plm", &mut monad_vat);
         //self.new_vat_queue.send(monad_vat).unwrap();
         self.node_control_queue.send(NodeControlMsg::CreateVat(monad_vat)).unwrap();
