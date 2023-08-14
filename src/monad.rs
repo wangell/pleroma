@@ -1,5 +1,6 @@
 use crate::ast;
 use crate::ast::AstNode;
+use crate::nested_hashmap;
 use crate::codegen;
 use crate::pbin;
 use crate::compile;
@@ -76,14 +77,15 @@ impl Monad {
 
 pub fn load_monad(monad_path: &str) -> Vat {
 
-    let mut fmap = HashMap::new();
-    fmap.insert("hello".to_string(), (Monad::hello as ast::RawFF, Vec::new()));
-    fmap.insert("kprint".to_string(), (Monad::kprint as ast::RawFF, vec![(String::from("p0"), ast::CType::Void)]));
+    let monad_bindings = nested_hashmap! {
+        "Monad" => {
+            "hello" => (Monad::hello, Vec::new()),
+            "kprint" => (Monad::kprint, vec![(String::from("p0"), ast::CType::Void)])
+        }
+    };
 
-    let mut monmap = HashMap::new();
-    monmap.insert("Monad".to_string(), fmap);
 
-    let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "sys/kernel.plmb", monmap);
+    let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "sys/kernel.plmb", monad_bindings);
     let mut z = 0;
     let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
 

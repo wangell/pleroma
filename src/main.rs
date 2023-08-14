@@ -52,7 +52,9 @@ cfg_if::cfg_if! {
     }
 }
 
+#[macro_use]
 pub mod ffi;
+
 pub mod lexer;
 pub mod parser;
 pub mod sem;

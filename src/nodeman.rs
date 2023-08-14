@@ -14,6 +14,8 @@ use crate::common::BTreeMap;
 use crate::common::HashMap;
 use crate::node::Node;
 use crate::common::Arc;
+use crate::nested_hashmap;
+
 use std::{fs};
 use crossbeam::channel::{select, unbounded};
 
@@ -108,15 +110,15 @@ impl Nodeman {
 
 pub fn load_nodeman(node: Node, nodeman_path: &str, new_vat_queue: crossbeam::channel::Sender<NodeControlMsg>) -> Vat {
 
-    let mut fmap = HashMap::new();
-    fmap.insert("nmup".to_string(), (Nodeman::nmup as ast::RawFF, Vec::new()));
-
-    let mut monmap = HashMap::new();
-    monmap.insert("Nodeman".to_string(), fmap);
+    let nodeman_bindings = nested_hashmap! {
+        "Nodeman" => {
+            "nmup" => (Nodeman::nmup, Vec::new())
+        }
+    };
 
     let mut nman = Nodeman::new(node, new_vat_queue);
 
-    let nm_code = compile::compile_from_files(vec![String::from("sys/nodeman.plm")], "sys/nodeman.plmb", monmap);
+    let nm_code = compile::compile_from_files(vec![String::from("sys/nodeman.plm")], "sys/nodeman.plmb", nodeman_bindings);
 
     nman.load_code_bytes(&nm_code);
 
