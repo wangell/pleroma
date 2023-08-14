@@ -312,11 +312,16 @@ impl AstNodeVisitor for GenCode {
         functions: &mut HashMap<String, Box<AstNode>>,
         foreign_functions: &HashMap<u8, ast::ForeignFunc>,
     ) {
+        self.symbol_table.clear();
+
         self.current_func_id = 0;
+
+        self.symbol_table.insert(String::from("self"), ast::CType::Loc(ast::PType::Entity(name.clone())));
 
         let mut data_map: HashMap<String, Hvalue> = HashMap::new();
         for (data_name, data_type) in data_declarations {
             data_map.insert(data_name.clone(), Hvalue::None);
+            self.symbol_table.insert(data_name.clone(), data_type.clone());
         }
         self.entity_data_values
             .insert(self.current_entity_id, data_map);
@@ -409,22 +414,19 @@ impl AstNodeVisitor for GenCode {
             f_args += 1;
         }
 
+        //println!("{:#?}", self.symbol_table);
+        let entity_type = self.symbol_table.get(&id.original_sym).unwrap();
+
         // We have the entity type + function name, now we need to find which number function to message
-        //if let ast::CType::Loc(ast::PType::Entity(ename)) = entity_type {
-
-        //    let fid = self.entities_and_functions.get(ename).unwrap().get(func_name).unwrap();
-        //    //let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
-
-        //    self.emit_op(Op::Message(*fid as u64, f_args as u8));
-
-        //}
-
-        let ename = "Monad";
+        if let ast::CType::Loc(ast::PType::Entity(ename)) = entity_type {
 
             let fid = self.entities_and_functions.get(ename).unwrap().get(func_name).unwrap();
             //let f_args = self.entity_function_types.get(ename).unwrap().get(func_name).unwrap().0.len();
 
             self.emit_op(Op::Message(*fid as u64, f_args as u8));
+
+        }
+
     }
 
     fn visit_operator(&mut self, left: &mut AstNode, op: &BinOp, right: &mut AstNode) {

@@ -205,6 +205,7 @@ pub fn run_expr(
                         // TODO: u64
                         function_id: a0 as u32,
                         src_promise: Some(next_prom_id.into()),
+                        no_response: false
                     },
                 };
 
@@ -257,7 +258,7 @@ pub fn run_expr(
                     args.push(ast::AstNode::ValueNode(local_var));
                 }
 
-                //let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
+                let mut target_entity = vat.entities.get_mut(&msg.dst_address.entity_id).unwrap();
                 let foreign_func: ast::RawFF = unsafe { core::mem::transmute(ptr) };
                 let res = foreign_func(vat, msg.dst_address.entity_id, Hvalue::List(args));
 
@@ -307,6 +308,7 @@ pub fn run_msg(
             args,
             function_id,
             src_promise,
+            no_response
         } => {
 
 
@@ -337,15 +339,17 @@ pub fn run_msg(
 
             let poss_res = run_expr(z, vat, msg, tx_msg, src_promise.clone());
 
-            if let Some(res) = poss_res {
-                out_msg = Some(Msg {
-                    src_address: msg.dst_address,
-                    dst_address: msg.src_address,
-                    contents: vm_core::MsgContents::Response {
-                        result: res,
-                        dst_promise: *src_promise,
-                    },
-                });
+            if !no_response {
+                if let Some(res) = poss_res {
+                    out_msg = Some(Msg {
+                        src_address: msg.dst_address,
+                        dst_address: msg.src_address,
+                        contents: vm_core::MsgContents::Response {
+                            result: res,
+                            dst_promise: *src_promise,
+                        },
+                    });
+                }
             }
         }
         vm_core::MsgContents::Response {
@@ -356,6 +360,7 @@ pub fn run_msg(
             if let Some(promise_id) = dst_promise {
                 // We want to execute from top of stack down
                 let fix_id = *promise_id as u8;
+                //println!("{:?}", vat);
                 let prom = &mut vat.promise_stack.get_mut(&fix_id).unwrap();
                 let mut promise;
                 {
@@ -399,27 +404,6 @@ pub fn run_msg(
                     }
                 }
             }
-        }
-        vm_core::MsgContents::BigBang { args, function_id } => {
-            let mut z = 0;
-            let data_table = load_entity_data_table(&mut z, &code[..]);
-
-            let mut q = 0;
-            let inoc_table = load_entity_inoculation_table(&mut q, &code[z..]);
-
-            let mut x = 0;
-            let table = load_entity_function_table(&mut x, &code[q + z..]);
-
-            vat.call_stack.push(StackFrame {
-                entity_id: msg.dst_address.entity_id,
-                locals: HashMap::new(),
-                return_address: None,
-            });
-
-            z = table[&0][&function_id].0 as usize;
-
-            let rt_bb = run_expr(z, vat, msg, tx_msg, None);
-            //println!("{:#?}", rt_bb);
         }
     }
 

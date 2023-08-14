@@ -52,6 +52,7 @@ cfg_if::cfg_if! {
     }
 }
 
+pub mod ffi;
 pub mod lexer;
 pub mod parser;
 pub mod sem;

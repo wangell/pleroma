@@ -3,6 +3,9 @@ cfg_if::cfg_if! {
         use std::collections::HashMap as HashMap;
         use std::collections::BTreeMap;
         use crate::ast::{Hvalue, Module, EntityDef};
+        use std::rc::Rc;
+        use core::cell::RefCell;
+        use std::sync::Mutex;
     }
 }
 
@@ -15,11 +18,15 @@ cfg_if::cfg_if! {
         use alloc::string::String;
         use alloc::vec::Vec;
         use alloc::boxed::Box;
+        use alloc::rc::Rc;
+        use core::cell::RefCell;
         use crate::ast::{Hvalue, Module, EntityDef};
     }
 }
 
+
 use crate::common::Arc;
+use crate::ffi;
 
 #[derive(Debug, Clone, Copy)]
 pub struct EntityAddress {
@@ -44,16 +51,11 @@ pub enum MsgContents {
         args: Vec<Hvalue>,
         function_id: u32,
         src_promise: Option<u32>,
+        no_response: bool
     },
     Response {
         result: Hvalue,
         dst_promise: Option<u32>,
-    },
-
-    // Initial message to kick off universe
-    BigBang {
-        args: Vec<Hvalue>,
-        function_id: u32,
     },
 }
 
@@ -69,7 +71,8 @@ pub struct Entity {
     pub address: EntityAddress,
     pub data: BTreeMap<String, Hvalue>,
     pub code: u32,
-    pub entity_type: u32
+    pub entity_type: u32,
+    pub bound_entity: Option<Box<dyn ffi::BoundEntity>>
 }
 
 #[derive(Debug, Clone)]
@@ -137,13 +140,13 @@ pub struct StackFrame {
 pub struct PleromaNode {}
 
 impl Vat {
-    pub fn new() -> Vat {
+    pub fn new(vat_id: u32) -> Vat {
         Vat {
             inbox: Vec::new(),
             outbox: Vec::new(),
             entities: HashMap::new(),
 
-            vat_id: 0,
+            vat_id: vat_id,
             last_entity_id: 0,
 
             op_stack: Vec::new(),
@@ -167,6 +170,10 @@ impl Vat {
     }
 
     pub fn create_entity_code(&mut self, entity_type: u32, code: u32, data: &BTreeMap<String, Hvalue>) -> &Entity {
+        self.create_entity(entity_type, code, data, None)
+    }
+
+    pub fn create_entity(&mut self, entity_type: u32, code: u32, data: &BTreeMap<String, Hvalue>, bound_entity: Option<Box<dyn ffi::BoundEntity>>) -> &Entity {
         let entity_id = self.last_entity_id;
         let mut ent = Entity {
             address: EntityAddress {
@@ -176,7 +183,8 @@ impl Vat {
             },
             data: data.clone(),
             code: code,
-            entity_type: entity_type
+            entity_type: entity_type,
+            bound_entity: bound_entity
         };
 
         ent.data.insert(String::from("self"), Hvalue::EntityAddress(ent.address));
@@ -186,5 +194,15 @@ impl Vat {
         self.last_entity_id += 1;
 
         &self.entities[&entity_id]
+    }
+
+    pub fn send_msg(&mut self, ent: u32) {
+        let msg = Msg {
+            src_address: EntityAddress::new(0, 0, 0),
+            dst_address: EntityAddress::new(0, ent, 0),
+            contents: MsgContents::Request{ function_id: 2, args: Vec::new(), src_promise: None, no_response: false }
+        };
+
+        self.outbox.push(msg);
     }
 }

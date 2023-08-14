@@ -103,7 +103,10 @@ pub fn compile_from_ast(asts: &HashMap<String, ast::AstNode>, outpath: &str) -> 
 
     let mut new_asts = asts.clone();
 
-    let mut root = &mut new_asts.get_mut("sys/kernel.plm").unwrap();
+    // FIXME: there can be multiple asts
+    let first_key = new_asts.keys().next().unwrap().clone();
+
+    let mut root = &mut new_asts.get_mut(&first_key).unwrap();
 
     let mut ent_ids_visitor = ConstructSymbolTable::new();
     let ent_ids_result = ast::walk(&mut ent_ids_visitor, root);

@@ -5,6 +5,7 @@ use crate::compile;
 use crate::ast;
 use crate::pbin;
 use crate::parser;
+use crate::vm_core::Vat;
 
 use crate::{vm_core, monad, vm, node, nodeman};
 
@@ -25,6 +26,12 @@ pub fn hotplate(
                 tx_msg.send(return_msg_contents).unwrap();
             }
         }
+
+        // FIXME Check if this makes sense
+        for msg in &vat.outbox {
+            tx_msg.send(msg.clone()).unwrap();
+        }
+        vat.outbox.clear();
 
         // Back on to the sushi belt
         let rs = ml_tx_vat.send(vat).unwrap();
@@ -76,6 +83,9 @@ fn main_loop(
     vat_rx: &crossbeam::channel::Receiver<vm_core::Vat>,
     tx_msg: &crossbeam::channel::Sender<vm_core::Msg>,
     rx_msg: &crossbeam::channel::Receiver<vm_core::Msg>,
+
+    node_control_queue: &crossbeam::channel::Receiver<nodeman::NodeControlMsg>,
+
     sleeping_vats: &mut Vec<vm_core::Vat>,
     vat_inboxes: &mut HashMap<u32, Vec<vm_core::Msg>>,
 ) {
@@ -94,6 +104,7 @@ fn main_loop(
     loop {
         let mut waited_vat = None;
         let mut waited_msg = None;
+        let mut waited_ncm = None;
 
         select! {
             recv(vat_rx) -> waited_vat_new => {
@@ -102,7 +113,31 @@ fn main_loop(
             recv(rx_msg) -> waited_msg_new => {
                 waited_msg = Some(waited_msg_new);
             }
+            recv(node_control_queue) -> waited_ncm_new => {
+                waited_ncm = Some(waited_ncm_new);
+            }
         }
+
+        // Queue messages
+        if let Some(wncm) = waited_ncm {
+            let mut wmt = wncm.unwrap();
+            match wmt {
+                nodeman::NodeControlMsg::CreateVat(v) => {
+                    vat_inboxes.insert(2, Vec::new());
+                    sleeping_vats.push(v);
+                },
+                _ => todo!()
+            }
+        }
+
+        // TODO: this needs to be done to clear all ncm
+        //loop {
+        //    if let Ok(msg) = rx_msg.try_recv() {
+        //        triage_msg(vat_inboxes, sleeping_vats, vat_tx, msg);
+        //    } else {
+        //        break;
+        //    }
+        //}
 
         // Queue messages
         if let Some(wm) = waited_msg {
@@ -140,6 +175,7 @@ pub fn boot() {
     // Main loop vat tx <-> hotplate vat rx, hotplate vat tx <-> main loop vat rx
     let (ml_vat_tx, ml_vat_rx) = unbounded::<vm_core::Vat>();
     let (hp_vat_tx, hp_vat_rx) = unbounded::<vm_core::Vat>();
+    let (node_control_tx, node_control_rx) = unbounded::<nodeman::NodeControlMsg>();
 
     // Max concurrency
     let n_hotplates = 1;
@@ -155,7 +191,7 @@ pub fn boot() {
     let msg = vm_core::Msg {
         src_address: vm_core::EntityAddress::new(0, 0, 0),
         dst_address: vm_core::EntityAddress::new(0, 0, 0),
-        contents: vm_core::MsgContents::BigBang{ function_id: 1, args: Vec::new() }
+        contents: vm_core::MsgContents::Request{ function_id: 1, args: Vec::new(), src_promise: None, no_response: true }
     };
     tx_ml_box.send(msg).unwrap();
 
@@ -164,21 +200,29 @@ pub fn boot() {
     let mut vat_inboxes: HashMap<u32, Vec<vm_core::Msg>> = HashMap::new();
 
     vat_inboxes.insert(0, Vec::new());
-    let mut vat = vm_core::Vat::new();
-    let mut node = node::Node::new();
+    vat_inboxes.insert(1, Vec::new());
 
-    monad::load_monad("sys/kernel.plm", &mut vat);
+    let mut nm_vat = vm_core::Vat::new(0);
+    let mut monad_vat = vm_core::Vat::new(1);
+
+    // Load Monad, which loads Nodeman
+    //monad::load_monad("sys/kernel.plm", &mut monad_vat);
+    monad::load_monad("sys/kernel.plm", &mut monad_vat);
 
     let mut our_node = node::Node::new();
-    let mut our_nodeman = nodeman::load_nodeman(our_node, "bsys/kernel.plmb");
+    let mut our_nodeman = nodeman::load_nodeman(our_node, "bsys/nodeman.plmb", &mut nm_vat, node_control_tx);
 
-    ml_vat_tx.send(vat);
+    ml_vat_tx.send(nm_vat);
+    ml_vat_tx.send(monad_vat);
 
     main_loop(
         &hp_vat_tx,
         &ml_vat_rx,
         &tx_ml_box,
         &rx_ml_box,
+
+        &node_control_rx,
+
         &mut sleeping_vats,
         &mut vat_inboxes,
     );

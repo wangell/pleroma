@@ -1,0 +1,18 @@
+~B;
+
+ε Nodeman { io : u32 } {
+
+  δ create() → loc u32 {
+    ↵ self;
+  }
+
+  δ nmup() → loc u32 {
+    ↵ 0;
+  }
+
+  δ blah() → loc u32 {
+    let r: u32 = self ! nmup();
+    await r;
+    ↵ 0;
+  }
+}

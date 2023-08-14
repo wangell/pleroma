@@ -10,6 +10,7 @@ use crate::vm_core::Vat;
 use crate::common::BTreeMap;
 use crate::common::HashMap;
 use crate::common::Arc;
+use crate::{node, nodeman};
 
 use std::fs;
 
@@ -67,7 +68,7 @@ impl Monad {
 .JMML.    .JMML.`Mbmmd'.JMML.   `Ybmd9'.JMML  JMML  JMML.`Moo9^Yo.
 "#);
 
-        println!("Hello from Pleroma.");
+        println!("\x1b[0;32mHello, welcome to Pleroma!\x1b[0m");
 
         return ast::Hvalue::None;
     }
@@ -82,7 +83,7 @@ pub fn load_monad(monad_path: &str, vat: &mut Vat) {
     let mut monmap = HashMap::new();
     monmap.insert("Monad".to_string(), fmap);
 
-    let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "bsys/kernel.plmb", monmap);
+    let monad_code = compile::compile_from_files(vec![String::from("sys/kernel.plm")], "sys/kernel.plmb", monmap);
     vat.code = Arc::new(monad_code.clone());
     let mut z = 0;
     let data_table = pbin::load_entity_data_table(&mut z, &monad_code);
